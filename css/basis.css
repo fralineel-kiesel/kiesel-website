@@ -1,4 +1,14 @@
-/* basis.css – Farb-Tokens, Grundlagen, Navigation, Buttons, Footer */
+/* basis.css – Schriften, Farb-Tokens, Grundlagen, Navigation, Buttons, Footer */
+
+/* Schriften liegen lokal in schriften/ (Lizenz: SIL OFL, siehe OFL-*.txt).
+   Beide sind variable Fonts: eine Datei enthält alle Stärken von 400 bis 600,
+   mehr brauchen wir nicht (b/strong mit 700 nimmt automatisch 600).
+   Quelle: Google Fonts, Zeichensatz „latin“, mit fontTools auf 400–600 beschnitten.
+   font-display:swap zeigt den Text sofort in der Ersatzschrift und tauscht,
+   sobald die Datei geladen ist. */
+@font-face{font-family:"Unbounded";src:url("../schriften/unbounded.woff2") format("woff2");font-weight:400 600;font-style:normal;font-display:swap}
+@font-face{font-family:"Instrument Sans";src:url("../schriften/instrument-sans.woff2") format("woff2");font-weight:400 600;font-style:normal;font-display:swap}
+
 :root{
   --bg:#EEF0F1; --panel:#F8F9FA; --ink:#141A21; --muted:#57626D; --line:#D4DADF;
   --accent:#0E7490; --accent-ink:#FFFFFF; --accent-soft:#D4EBF0; --heat:#E1603A;
