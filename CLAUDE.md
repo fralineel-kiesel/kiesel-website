@@ -41,5 +41,5 @@ Farben: Mattschwarz, Titangrau, Himmelblau, Mattweiss, Kieselbeige. Hülle: CHF 
 ## Werkzeuge
 
 - Bilder neu erzeugen: `python werkzeuge/bilder.py` (Python 3.12 + Pillow; falls `python` nicht gefunden: `%LOCALAPPDATA%\Programs\Python\Python312\python.exe`)
-- Kein Git installiert.
+- Git: Repo https://github.com/fralineel-kiesel/kiesel-website, Branch `main`. Falls `git` nicht gefunden: `C:\Program Files\Git\cmd\git.exe`. Erzeugte Bilder werden bewusst mit versioniert (Seite muss ohne Build laufen).
 - Testen unter `file://`: headless Chrome (`C:\Program Files\Google\Chrome\Application\chrome.exe --headless=new --dump-dom|--screenshot=…`), Unterseite per Hash in der URL. Headless ist mindestens ca. 504 px breit, also Handy-Breite im eingebauten Browser mit Viewport „mobile“ prüfen. Die Vorschau zeigt lokale Dateien nur als statischen Schnappschuss, für Klicktests einen temporären lokalen Server nutzen.
