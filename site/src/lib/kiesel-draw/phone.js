@@ -9,8 +9,8 @@
 // <defs> anlegt. Sie funktionieren darum nur innerhalb einer Rückseite mit demselben pid.
 // Die Reihenfolge der Zeilen ist Absicht: In SVG liegt später Gezeichnetes oben.
 import { E, stop, f, rr, uid } from './svg.js';
-import { MODELS, geo, camrow } from './models.js';
-import { palette } from './colors.js';
+import { MODELS, DICKE, geo, camrow } from './models.js';
+import { palette, led as ledZustand } from './colors.js';
 
 // Kiesel-Logo: die Kieselform und zwei "Adern"
 export const PEB = 'M54 18C79 17 96 31 95 52C94 72 76 84 50 84C24 84 5 73 5 53C5 33 27 19 54 18Z';
@@ -240,6 +240,45 @@ export function frontSvg(mk, col, pid, huelle = null) {
   return s;
 }
 
+// Seitenansicht (rechte Kante): lib.py hat keine, darum aus side() der alten Seite
+// (js/handy.js) übernommen, mit denselben Massen. Links liegt das Display, rechts der
+// Rücken mit dem Kamerabuckel. Gefärbt wie Vorder- und Rückseite: Rahmen mit dem Verlauf
+// fr, Buckel mit dem Metallverlauf bz der Linsenringe, darunter der weiche Schatten sh.
+//   Breite = DICKE = 90 Einheiten (9 mm), Höhe = H des Modells
+export function sideSvg(mk, col, pid, huelle = null) {
+  const m = MODELS[mk];
+  const [, H, , g] = geo(m);
+  const D = DICKE;
+  const bump = m.cams === 2 ? 20 : 16; // Pro: grössere Tele-Linse, Buckel steht weiter vor
+  const defs = commonDefs(pid, col);
+  if (huelle) {
+    defs.push(E('linearGradient', { id: pid + 'cr', x1: '0', y1: '0', x2: '1', y2: '0' },
+      stop('0', huelle.lo) + stop('0.04', huelle.frame) + stop('0.1', huelle.hi) + stop('0.2', huelle.frame) + stop('0.8', huelle.frame) + stop('0.9', huelle.hi) + stop('0.96', huelle.frame) + stop('1', huelle.lo)));
+  }
+  let s = '<defs>' + defs.join('') + '</defs>';
+  s += E('rect', { x: '18', y: '40', width: f(D), height: f(H), rx: '40', style: 'fill: #0B1016; opacity: 0.3', filter: `url(#${pid}sh)` });
+  s += E('rect', { x: f(D - 2), y: '28', width: f(bump), height: '136', rx: '7', style: `fill: url(#${pid}bz)` });
+  s += E('rect', { x: '0', y: '0', width: f(D), height: f(H), rx: '40', style: `fill: url(#${pid}fr)` });
+  s += E('rect', { x: '2', y: '2', width: f(D - 4), height: f(H - 4), rx: '38', style: 'fill: none; stroke: #FFFFFF; stroke-opacity: 0.35; stroke-width: 2' });
+  // Antennenfugen oben und unten
+  s += E('rect', { x: '0', y: '150', width: f(D), height: '8', style: `fill: ${col.lo}; opacity: 0.45` });
+  s += E('rect', { x: '0', y: f(H - 158), width: f(D), height: '8', style: `fill: ${col.lo}; opacity: 0.45` });
+  // Power-Taste und Kamera-Knopf (mit Saphirglas-Fläche)
+  s += E('rect', { x: '22', y: f(g.pw), width: '46', height: '180', rx: '20', style: `fill: ${col.lo}` });
+  s += E('rect', { x: '22', y: f(g.cc), width: '46', height: '110', rx: '18', style: `fill: ${col.lo}` });
+  s += E('rect', { x: '32', y: f(g.cc + 20), width: '26', height: '70', rx: '10', style: 'fill: #1A2530; opacity: 0.85' });
+  if (huelle) {
+    // Hülle: 1.4 mm vor dem Display, 1.6 mm hinter dem Rücken, Knöpfe abgedeckt
+    s += E('rect', { x: '-14', y: '-22', width: f(D + 30), height: f(H + 44), rx: '50', style: `fill: url(#${pid}cr)` });
+    s += E('rect', { x: '-14', y: '-22', width: f(D + 30), height: f(H + 44), rx: '50', style: `fill: none; stroke: ${huelle.lo}; stroke-opacity: 0.5; stroke-width: 2` });
+    s += E('rect', { x: f(D + 16), y: '10', width: f(bump + 2), height: '172', rx: '6', style: `fill: ${huelle.frame}` });
+    s += E('rect', { x: f(D + 16), y: '10', width: f(bump + 2), height: '172', rx: '6', style: `fill: none; stroke: ${huelle.lo}; stroke-opacity: 0.5; stroke-width: 2` });
+    s += E('rect', { x: '22', y: f(g.pw), width: '46', height: '180', rx: '20', style: `fill: ${huelle.lo}; opacity: 0.75` });
+    s += E('rect', { x: '22', y: f(g.cc), width: '46', height: '110', rx: '18', style: 'fill: #1A2530; opacity: 0.55' });
+  }
+  return s;
+}
+
 // Ein Handy in einer grösseren Szene platzieren: um die Mitte drehen und skalieren
 export function place(mk, inner, cx, cy, a, sc) {
   const m = MODELS[mk];
@@ -256,14 +295,16 @@ export function floor(cx, cy, rx, ry, fid, op = '0.35') {
 // ---------------------------------------------------------------------------
 // Liefert ein fertiges <svg> mit 200 Einheiten Rand rundherum (Platz für Schatten,
 // Drehung und Hülle), optionalem Bodenschatten und einem aria-label.
-//   ansicht: 'vorne' | 'hinten'          modell: 'k1' | 'pro'
+//   ansicht: 'vorne' | 'hinten' | 'seite' modell: 'k1' | 'pro'
 //   farbe:   Name ('Himmelblau'), Hex ('#C0392B') oder fertige Palette
 //   hoehe:   Höhe in px inkl. Rand (wie in gen2.py); null = ohne width/height, dann
 //            bestimmt CSS die Grösse (z.B. width: 100%)
 //   drehung: Grad um die Mitte     huelle: null oder Farbe der Hülle
-//   led:     null oder LED-Objekt   boden: Bodenschatten ja/nein
+//   led:     'off' | 'call' | 'msg' | … (siehe LED in colors.js), Hex oder LED-Objekt
+//   boden:   Bodenschatten ja/nein
 //   label:   eigener Text für Screenreader   pid: ID-Präfix (sonst automatisch)
-const ANSICHT = { vorne: 'front', hinten: 'back', front: 'front', back: 'back' };
+const ANSICHT = { vorne: 'front', hinten: 'back', seite: 'side', front: 'front', back: 'back', side: 'side' };
+const ANSICHT_TEXT = { front: ', Vorderseite', back: ', Rückseite', side: ', Seitenansicht, 9 mm dick' };
 
 export function handy({ ansicht = 'hinten', modell = 'pro', farbe = 'Himmelblau', hoehe = 400, drehung = 0,
   huelle = null, led = null, boden = true, label = null, pid = null } = {}) {
@@ -273,17 +314,18 @@ export function handy({ ansicht = 'hinten', modell = 'pro', farbe = 'Himmelblau'
   const col = palette(farbe);
   const k = huelle ? palette(huelle) : null;
   const m = MODELS[modell];
-  const { W, H } = m;
+  const W = kind === 'side' ? DICKE : m.W, H = m.H; // Seitenansicht: nur 9 mm breit
   const pad = 200;
   const vbw = W + 2 * pad, vbh = H + 2 * pad;
-  const inner = kind === 'back' ? backSvg(modell, col, pid, led, k) : frontSvg(modell, col, pid, k);
+  const inner = kind === 'back' ? backSvg(modell, col, pid, ledZustand(led), k)
+    : kind === 'side' ? sideSvg(modell, col, pid, k) : frontSvg(modell, col, pid, k);
   let fl = '';
   if (boden) {
     fl = E('defs', {}, E('filter', { id: pid + 'fl', x: '-50%', y: '-200%', width: '200%', height: '500%' }, E('feGaussianBlur', { stdDeviation: '26' }))) +
-      E('ellipse', { cx: f(W / 2), cy: f(H + 80), rx: f(W * 0.44), ry: '30', style: 'fill: #000000; opacity: 0.35', filter: `url(#${pid}fl)` });
+      E('ellipse', { cx: f(W / 2), cy: f(H + 80), rx: f(kind === 'side' ? W * 0.8 : W * 0.44), ry: '30', style: 'fill: #000000; opacity: 0.35', filter: `url(#${pid}fl)` });
   }
   const g = drehung ? E('g', { transform: `rotate(${f(drehung)} ${f(W / 2)} ${f(H / 2)})` }, inner) : inner;
-  const lab = label || (modell === 'pro' ? 'Kiesel 1 Pro' : 'Kiesel 1') + (kind === 'back' ? ', Rückseite' : ', Vorderseite');
+  const lab = label || (modell === 'pro' ? 'Kiesel 1 Pro' : 'Kiesel 1') + ANSICHT_TEXT[kind];
   const groesse = hoehe === null ? {} : { width: f(hoehe * vbw / vbh), height: f(hoehe) };
   return E('svg', { ...groesse, viewBox: `${-pad} ${-pad} ${vbw} ${vbh}`, role: 'img', 'aria-label': lab, style: 'display: block; overflow: visible' }, fl + g);
 }

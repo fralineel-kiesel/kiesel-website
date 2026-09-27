@@ -108,3 +108,51 @@ function normHex(s) {
   if (!/^[0-9a-fA-F]{6}$/.test(h)) throw new Error(`Keine gültige Farbe: ${s}`);
   return '#' + h.toUpperCase();
 }
+
+// ---------------------------------------------------------------------------
+// LED-Zustände des RGB-Blitzes
+// ---------------------------------------------------------------------------
+// lib.py kennt nur das Schema { color, o1, o2, mid, edge } (siehe ledDefs in phone.js),
+// aber keine fertigen Zustände. Die Signalfarben stammen aus der alten Seite
+// (css/handy.css), die Texte dazu aus js/daten.js (LEDTXT).
+//   mid/edge: die LED selbst ist innen heller, am Rand dunkler: Signalfarbe mit 25 % Weiss
+//             bzw. 25 % Schwarz gemischt.
+//   o1/o2:    Deckkraft des Leuchthofs in der Mitte und bei 30 % des Radius: 0.8 und 0.4.
+// Beides ist an bilder/original/kiesel-kamera.png ausgemessen (blauer Blitz = Anruf): Die
+// Zeichnung deckungsgleich über das PNG gelegt, weicht die LED im Schnitt 2.3 von 255 ab,
+// der Leuchthof 1.2. (Dieselben 0.8/0.4 hatte die alte Seite beim Fotoblitz.)
+export const LED_FARBEN = {
+  call: '#3D8BFF', msg: '#A77BFF', charge: '#35D07F', full: '#35D07F',
+  low: '#FF4B4B', privacy: '#FF9A2E', flash: '#FFFFFF',
+};
+export const LED_NAMEN = {
+  off: 'Aus', call: 'Anruf', msg: 'Nachricht', charge: 'Lädt', full: 'Voll geladen',
+  low: 'Akku unter 10 %', privacy: 'Privacy-Modus', flash: 'Fotoblitz',
+};
+
+// Zwei Farben mischen: t = 0 → a, t = 1 → b
+export function mische(a, b, t) {
+  const x = parseInt(a.slice(1), 16), y = parseInt(b.slice(1), 16);
+  return '#' + [16, 8, 0].map((s) => {
+    const v = Math.round(((x >> s) & 255) * (1 - t) + ((y >> s) & 255) * t);
+    return v.toString(16).padStart(2, '0');
+  }).join('').toUpperCase();
+}
+
+// Aus einer Signalfarbe ein LED-Objekt machen (auch für eigene Farben nutzbar)
+export function ledAus(color, o1 = '0.8', o2 = '0.4') {
+  return { color, o1, o2, mid: mische(color, '#FFFFFF', 0.25), edge: mische(color, '#000000', 0.25) };
+}
+
+// Alle Zustände als fertige LED-Objekte. "off" = null: dann zeichnet lib.py die
+// cremefarbene Blitz-LED ohne Leuchthof.
+export const LED = Object.fromEntries(Object.entries(LED_FARBEN).map(([k, c]) => [k, ledAus(c)]));
+
+// 'call' → LED-Objekt, 'off'/null → null, eigenes Objekt bleibt, Hex → ledAus(hex)
+export function led(zustand) {
+  if (!zustand || zustand === 'off') return null;
+  if (typeof zustand === 'object') return zustand;
+  if (LED[zustand]) return LED[zustand];
+  if (/^#[0-9a-f]{6}$/i.test(zustand)) return ledAus(zustand.toUpperCase());
+  throw new Error(`Unbekannter LED-Zustand: ${zustand}`);
+}
