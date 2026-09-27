@@ -1,0 +1,97 @@
+/* tokens.css – das Kiesel-Designsystem als CSS-Variablen
+   Quelle: Artboard „Designsystem“ in design/kiesel-2.0/ (erzeugt von design/generator/gen2.py).
+   Regel: Im restlichen CSS keine festen Farben, Schriftgrössen, Abstände oder Radien,
+   sondern immer diese Variablen verwenden.
+
+   ── Wie Hell und Dunkel funktionieren ────────────────────────────────
+   Jede Farbe steht nur einmal da: light-dark(<hell>, <dunkel>).
+   Der Browser nimmt den ersten Wert, wenn das Element im hellen Farbschema ist,
+   sonst den zweiten. Welches Schema gilt, steuert die Eigenschaft color-scheme:
+     • ohne Wahl:          color-scheme: light dark  → folgt der Systemeinstellung
+     • data-theme="light": color-scheme: light       → immer hell
+     • data-theme="dark":  color-scheme: dark        → immer dunkel
+   data-theme setzt der Thema-Umschalter im Footer auf <html>. Es funktioniert aber
+   auf jedem Element, die Seite /designsystem/ zeigt so beide Themen nebeneinander. */
+
+:root {
+  color-scheme: light dark;
+
+  /* ── Farben (hell, dunkel) ── */
+  --bg:         light-dark(#EEF0F1, #0C1116); /* Seitenhintergrund */
+  --surface:    light-dark(#F8F9FA, #141B22); /* Karten, Leisten */
+  --raised:     light-dark(#FFFFFF, #1C252E); /* aktive Menüpunkte */
+  --ink:        light-dark(#141A21, #EEF2F5); /* Text, Kaufen-Knopf */
+  --muted:      light-dark(#56616C, #9AA7B3); /* Nebentext */
+  --line:       light-dark(#D4DADF, #27313B); /* Linien, Rahmen */
+  --accent:     light-dark(#0E7490, #5CC3DB); /* Akzent, Hauptknöpfe */
+  --accent-ink: light-dark(#FFFFFF, #05232B); /* Text auf Akzent */
+  --heat:       light-dark(#C4502B, #FF8A5E); /* Warnung, «fällt weg» */
+  --stage:      light-dark(#E6EBEE, #17202A); /* Bühne oben */
+  --stage-lo:   light-dark(#D2D9DE, #0A0F14); /* Bühne unten */
+  --overlay:    light-dark(rgba(20, 26, 33, 0.45), rgba(4, 8, 12, 0.66)); /* hinter Menü und Schublade */
+
+  /* Glas: liegt immer auf Bildern, darum in beiden Themen gleich */
+  --glass:        rgba(8, 13, 18, 0.66);
+  --glass-ink:    #FFFFFF;
+  --glass-on:     #FFFFFF;
+  --glass-on-ink: #0C1116;
+
+  /* ── Schriften ── */
+  --display: "Unbounded", "Arial Black", sans-serif;
+  --body:    "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+
+  /* Schriftgrössen: clamp(min, fliessend, max) wächst mit der Fensterbreite
+     vom Handy-Wert (390 px) bis zum Desktop-Wert (1440 px). */
+  --fs-display: clamp(46px, 18.5px + 7.05vw, 128px); /* Display 112–128, Handy 46 */
+  --fs-1:       clamp(32px, 20px + 3.05vw, 64px);    /* Titel 1: 56–64, Handy 32 */
+  --fs-2:       clamp(26px, 23.8px + 0.571vw, 32px); /* Titel 2: 32 */
+  --fs-3:       clamp(20px, 19.3px + 0.19vw, 22px);  /* Titel 3: 20–22 */
+  --fs-lead:    clamp(17px, 15.5px + 0.381vw, 21px); /* Einleitung: 19–21 */
+  --fs-text:    clamp(16px, 15.6px + 0.095vw, 17px); /* Text: 16–17 */
+  --fs-small:   clamp(13px, 12.6px + 0.095vw, 14px); /* Klein: 13–14 */
+
+  /* Laufweite (enger bei grossen Titeln) und Zeilenhöhe */
+  --ls-display: -0.05em;
+  --ls-1: -0.04em;
+  --ls-2: -0.02em;
+  --ls-3: -0.01em;
+  --lh-display: 0.95;
+  --lh-1: 1.02;
+  --lh-2: 1.1;
+  --lh-3: 1.2;
+  --lh-text: 1.6;
+
+  /* ── Abstände (nur diese zehn Werte verwenden) ── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 96px;
+  --space-10: 140px;
+
+  /* ── Radien ── */
+  --radius-s: 8px;      /* klein */
+  --radius-m: 16px;     /* Felder */
+  --radius-l: 24px;     /* Karten */
+  --radius-xl: 32px;    /* Bühnen */
+  --radius-full: 999px; /* Knöpfe, Chips */
+
+  /* ── Layout ── */
+  --page-max: 1200px;                  /* Inhaltsbreite, bei 1440 px bleiben 120 px Rand */
+  --gutter: clamp(20px, 5vw, 48px);    /* Seitenrand auf kleineren Bildschirmen */
+  --header-h: 56px;                    /* Handy; ab 900 px 64 px, siehe unten */
+  --subnav-h: 56px;
+}
+
+/* Breakpoint Desktop: ab 900 px passt das ganze Hauptmenü in die Kopfzeile. */
+@media (min-width: 900px) {
+  :root { --header-h: 64px; }
+}
+
+/* Feste Wahl über den Thema-Umschalter (oder für eine Vorschau auf /designsystem/) */
+[data-theme="light"] { color-scheme: light; }
+[data-theme="dark"]  { color-scheme: dark; }

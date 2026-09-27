@@ -1,0 +1,139 @@
+---
+// Footer mit Seitenübersicht (Artboards „Startseite Desktop“ und „Startseite Handy“).
+//   Desktop: fünf Spalten (Marke + vier Linkgruppen), darunter die Hinweise
+//   Handy:   die vier Gruppen als Akkordeon, darunter Thema und Hinweise
+//
+// Pro Gruppe gibt es zwei Überschriften: eine normale fürs Desktop und eine mit Knopf
+// fürs Handy. CSS zeigt je nach Breite nur eine davon (display:none versteckt sie auch
+// vor Screenreadern). So hat der Desktop keinen sinnlosen Aufklapp-Knopf.
+import Logo from './Logo.astro';
+import Icon from './Icon.astro';
+import ThemaUmschalter from './ThemaUmschalter.astro';
+import { FOOTER_SPALTEN } from '../data/navigation.js';
+import { pfad } from '../lib/pfad.js';
+---
+<footer class="footer">
+  <div class="container">
+    <div class="raster">
+      <div class="marke-spalte">
+        <div class="marke">
+          <Logo size={28} /><span class="wort">kiesel</span>
+        </div>
+        <p class="satz">Zwei kompakte Handys, die es nur als Idee gibt.</p>
+        <ThemaUmschalter />
+      </div>
+
+      {FOOTER_SPALTEN.map((s, i) => (
+        <div class="spalte" data-footer-gruppe>
+          <h2 class="titel nur-desktop">{s.titel}</h2>
+          <h2 class="titel nur-handy">
+            <button type="button" aria-expanded="false" aria-controls={`footer-${i}`}>
+              {s.titel}<Icon name="down" size={18} class="pfeil" />
+            </button>
+          </h2>
+          <ul role="list" id={`footer-${i}`}>
+            {s.links.map((l) => <li><a href={pfad(l.pfad)}>{l.name}</a></li>)}
+          </ul>
+        </div>
+      ))}
+    </div>
+
+    <div class="hinweise">
+      <p>Kiesel 1 und Kiesel 1 Pro sind Fan-Konzepte, keine echten Produkte. Preise und Werte sind Schätzungen.</p>
+      <p>iPhone ist eine Marke von Apple Inc.</p>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .footer {
+    margin-top: 80px;
+    padding: var(--space-6) 0 var(--space-7);
+    border-top: 1px solid var(--line);
+  }
+
+  .raster { display: flex; flex-direction: column; }
+
+  /* ── Handy: Akkordeon ── */
+  .nur-desktop { display: none; }
+  .titel { font-family: var(--body); }
+  .titel button {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: var(--space-4) 0;
+    border: 0;
+    border-bottom: 1px solid var(--line);
+    background: transparent;
+    color: var(--ink);
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.6;
+    text-align: left;
+  }
+  .titel :global(.pfeil) { transition: transform 0.2s; }
+  .titel button[aria-expanded="true"] :global(.pfeil) { transform: rotate(180deg); }
+
+  .spalte ul { display: none; flex-direction: column; gap: var(--space-3); margin: 0; }
+  .spalte.offen ul { display: flex; padding: var(--space-4) 0 var(--space-5); border-bottom: 1px solid var(--line); }
+  .spalte.offen .titel button { border-bottom-color: transparent; }
+  .spalte li { font-size: 15px; line-height: 1.6; }
+  .spalte a { color: var(--muted); text-decoration: none; }
+  .spalte a:hover { color: var(--ink); }
+
+  /* Die Marken-Spalte zeigt auf dem Handy nur den Thema-Umschalter, und zwar zuletzt */
+  .marke-spalte { order: 1; margin-top: var(--space-5); }
+  .marke, .satz { display: none; }
+
+  .hinweise {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    margin-top: 20px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  /* ── Desktop: fünf Spalten ── */
+  @media (min-width: 900px) {
+    .footer { margin-top: var(--space-10); padding: var(--space-8) 0 0; }
+    .raster {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: var(--space-6);
+    }
+    .nur-handy { display: none; }
+    .nur-desktop { display: block; }
+    .titel { font-size: 14px; font-weight: 600; line-height: 1.6; color: var(--ink); }
+    .spalte { display: flex; flex-direction: column; gap: var(--space-3); }
+    .spalte ul,
+    .spalte.offen ul { display: flex; padding: 0; border: 0; }
+    .marke-spalte { order: 0; margin-top: 0; display: flex; flex-direction: column; gap: var(--space-3); }
+    .marke { display: flex; align-items: center; gap: 10px; color: var(--ink); }
+    .wort { font-family: var(--display); font-size: 18px; font-weight: 600; line-height: 1; letter-spacing: -0.03em; }
+    .satz { display: block; color: var(--muted); font-size: 15px; line-height: 1.6; }
+    .marke-spalte :global(.thema) { margin-top: var(--space-2); }
+
+    .hinweise {
+      flex-direction: row;
+      justify-content: space-between;
+      gap: var(--space-5);
+      margin-top: var(--space-7);
+      padding: var(--space-5) 0 var(--space-7);
+      border-top: 1px solid var(--line);
+    }
+  }
+</style>
+
+<script>
+  document.querySelectorAll('[data-footer-gruppe]').forEach((gruppe) => {
+    const knopf = gruppe.querySelector('.nur-handy button');
+    knopf.addEventListener('click', () => {
+      const offen = knopf.getAttribute('aria-expanded') !== 'true';
+      knopf.setAttribute('aria-expanded', String(offen));
+      gruppe.classList.toggle('offen', offen);
+    });
+  });
+</script>

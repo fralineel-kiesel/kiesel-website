@@ -1,0 +1,40 @@
+---
+// Eigene 404-Seite. Astro baut daraus dist/404.html.
+// GitHub Pages zeigt eine 404.html aber nur, wenn sie im obersten Ordner der Website liegt.
+// Solange Kiesel 2.0 unter /v2/ liegt, ist sie direkt unter /kiesel-website/v2/404.html erreichbar.
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Knopf from '../components/Knopf.astro';
+import { pfad } from '../lib/pfad.js';
+---
+<BaseLayout titel="Seite nicht gefunden" noindex>
+  <section class="container fehler">
+    <p class="code" aria-hidden="true">404</p>
+    <h1 class="t-1">Dieser Kiesel ist weggerollt.</h1>
+    <p class="t-lead t-muted">Die Seite gibt es nicht (mehr). Vielleicht hilft einer dieser Wege weiter.</p>
+    <div class="knoepfe">
+      <Knopf href={pfad()} art="primaer" groesse="l">Zur Startseite</Knopf>
+      <Knopf href={pfad('kiesel-1-pro/')} art="sekundaer" groesse="l">Kiesel 1 Pro ansehen</Knopf>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .fehler {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-4);
+    padding-top: clamp(var(--space-7), 8vw, var(--space-9));
+    text-align: center;
+  }
+  .code {
+    font-family: var(--display);
+    font-size: var(--fs-display);
+    font-weight: 600;
+    line-height: var(--lh-display);
+    letter-spacing: var(--ls-display);
+    color: var(--accent);
+  }
+  .fehler p:not(.code) { max-width: 560px; }
+  .knoepfe { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-3); margin-top: var(--space-4); }
+</style>

@@ -1,0 +1,13 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Platzhalter from '../../components/Platzhalter.astro';
+---
+<BaseLayout titel="Kiesel 1" unterleiste="k1">
+  <Platzhalter
+    etappe={4}
+    titel="Kiesel 1"
+    einleitung="So gross wie das iPhone SE von 2016, mit Akku für den ganzen Tag."
+    auch={[5]}
+    anker={[{ id: 'akku', text: 'Hier kommt der Akku-Rechner hin (Etappe 4).' }]}
+  />
+</BaseLayout>

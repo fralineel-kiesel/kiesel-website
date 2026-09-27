@@ -1,0 +1,6 @@
+# Von npm installierte Pakete (werden aus package-lock.json wiederhergestellt)
+node_modules/
+# Ergebnis von "npm run build", entsteht bei jedem Build neu
+dist/
+# Zwischenspeicher von Astro (erzeugte Typen, Cache)
+.astro/

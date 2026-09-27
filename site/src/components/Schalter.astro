@@ -1,0 +1,61 @@
+---
+// Schalter (An/Aus), z.B. „Hülle dazu“ oder „Zen an“.
+// Ein <button role="switch" aria-checked>: Screenreader sagen „Schalter, an“ bzw. „aus“.
+// Enter und Leertaste funktionieren, weil es ein echter Knopf ist.
+const { an = false, class: klasse, ...rest } = Astro.props;
+---
+<button type="button" role="switch" aria-checked={an ? 'true' : 'false'} class:list={['schalter', klasse]} data-schalter {...rest}>
+  <span class="spur" aria-hidden="true"><span class="knauf"></span></span>
+  <span class="text"><slot /></span>
+</button>
+
+<style>
+  .schalter {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 15px;
+    font-weight: 600;
+    text-align: left;
+  }
+  .spur {
+    position: relative;
+    flex-shrink: 0;
+    width: 50px;
+    height: 30px;
+    border-radius: 15px;
+    background: var(--line);
+    transition: background-color 0.2s;
+  }
+  .knauf {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 24px;
+    height: 24px;
+    border-radius: 12px;
+    background: #FFFFFF; /* in beiden Themen weiss, wie im Artboard */
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s;
+  }
+  .schalter[aria-checked="true"] .spur { background: var(--accent); }
+  .schalter[aria-checked="true"] .knauf { transform: translateX(20px); }
+  .schalter:focus-visible { outline: none; }
+  .schalter:focus-visible .spur { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+
+<script>
+  document.addEventListener('click', (e) => {
+    const s = e.target.closest('[data-schalter]');
+    if (!s) return;
+    const an = s.getAttribute('aria-checked') !== 'true';
+    s.setAttribute('aria-checked', an ? 'true' : 'false');
+    s.dispatchEvent(new CustomEvent('kiesel:schalter', { bubbles: true, detail: { an } }));
+  });
+</script>

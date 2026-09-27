@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <style>
+    .k { fill: #141A21 } .a { stroke: #0E7490 }
+    @media (prefers-color-scheme: dark) { .k { fill: #EEF2F5 } .a { stroke: #5CC3DB } }
+  </style>
+  <defs><clipPath id="c"><path d="M54 18C79 17 96 31 95 52C94 72 76 84 50 84C24 84 5 73 5 53C5 33 27 19 54 18Z"/></clipPath></defs>
+  <path class="k" d="M54 18C79 17 96 31 95 52C94 72 76 84 50 84C24 84 5 73 5 53C5 33 27 19 54 18Z"/>
+  <g clip-path="url(#c)" fill="none" stroke-linecap="round">
+    <path class="a" stroke-width="7" d="M-4 70C26 62 56 50 104 34"/>
+    <path class="a" stroke-width="2.2" opacity="0.7" d="M-4 80C30 72 64 60 104 46"/>
+  </g>
+</svg>
