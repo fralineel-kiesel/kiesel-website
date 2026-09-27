@@ -58,9 +58,13 @@ export const pts = (lst) => lst.map(([x, y]) => `${f(x)},${f(y)}`).join(' ');
 
 // Eindeutige Präfixe für IDs. SVG-IDs gelten für die ganze Seite: Hätten zwei Handys
 // beide einen Verlauf "fr", würde das zweite die Farbe des ersten übernehmen.
-// Darum bekommt jede Zeichnung ihr eigenes Präfix (k1, k2, …), wie PID in gen2.py.
+// Darum bekommt jede Zeichnung ihr eigenes Präfix, wie PID in gen2.py.
+// Achtung: Der Server (Astro-Build) und der Browser zählen je für sich ab 1. Damit ein im
+// Browser gezeichnetes Handy nicht dieselbe ID bekommt wie eines aus dem Build, steht
+// dazwischen "s" (Server) bzw. ein zufälliges Kürzel pro geladenem Skript.
+const lauf = typeof document === 'undefined' ? 's' : Math.random().toString(36).slice(2, 6);
 let zaehler = 0;
-export const uid = (vorsilbe = 'k') => `${vorsilbe}${++zaehler}`;
+export const uid = (vorsilbe = 'k') => `${vorsilbe}${lauf}${++zaehler}`;
 
 // SVG-Text → echtes DOM-Element (nur im Browser). Für Fälle, in denen man das Element
 // weiterbearbeiten will, statt es per innerHTML einzusetzen.
