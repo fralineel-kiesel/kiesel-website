@@ -1,6 +1,7 @@
-// Kamera-Zoom für die Modellseiten (Etappe 5): stufenloser Zoom, Linsenwechsel bei 3x,
-// versteckte Details im Alpenpanorama. Gebraucht von ZoomVergleich (Pro) und ZoomDemo
-// (Kiesel 1). Die Komponenten liefern das HTML, hier steckt das ganze Verhalten.
+// Kamera-Zoom (Etappe 5): stufenloser Zoom, Linsenwechsel bei 3x, acht versteckte Details im
+// Alpenpanorama. Gebraucht von ZoomVergleich (Pro-Seite), ZoomDemo (Kiesel-1-Seite) und
+// KameraSuche (/funktionen/, „Such das Gipfelkreuz“). Die Komponenten liefern das HTML nach
+// dem Artboard „Funktionen“, hier steckt das ganze Verhalten.
 //
 // Begriffe
 //   z      Kamera-Zoom, wie ihn die Kamera-App anzeigt (0.5x … 10x)
@@ -30,6 +31,13 @@
 // Zoom trotzdem direkt über 3x (Chip bei „weniger Bewegung“), wartet der Wechsel zwei Bilder.
 //   Weil mix stetig läuft, kann ein Wechsel mittendrin umkehren (Regler hin und her um
 //   3x), ohne dass etwas springt. Bei „weniger Bewegung“ wechselt die Linse sofort.
+//
+// Versteckte Details: gefunden, sobald eines ab Bild-Zoom 5 nicht nur am Rand im Bild ist
+// (erst nach der ersten eigenen Bedienung) oder angeflogen wurde. Dann: Vorschaubild zeigt
+// es, Zähler zählt, und solange es im Bild ist, liegt der Fokusring darum (von mehreren das
+// zuletzt gefundene, sonst das mittigste).
+// Zielen (Option zielen, nur ohne Trennlinie): Tippen oder Klicken schwenkt dorthin, mit der
+// Maus ziehen verschiebt, mit dem Finger waagrecht ziehen auch (senkrecht scrollt die Seite).
 import { crop, begrenze, ZOOM_TARGETS } from '../lib/kiesel-draw/ausschnitt.js';
 
 // ── Zoom-Umrechnung ──
@@ -69,7 +77,7 @@ const FOKUS_PX = 1.4;               // Zusatz-Unschärfe der neuen Linse am Anfa
 const FOKUS_GROESSER = 0.012;       // … und so viel grösser (rastet auf 1 ein)
 const WARM = { tele: 2.2, haupt: 4.5 }; // Tele zeichnet ab 2.2x mit, die Hauptkamera bis 4.5x
 const WARM_BILDER = 2;              // so viele Bilder muss eine Ebene gezeichnet sein vor dem Wechsel
-const DETAIL_AB = 3.5, DETAIL_VOLL = 5; // Bild-Zoom, ab dem die Details auftauchen / ganz da sind
+const RING_AB = 3.5, FUND_AB = 5;   // Bild-Zoom: Fokusring sichtbar ab / Detail gilt als gefunden ab
 
 const glatt = (t) => t * t * (3 - 2 * t);
 const ausrollen = (t) => 1 - (1 - t) ** 3;
@@ -78,18 +86,22 @@ const ruhig = matchMedia('(prefers-reduced-motion: reduce)');
 
 // wurzel: Element mit allem darin. Optionen:
 //   max: grösster Zoom (Pro 10, Kiesel 1 5)   start: Zoom beim Laden   blick: [x, y]
-//   zielZoom: Zoom beim Anvisieren eines Details
+//   zielZoom: Zoom beim Anvisieren eines Details   zielen: Tippen/Ziehen im Bild bewegt den Blick
 //   beschrifte(zustand): Texte der Komponente nachführen, zustand = { z (gerundet), linse, max },
 //     Rückgabe = aria-valuetext des Reglers
-export function starteKamera(wurzel, { max, start, blick: startBlick, zielZoom, beschrifte }) {
+export function starteKamera(wurzel, { max, start, blick: startBlick, zielZoom, zielen = false, beschrifte }) {
   const fenster = wurzel.querySelector('[data-fenster]');
   const ebenen = [...wurzel.querySelectorAll('[data-ebene]')].map((el) => ({ el, art: el.dataset.ebene, svg: el.querySelector('svg') }));
   const hatTele = ebenen.some((e) => e.art === 'tele');
+  const skala = wurzel.querySelector('[data-zoom-skala]');
   const regler = wurzel.querySelector('[data-zoom-regler]');
   const stufen = [...wurzel.querySelectorAll('[data-stufe]')];
-  const marken = [...wurzel.querySelectorAll('[data-marke]')];
+  const abschnitte = [...wurzel.querySelectorAll('[data-linsenabschnitt]')];
   const kacheln = [...wurzel.querySelectorAll('[data-detail]')];
   const zaehler = wurzel.querySelector('[data-entdeckt]');
+  const fundpunkte = [...wurzel.querySelectorAll('[data-fundpunkt]')];
+  const fokus = wurzel.querySelector('[data-fokusring]');
+  const fokustext = wurzel.querySelector('[data-fokustext]');
   const ansage = wurzel.querySelector('[data-ansage]');
 
   let z = start;
@@ -103,6 +115,8 @@ export function starteKamera(wurzel, { max, start, blick: startBlick, zielZoom, 
   for (const e of ebenen) e.warmSeit = -WARM_BILDER; // beim Laden ist alles schon gezeichnet
   let letzteBeschriftung = '';
   const entdeckt = new Set();
+  let neuster = null;   // zuletzt gefundenes Detail (bekommt den Fokusring, wenn im Bild)
+  let ansicht = null;   // aktueller Ausschnitt: { vx, vy, vw, vh, W, H, s } (s = px pro Bild-Einheit)
   // Marken zeigen und zählen erst, wenn jemand selbst zoomt: Die zwei Details, die beim
   // Laden schon im Bild sind, wären sonst ohne Zutun „entdeckt“.
   let bedient = false;
@@ -206,7 +220,9 @@ export function starteKamera(wurzel, { max, start, blick: startBlick, zielZoom, 
     wurzel.dataset.zoom = zahl(z);
     if (wechsel) wurzel.dataset.wechsel = ''; else delete wurzel.dataset.wechsel;
 
-    setzeMarken(vb.split(' ').map(Number), W, H, Z);
+    const [vx, vy, vw, vh] = vb.split(' ').map(Number);
+    ansicht = { vx, vy, vw, vh, W, H, s: Math.max(W / vw, H / vh) };
+    setzeFunde(Z);
     setzeBedienung();
     if (weiter) plane();
   }
@@ -216,11 +232,15 @@ export function starteKamera(wurzel, { max, start, blick: startBlick, zielZoom, 
     const r = rund(z);
     // Beim Ziehen steht hier derselbe Wert, den der Regler selbst geliefert hat: harmlos
     if (regler) regler.value = String(alsWert(z));
+    skala?.style.setProperty('--wert', (Math.log(z / 0.5) / LOG).toFixed(4));
     const zustand = { z: r, linse, max };
     const schluessel = `${r}|${linse}`;
     if (schluessel === letzteBeschriftung) return;
     letzteBeschriftung = schluessel;
     stufen.forEach((b) => b.setAttribute('aria-pressed', Number(b.dataset.stufe) === r ? 'true' : 'false'));
+    // Linsen-Leiste: der letzte Abschnitt, dessen „ab“ erreicht ist
+    const aktiv = abschnitte.filter((a) => r >= Number(a.dataset.ab)).pop();
+    abschnitte.forEach((a) => a.toggleAttribute('data-aktiv', a === aktiv));
     const text = beschrifte(zustand);
     regler?.setAttribute('aria-valuetext', text);
   }
@@ -271,30 +291,49 @@ export function starteKamera(wurzel, { max, start, blick: startBlick, zielZoom, 
     plane();
   }
 
+  // Schwenk auf einen Punkt im Bild (Zielen), Zoom bleibt
+  function schwenkeZu([x, y]) {
+    bedient = true;
+    const Z = bildZoom(z);
+    const [x0, y0] = begrenze(blick[0], blick[1], Z);
+    const [x1, y1] = begrenze(x, y, Z);
+    fahrt = {
+      t0: performance.now(),
+      dauer: 450,
+      schritt: (t) => { const e = ausrollen(t); blick = [x0 + (x1 - x0) * e, y0 + (y1 - y0) * e]; },
+    };
+    plane();
+  }
+
   // ── Versteckte Details ──
-  function setzeMarken([vx, vy, vw, vh], W, H, Z) {
-    if (!marken.length) return;
-    const s = Math.max(W / vw, H / vh);
-    const ox = (W - vw * s) / 2, oy = (H - vh * s) / 2;
-    const staerke = Math.min(1, Math.max(0, (Z - DETAIL_AB) / (DETAIL_VOLL - DETAIL_AB)));
-    marken.forEach((m) => {
-      const i = Number(m.dataset.marke);
-      const [, tx, ty] = ZOOM_TARGETS[i];
-      const px = ox + (tx - vx) * s, py = oy + (ty - vy) * s;
-      const drin = px > 12 && px < W - 12 && py > 12 && py < H - 12;
-      // Erst nach der ersten eigenen Bedienung: Beim Laden sieht das Bild aus wie im Artboard
-      const an = bedient && drin && staerke > 0;
-      m.style.visibility = an ? '' : 'hidden';
-      if (!an) return;
-      m.style.opacity = glatt(staerke).toFixed(3);
-      m.style.transform = `translate(${px.toFixed(1)}px, ${py.toFixed(1)}px)`;
-      // Ring mit 40 Bild-Einheiten Durchmesser (Artboard: r = 22), aber tippbar und nicht riesig
-      const d = Math.min(120, Math.max(44, 40 * s));
-      m.style.setProperty('--d', `${d.toFixed(0)}px`);
-      m.dataset.seite = px + d / 2 > W - 200 ? 'links' : 'rechts';
-      // Entdeckt, sobald es ganz aufgetaucht ist und nicht nur am Rand klebt
-      if (bedient && staerke >= 1 && px > W * 0.12 && px < W * 0.88 && py > H * 0.12 && py < H * 0.88) entdecke(i);
+  // Lage eines Punkts im Bild auf dem Bildschirm (px im Fenster)
+  const aufSchirm = (x, y) => [(ansicht.W - ansicht.vw * ansicht.s) / 2 + (x - ansicht.vx) * ansicht.s, (ansicht.H - ansicht.vh * ansicht.s) / 2 + (y - ansicht.vy) * ansicht.s];
+  const imBild = (x, y) => [ansicht.vx + (x - (ansicht.W - ansicht.vw * ansicht.s) / 2) / ansicht.s, ansicht.vy + (y - (ansicht.H - ansicht.vh * ansicht.s) / 2) / ansicht.s];
+
+  function setzeFunde(Z) {
+    const { W, H, s } = ansicht;
+    let ring = null, bester = Infinity;
+    ZOOM_TARGETS.forEach(([, tx, ty], i) => {
+      const [px, py] = aufSchirm(tx, ty);
+      // Gefunden: ganz aufgetaucht und nicht nur am Rand
+      if (bedient && Z >= FUND_AB && px > W * 0.12 && px < W * 0.88 && py > H * 0.12 && py < H * 0.88) entdecke(i);
+      // Fokusring: um ein gefundenes Detail im Bild, das neueste zuerst, sonst das mittigste
+      if (!entdeckt.has(i) || Z < RING_AB || px < 0 || px > W || py < 0 || py > H) return;
+      const abstand = i === neuster ? -1 : Math.hypot(px - W / 2, py - H / 2);
+      if (abstand < bester) { bester = abstand; ring = { i, px, py }; }
     });
+    if (!fokus) return;
+    fokus.style.visibility = ring ? '' : 'hidden';
+    if (!ring) return;
+    // Wie im Artboard: 132 px bei 6x, also rund 30 Bild-Einheiten, aber nie winzig oder riesig
+    const d = Math.min(150, Math.max(56, 30 * s));
+    fokus.style.setProperty('--d', `${d.toFixed(0)}px`);
+    fokus.style.transform = `translate(${ring.px.toFixed(1)}px, ${ring.py.toFixed(1)}px)`;
+    fokus.style.opacity = Math.min(1, (Z - RING_AB) / (FUND_AB - RING_AB)).toFixed(3);
+    if (fokus.dataset.detail !== String(ring.i)) {
+      fokus.dataset.detail = String(ring.i);
+      fokustext.textContent = `${ZOOM_TARGETS[ring.i][0]} entdeckt`;
+    }
   }
 
   function entdecke(i, angeflogen = false) {
@@ -303,10 +342,23 @@ export function starteKamera(wurzel, { max, start, blick: startBlick, zielZoom, 
       return;
     }
     entdeckt.add(i);
-    wurzel.querySelectorAll(`[data-detail="${i}"], [data-marke="${i}"]`).forEach((el) => el.setAttribute('data-gefunden', ''));
+    neuster = i;
+    const name = ZOOM_TARGETS[i][0];
+    kacheln.filter((k) => k.dataset.detail === String(i)).forEach((k) => {
+      k.setAttribute('data-gefunden', '');
+      k.setAttribute('aria-label', `${name}: hinzoomen`);
+      k.querySelector('[data-fundname]').textContent = name;
+    });
     const n = entdeckt.size, alle = ZOOM_TARGETS.length;
-    if (zaehler) zaehler.textContent = n === alle ? `Alle ${alle} entdeckt. Adleraugen!` : `${n} von ${alle} entdeckt`;
-    sage(`${ZOOM_TARGETS[i][0]} entdeckt. ${n} von ${alle}.`);
+    fundpunkte.forEach((p, j) => p.toggleAttribute('data-an', j < n));
+    if (zaehler) zaehler.textContent = n === alle ? `Alle ${alle} entdeckt` : `${n} von ${alle} entdeckt`;
+    if (fokus) {
+      // Ring zieht sich einmal zusammen (Animation neu starten)
+      fokus.removeAttribute('data-neu');
+      void fokus.offsetWidth;
+      fokus.setAttribute('data-neu', '');
+    }
+    sage(`${name} entdeckt. ${n} von ${alle}.`);
   }
 
   // ── Ereignisse ──
@@ -330,11 +382,51 @@ export function starteKamera(wurzel, { max, start, blick: startBlick, zielZoom, 
     });
   }
   stufen.forEach((b) => b.addEventListener('click', () => fahreZu(Number(b.dataset.stufe))));
-  marken.forEach((m) => {
-    // Nicht die Trennlinie des Vergleichs mitziehen
-    m.addEventListener('pointerdown', (e) => e.stopPropagation());
-    m.addEventListener('click', () => fliegeZu(Number(m.dataset.marke)));
-  });
+  if (zielen) {
+    // Maus: ziehen verschiebt sofort, Klick ohne Bewegung schwenkt dorthin.
+    // Finger: waagrecht ziehen verschiebt, senkrecht gehört dem Scrollen (touch-action: pan-y),
+    // Tippen schwenkt dorthin.
+    let zug = null;
+    fenster.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0 || e.target.closest('button')) return;
+      zug = { id: e.pointerId, x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, aktiv: false, maus: e.pointerType === 'mouse' };
+      if (zug.maus) e.preventDefault(); // kein Text markieren
+    });
+    fenster.addEventListener('pointermove', (e) => {
+      if (!zug || e.pointerId !== zug.id) return;
+      const dx = e.clientX - zug.x, dy = e.clientY - zug.y;
+      if (!zug.aktiv) {
+        if (zug.maus ? Math.hypot(dx, dy) > 4 : Math.abs(dx) > 6 && Math.abs(dx) > Math.abs(dy)) {
+          zug.aktiv = true;
+          fenster.setPointerCapture(e.pointerId);
+          fenster.setAttribute('data-zieht', '');
+          // Ab dem sichtbaren Ausschnitt verschieben (der Blick kann ausserhalb liegen)
+          blick = begrenze(blick[0], blick[1], bildZoom(z));
+        } else if (!zug.maus && Math.abs(dy) > 6) {
+          zug = null;
+          return;
+        } else return;
+      }
+      bedient = true;
+      fahrt = null;
+      const Z = bildZoom(z);
+      blick = begrenze(blick[0] - (e.clientX - zug.lx) / ansicht.s, blick[1] - (zug.maus ? (e.clientY - zug.ly) / ansicht.s : 0), Z);
+      zug.lx = e.clientX;
+      zug.ly = e.clientY;
+      plane();
+    });
+    const ende = (e) => {
+      if (!zug || e.pointerId !== zug.id) return;
+      if (!zug.aktiv && e.type === 'pointerup') {
+        const r = fenster.getBoundingClientRect();
+        schwenkeZu(imBild(e.clientX - r.left, e.clientY - r.top));
+      }
+      fenster.removeAttribute('data-zieht');
+      zug = null;
+    };
+    fenster.addEventListener('pointerup', ende);
+    fenster.addEventListener('pointercancel', ende);
+  }
   kacheln.forEach((k) => k.addEventListener('click', () => {
     fliegeZu(Number(k.dataset.detail));
     // Auf dem Handy liegt die Demo über den Kacheln: hinscrollen, damit man den Flug sieht
@@ -349,7 +441,7 @@ export function starteKamera(wurzel, { max, start, blick: startBlick, zielZoom, 
   plane();
 
   // Für die Prüfskripte: wurzel.kamera.zustand()
-  const api = { setzeZoom, fahreZu, fliegeZu, zustand: () => ({ z, blick: [...blick], linse, mix, wechsel: !!wechsel, entdeckt: [...entdeckt] }) };
+  const api = { setzeZoom, fahreZu, fliegeZu, schwenkeZu, zustand: () => ({ z, blick: [...blick], linse, mix, wechsel: !!wechsel, entdeckt: [...entdeckt] }) };
   wurzel.kamera = api;
   return api;
 }

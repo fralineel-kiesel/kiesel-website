@@ -1,0 +1,105 @@
+---
+// Privacy-Modus auf /funktionen/ (Artboard „Funktionen“, Abschnitt privacy): links das
+// Schaltbild (640 × 380, Masse aus gen3.py), rechts Text, Schalter und die zwei Listen.
+// Ein Schalter trennt alle drei (so im Artboard): Die Hebel klappen um 32° auf, die Leitungen
+// dahinter werden grau gestrichelt, „verbunden“ wird „getrennt“, der Punkt auf der Platine
+// leuchtet orange wie die LED im Privacy-Modus. Farben über die Tokens, also in beiden Themen.
+import Schalter from '../Schalter.astro';
+import { PRIVACY, RGB } from '../../data/funktionen.js';
+
+const ORANGE = RGB.ereignisse.privacy.color;
+const text = (x, y, inhalt, klasse, extra = '') => `<text x="${x}" y="${y}" class="${klasse}" ${extra}>${inhalt}</text>`;
+let zeilen = '';
+PRIVACY.teile.forEach((name, i) => {
+  const y = [80, 190, 300][i];
+  zeilen += `<rect x="20" y="${y - 34}" width="150" height="68" rx="14" class="kasten"/>`
+    + text(95, y - 4, name, 'name')
+    + text(95, y + 17, PRIVACY.status[0], 'status', 'data-status')
+    + `<path d="M170 ${y} H222" class="zuleitung"/>`
+    + `<circle cx="228" cy="${y}" r="6" class="kontakt"/>`
+    + `<line x1="228" y1="${y}" x2="282" y2="${y}" class="hebel" style="transform-origin: 228px ${y}px"/>`
+    + `<circle cx="288" cy="${y}" r="6" class="kontakt"/>`
+    + `<path d="M294 ${y} H340 C380 ${y} 390 190 440 190" class="leitung"/>`;
+});
+const schema = `<svg viewBox="0 0 640 380" role="img" aria-label="Schema: Kamera, Mikrofon und GPS hängen über je einen Schalter an der Platine. Alle verbunden." data-privacy-schema>`
+  + zeilen
+  + '<rect x="440" y="120" width="170" height="140" rx="16" class="kasten"/>'
+  + text(525, 178, 'Platine', 'name')
+  + text(525, 200, PRIVACY.platine[0], 'status', 'data-platine')
+  + `<circle cx="525" cy="232" r="9" class="anzeige"/>`
+  + '</svg>';
+---
+<div class="privacy" data-privacy="aus" data-privacy-modus style={`--privacy-orange: ${ORANGE}`}>
+  <div class="schema" set:html={schema} />
+  <div class="text">
+    <h2 class="t-1">{PRIVACY.titel}</h2>
+    <p class="t-lead t-muted">{PRIVACY.text}</p>
+    <div class="schalter"><Schalter data-privacy-schalter><span data-privacy-label>{PRIVACY.schalter[0]}</span></Schalter></div>
+    <div class="listen">
+      {[[PRIVACY.weiterTitel, PRIVACY.weiter, 'weiter'], [PRIVACY.pausiertTitel, PRIVACY.pausiert, 'pausiert']].map(([titel, liste, art]) => (
+        <div>
+          <h3>{titel}</h3>
+          <ul>{liste.map((t) => <li class={art}>{t}</li>)}</ul>
+        </div>
+      ))}
+    </div>
+    <p class="hinweis t-small t-muted">{PRIVACY.hinweis}</p>
+  </div>
+  <p class="vh" aria-live="polite" data-privacy-ansage></p>
+</div>
+
+<style>
+  .privacy { display: grid; gap: var(--space-6); align-items: center; }
+  .schema { padding: var(--space-4); border: 1px solid var(--line); border-radius: var(--radius-xl); background: var(--bg); }
+  .schema :global(svg) { display: block; width: 100%; height: auto; }
+  /* Schaltbild: Farben aus den Tokens */
+  .schema :global(.kasten) { fill: var(--surface); stroke: var(--line); stroke-width: 1.2; }
+  .schema :global(.name) { font-family: var(--body); font-size: 15px; font-weight: 600; fill: var(--ink); text-anchor: middle; }
+  .schema :global(.status) { font-family: var(--body); font-size: 12.5px; fill: var(--muted); text-anchor: middle; transition: fill 0.3s; }
+  .schema :global(.zuleitung) { fill: none; stroke: var(--accent); stroke-width: 2.5; }
+  .schema :global(.kontakt) { fill: var(--bg); stroke: var(--ink); stroke-width: 2; }
+  .schema :global(.hebel) { stroke: var(--ink); stroke-width: 3; stroke-linecap: round; transition: transform 0.35s cubic-bezier(0.3, 1.4, 0.5, 1); }
+  .schema :global(.leitung) { fill: none; stroke: var(--accent); stroke-width: 2.5; transition: stroke 0.3s; }
+  .schema :global(.anzeige) { fill: var(--line); transition: fill 0.3s; }
+  [data-privacy="an"] .schema :global(.hebel) { transform: rotate(-32deg); }
+  [data-privacy="an"] .schema :global(.leitung) { stroke: var(--muted); stroke-dasharray: 5 5; }
+  [data-privacy="an"] .schema :global(.status[data-status]) { fill: var(--heat); }
+  [data-privacy="an"] .schema :global(.anzeige) { fill: var(--privacy-orange); }
+  @media (prefers-reduced-motion: reduce) { .schema :global(*) { transition: none !important; } }
+
+  .text { display: flex; flex-direction: column; }
+  .text .t-lead { margin-top: var(--space-4); max-width: 520px; }
+  .schalter { margin-top: calc(var(--space-6) - 4px); }
+  .listen { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-5); margin-top: var(--space-6); }
+  h3 { margin: 0 0 var(--space-2); font-family: var(--body); font-size: var(--fs-small); font-weight: 600; color: var(--muted); }
+  ul { display: flex; flex-direction: column; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+  li { display: flex; align-items: center; gap: 10px; }
+  li::before { content: ''; flex-shrink: 0; width: 8px; height: 8px; border-radius: var(--radius-full); }
+  li.weiter::before { background: var(--accent); }
+  li.pausiert::before { background: var(--heat); }
+  .hinweis { margin-top: var(--space-5); }
+
+  @media (min-width: 900px) {
+    .privacy { grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); gap: var(--space-8); }
+    .schema { padding: var(--space-6); }
+  }
+</style>
+
+<script>
+  import { PRIVACY } from '../../data/funktionen.js';
+
+  document.querySelectorAll('[data-privacy-modus]').forEach((wurzel) => {
+    const label = wurzel.querySelector('[data-privacy-label]');
+    const schema = wurzel.querySelector('[data-privacy-schema]');
+    const ansage = wurzel.querySelector('[data-privacy-ansage]');
+    wurzel.querySelector('[data-privacy-schalter]').addEventListener('kiesel:schalter', (e) => {
+      const an = e.detail.an;
+      wurzel.dataset.privacy = an ? 'an' : 'aus';
+      label.textContent = PRIVACY.schalter[an ? 1 : 0];
+      wurzel.querySelectorAll('[data-status]').forEach((t) => { t.textContent = PRIVACY.status[an ? 1 : 0]; });
+      wurzel.querySelector('[data-platine]').textContent = PRIVACY.platine[an ? 1 : 0];
+      schema.setAttribute('aria-label', `Schema: Kamera, Mikrofon und GPS hängen über je einen Schalter an der Platine. ${an ? 'Alle drei getrennt, die Platine läuft weiter.' : 'Alle verbunden.'}`);
+      ansage.textContent = an ? 'Privacy-Modus an: Kamera, Mikrofon und GPS sind vom Strom getrennt.' : 'Privacy-Modus aus: alles wieder verbunden.';
+    });
+  });
+</script>

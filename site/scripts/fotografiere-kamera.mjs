@@ -10,22 +10,20 @@
 //    1440 und 390 px, dunkel und hell → wechsel-<breite>-<thema>.png, wechsel-nah-….png
 // 2. Flug zu einem Detail (Kachel „Segelboot“), alle 150 ms ein Bild, Pro und Kiesel 1
 //    → flug-<modell>-<breite>.png
-// 3. Artboard „Versteckte Zoom-Details“ neben den Detail-Kacheln der Pro-Seite
-//    → details-1440-<thema>.png
+// (Die Bausteine nach dem Artboard „Funktionen“ vergleicht npm run fotos:funktionen.)
 //
 // Ausgabe in scripts/ausgabe/kamera/. Braucht einen fertigen Build (das npm-Skript baut
 // vorher) und Playwright mit Chromium.
 import { chromium } from 'playwright';
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import { starteServer } from './dist-server.mjs';
 
 const hier = path.dirname(fileURLToPath(import.meta.url));
 const aus = path.join(hier, 'ausgabe', 'kamera');
 const roh = path.join(aus, 'einzelbilder');
 fs.mkdirSync(roh, { recursive: true });
-const vorlage = pathToFileURL(path.join(hier, '..', '..', 'design', 'kiesel-2.0', 'Kiesel 2.0.html')).href;
 
 const browser = await chromium.launch();
 const { basis, schliessen } = await starteServer();
@@ -119,32 +117,6 @@ try {
     }
   }
 
-  // ------------------------------------------------------------- 3. Artboard „Versteckte Zoom-Details“
-  {
-    const seite = await browser.newPage({ viewport: { width: 1700, height: 1000 } });
-    await seite.goto(vorlage);
-    const rahmen = seite.locator('iframe[title="Versteckte Zoom-Details"]');
-    await rahmen.waitFor({ timeout: 60000 });
-    await rahmen.scrollIntoViewIfNeeded();
-    const inhalt = await (await rahmen.elementHandle()).contentFrame();
-    await inhalt.waitForFunction(() => document.body?.innerText.includes('Versteckte Details'), null, { timeout: 60000 });
-    await inhalt.evaluate(() => document.fonts.ready);
-    await seite.waitForTimeout(500);
-    await rahmen.screenshot({ path: path.join(roh, 'artboard-details.png') });
-    await seite.close();
-  }
-  for (const thema of Object.keys(THEMEN)) {
-    const { ctx, seite } = await oeffne('kiesel-1-pro/', 1440, 900, thema);
-    const details = seite.locator('.details').first();
-    await details.scrollIntoViewIfNeeded();
-    const datei = path.join(roh, `details-${thema}.png`);
-    await details.screenshot({ path: datei });
-    await bogen(path.join(aus, `details-1440-${THEMEN[thema]}.png`), [
-      ['Artboard „Versteckte Zoom-Details“', path.join(roh, 'artboard-details.png')],
-      [`Seite Kiesel 1 Pro, ${THEMEN[thema]}`, datei],
-    ], { spalten: 2, breite: 800 });
-    await ctx.close();
-  }
   console.log(`✓ Bilder in ${path.relative(process.cwd(), aus)}/`);
 } finally {
   await browser.close();

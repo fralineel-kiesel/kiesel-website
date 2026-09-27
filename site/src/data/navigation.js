@@ -72,7 +72,7 @@ export const ETAPPEN = {
   2: 'Zeichen-Motor',
   3: 'Startseite mit 3D',
   4: 'Modellseiten mit Akku-Story',
-  5: 'Kamera-Demos',
-  6: 'Funktionen, Zubehör, Kaufen, Warenkorb',
+  5: 'Kamera-Demos, Funktionen, Zubehör',
+  6: 'Kaufen, Warenkorb',
   7: 'Vergleichen, FAQ, Feinschliff',
 };

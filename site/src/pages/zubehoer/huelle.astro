@@ -1,11 +1,251 @@
 ---
+// /zubehoer/huelle/ nach dem Artboard „Kiesel-Hülle“ (design/generator/gen3.py): Bühne mit Rück-
+// und Vorderseite, Wahl von Modell, Hüllenfarbe und Vorschau-Handyfarbe, Kaufknopf. Darunter
+// drei Eigenschafts-Kacheln (Ausschnitte wie crop_phone() und der Profilschnitt, feste Farben
+// wie im Artboard) und die technischen Details („[Material]“ ist ein bewusster Platzhalter).
+// In den Warenkorb kommen nur Modell und Hüllenfarbe, nie die Vorschau-Handyfarbe.
+// ?modell=k1&farbe=Mattweiss (von /zubehoer/ „Ansehen“) wählt vor.
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import Platzhalter from '../../components/Platzhalter.astro';
+import Buehne from '../../components/Buehne.astro';
+import Knopf from '../../components/Knopf.astro';
+import Farbwaehler from '../../components/Farbwaehler.astro';
+import { handy, backSvg, palette, MODELS, f, uid } from '../../lib/kiesel-draw/index.js';
+import { HUELLE_PREIS } from '../../data/modelle.js';
+import { HUELLE } from '../../data/zubehoer.js';
+import { chf } from '../../lib/format.js';
+import { pfad } from '../../lib/pfad.js';
+
+const S = HUELLE.start;
+const DREHUNG = { hinten: -4, vorne: 3 };
+const bild = handy({ ansicht: 'hinten', modell: S.modell, farbe: S.handy, huelle: S.huelle, hoehe: null, drehung: DREHUNG.hinten, label: `Kiesel 1 Pro in ${S.handy} mit Hülle in ${S.huelle}, Rückseite` });
+
+// Ausschnitt einer Rückseite (crop_phone in gen3.py)
+const ausschnitt = (farbe, huelle, vb, label) => `<svg viewBox="${vb}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="${label}" style="display: block">${backSvg('pro', palette(farbe), uid('cp'), null, palette(huelle))}</svg>`;
+const PW = MODELS.pro.W, PH = MODELS.pro.H;
+const milchig = ausschnitt('Himmelblau', 'Mattweiss', `${f(PW / 2 - 260)} ${f(PH * 0.517 - 160)} 520 325`, 'Nahaufnahme: milchige Rückseite mit durchschimmerndem Kiesel und MagSafe-Ring');
+const rand = ausschnitt('Titangrau', 'Kieselbeige', `${f(PW - 230)} 120 320 200`, 'Nahaufnahme: fester Rand mit Tastenabdeckungen');
+
+// Profilschnitt, 1 mm = 18 px (gen3.py). Hülle und Handy in festen Farben, der Rest aus Tokens.
+// Abweichung vom Artboard: „Tisch“ steht links und die Fläche ist 30 breiter, sonst überlappt
+// „Tisch“ mit „0.6 mm Luft …“ und „0.8 mm“ wird am Rand abgeschnitten (so im Artboard).
+const mm = 18, tisch = 214, luft = 0.6 * mm, boden = 1.4 * mm, dicke = 9 * mm, ueber = 0.8 * mm;
+const oben = tisch - luft - boden - dicke; // Oberkante Handy
+const rahmen = `<svg viewBox="-4 0 430 250" role="img" aria-label="Schnitt: Hülle steht 0.8 mm über das Display und 0.6 mm über die Kamera" class="profil">`
+  + `<line x1="20" y1="${tisch}" x2="380" y2="${tisch}" class="tisch"/>`
+  + `<text x="20" y="238" class="klein">Tisch</text>`
+  + `<path d="M60 ${f(tisch - luft - boden)} H90 V${f(tisch - luft)} H330 V${f(tisch - luft - boden)} H350 V${f(oben - ueber)} H336 V${f(oben + 4)} H74 V${f(oben - ueber)} H60 Z" style="fill: #DCDBD6; stroke: #A4A29B; stroke-width: 1"/>`
+  + `<rect x="74" y="${f(oben)}" width="262" height="${f(dicke)}" rx="10" style="fill: #A7C4DE"/>`
+  + `<rect x="74" y="${f(oben)}" width="262" height="8" rx="4" style="fill: #0A0F14"/>`
+  + `<rect x="110" y="${f(tisch - luft - boden)}" width="70" height="${f(boden)}" rx="6" style="fill: #55585D"/>`
+  + `<line x1="356" y1="${f(oben - ueber)}" x2="356" y2="${f(oben)}" class="mass"/>`
+  + `<text x="364" y="${f(oben - 2)}" class="masstext">0.8 mm</text>`
+  + `<line x1="145" y1="${f(tisch - luft)}" x2="145" y2="${tisch}" class="mass"/>`
+  + `<text x="190" y="240" class="masstext">0.6 mm Luft unter der Kamera</text>`
+  + `<text x="205" y="${f(tisch - luft - boden - 4.5 * mm)}" style="font-family: var(--body); font-size: 13px; font-weight: 600; fill: #0C1116; text-anchor: middle">Kiesel 1 Pro</text>`
+  + '</svg>';
+
+const E = HUELLE.eigenschaften;
+const kacheln = [[milchig, ...E.milchig], [rand, ...E.rand], [rahmen, ...E.rahmen]];
+const details = HUELLE.details.map(([a, b]) => [a, b ?? chf(HUELLE_PREIS)]);
 ---
-<BaseLayout titel="Kiesel-Hülle">
-  <Platzhalter
-    etappe={6}
-    titel="Die Kiesel-Hülle"
-    einleitung="Hinten milchig, am Rand griffig, in fünf Farben für beide Modelle. CHF 59.–"
-  />
+<BaseLayout titel="Kiesel-Hülle" beschreibung={`${HUELLE.text} Für Kiesel 1 und Kiesel 1 Pro, ${chf(HUELLE_PREIS)}`}>
+  <nav class="container brotkrumen" aria-label="Brotkrumen">
+    <a href={pfad('zubehoer/')}>Zubehör</a><span aria-hidden="true">/</span><span aria-current="page">{HUELLE.titel}</span>
+  </nav>
+
+  <section class="container produkt" data-huelle aria-labelledby="huelle-titel">
+    <Buehne class="buehne">
+      <div class="handy" data-huelle-handy data-modell={S.modell} set:html={bild} />
+      <div class="ansichten" role="group" aria-label="Ansicht">
+        {HUELLE.ansichten.map(([wert, text]) => <button type="button" aria-pressed={wert === 'hinten' ? 'true' : 'false'} data-ansicht={wert}>{text}</button>)}
+      </div>
+    </Buehne>
+    <div class="wahl">
+      <h1 class="titel" id="huelle-titel">{HUELLE.titel}</h1>
+      <p class="preis">{chf(HUELLE_PREIS)}</p>
+      <p class="t-muted text">{HUELLE.text}</p>
+      <h2 class="frage">{HUELLE.modellFrage}</h2>
+      <div class="modelle" role="group" aria-label={HUELLE.modellFrage}>
+        {HUELLE.modelle.map(([wert, name, sub]) => (
+          <button type="button" aria-pressed={wert === S.modell ? 'true' : 'false'} data-modell-wahl={wert}>
+            <span class="name">{name}</span><span class="sub">{sub}</span>
+          </button>
+        ))}
+      </div>
+      <Farbwaehler name="huelle-farbe" wert={S.huelle} legende={HUELLE.farbeLegende} class="farbe" />
+      <Farbwaehler name="huelle-vorschau" wert={S.handy} legende={HUELLE.vorschauLegende} groesse={26} class="vorschau" />
+      <div class="kaufen">
+        <Knopf art="primaer" groesse="l" breit data-huelle-kaufen><span data-knopftext>{HUELLE.knopf}</span></Knopf>
+        <p class="t-small t-muted">{HUELLE.hinweis}</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="abschnitt container" aria-labelledby="eigenschaften-titel">
+    <h2 class="t-1" id="eigenschaften-titel">{HUELLE.eigenschaftenTitel}</h2>
+    <div class="kacheln">
+      {kacheln.map(([vis, titel, text]) => (
+        <article class="kachel">
+          <div class="kachel-bild" set:html={vis} />
+          <h3 class="t-3">{titel}</h3>
+          <p class="t-muted">{text}</p>
+        </article>
+      ))}
+    </div>
+  </section>
+
+  <section class="abschnitt container" aria-labelledby="details-titel">
+    <h2 class="t-2" id="details-titel">{HUELLE.detailsTitel}</h2>
+    <dl class="details">
+      {details.map(([a, b]) => <div><dt>{a}</dt><dd>{b}</dd></div>)}
+    </dl>
+  </section>
+  <p class="vh" aria-live="polite" data-ansage></p>
 </BaseLayout>
+
+<style>
+  .brotkrumen { display: flex; gap: var(--space-2); align-items: center; padding-top: var(--space-5); font-size: 15px; color: var(--muted); }
+  .brotkrumen a { color: var(--muted); text-decoration: none; }
+  .brotkrumen a:hover { color: var(--ink); text-decoration: underline; }
+  .brotkrumen [aria-current] { color: var(--ink); font-weight: 600; }
+
+  .produkt { display: grid; gap: var(--space-6); align-items: start; padding-top: var(--space-5); }
+  .produkt :global(.buehne) { height: 520px; }
+  .handy { height: 74%; display: flex; justify-content: center; }
+  .handy[data-modell="k1"] { height: 70%; }
+  .handy :global(svg) { height: 100%; width: auto; }
+  .ansichten {
+    position: absolute;
+    left: 50%;
+    bottom: var(--space-5);
+    display: inline-flex;
+    gap: var(--space-1);
+    padding: var(--space-1);
+    border-radius: var(--radius-full);
+    background: var(--glass);
+    transform: translateX(-50%);
+  }
+  .ansichten button {
+    height: 40px;
+    padding: 0 18px;
+    border: 0;
+    border-radius: var(--radius-full);
+    background: transparent;
+    color: var(--glass-ink);
+    font-family: var(--body);
+    font-size: var(--fs-small);
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .ansichten button[aria-pressed="true"] { background: var(--glass-on); color: var(--glass-on-ink); }
+  .ansichten button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  .wahl { display: flex; flex-direction: column; }
+  .titel { font-family: var(--display); font-size: calc(var(--fs-1) * 0.875); font-weight: 600; line-height: var(--lh-1); letter-spacing: var(--ls-1); }
+  .preis { margin-top: 14px; font-family: var(--display); font-size: var(--fs-2); font-weight: 500; line-height: 1.2; letter-spacing: var(--ls-2); }
+  .text { margin-top: var(--space-4); }
+  .frage { margin: var(--space-6) 0 10px; font-size: 15px; font-weight: 600; }
+  .modelle { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .modelle button {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-height: 44px;
+    padding: 14px 18px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-m);
+    background: var(--surface);
+    color: var(--ink);
+    text-align: left;
+    cursor: pointer;
+  }
+  .modelle button[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+  .modelle button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .modelle .name { font-family: var(--display); font-size: 16px; font-weight: 600; line-height: 1.2; }
+  .modelle .sub { font-size: 13px; color: var(--muted); }
+  .wahl :global(.farbe) { margin-top: calc(var(--space-6) - 4px); }
+  .wahl :global(.vorschau) { margin-top: var(--space-5); }
+  .wahl :global(.vorschau legend) { color: var(--muted); }
+  .kaufen { display: flex; flex-direction: column; gap: 10px; margin-top: var(--space-6); }
+  .kaufen p { text-align: center; }
+
+  .abschnitt { padding-top: clamp(var(--space-8), 10vw, var(--space-10)); }
+  .kacheln { display: grid; gap: var(--space-5); margin-top: var(--space-6); }
+  .kachel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    padding: 20px 20px 28px;
+    border: 1px solid var(--line);
+    border-radius: calc(var(--radius-l) + 4px);
+    background: var(--surface);
+  }
+  .kachel h3, .kachel p { padding: 0 var(--space-2); }
+  .kachel-bild { height: 250px; margin-bottom: var(--space-2); overflow: hidden; border-radius: var(--radius-m); background: var(--bg); }
+  .kachel-bild :global(svg) { width: 100%; height: 100%; }
+  .kachel-bild :global(.tisch) { stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 6 5; }
+  .kachel-bild :global(.klein) { font-family: var(--body); font-size: 12px; fill: var(--muted); }
+  .kachel-bild :global(.mass) { stroke: var(--accent); stroke-width: 2; }
+  .kachel-bild :global(.masstext) { font-family: var(--body); font-size: 13px; font-weight: 600; fill: var(--accent); }
+
+  .details { max-width: 900px; margin: var(--space-6) 0 0; }
+  .details div { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: var(--space-4); padding: var(--space-4) 0; border-top: 1px solid var(--line); }
+  .details dt { font-weight: 600; }
+  .details dd { margin: 0; color: var(--muted); }
+
+  @media (min-width: 900px) {
+    .produkt { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--space-8); padding-top: calc(var(--space-5) + 4px); }
+    .produkt :global(.buehne) { height: 780px; }
+    .wahl { padding-top: var(--space-4); }
+    .kacheln { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-5); margin-top: calc(var(--space-7) - 4px); }
+    .abschnitt > h2.t-1 { font-size: calc(var(--fs-1) * 0.875); }
+    .details div { grid-template-columns: 200px minmax(0, 1fr); gap: var(--space-5); }
+  }
+</style>
+
+<script>
+  import { handy } from '../../lib/kiesel-draw/phone.js';
+  import { huelleKaufen } from '../../scripts/huelle-kaufen.js';
+  import { FARBNAMEN } from '../../data/farben.js';
+
+  const NAME = { k1: 'Kiesel 1', pro: 'Kiesel 1 Pro' };
+  const DREHUNG = { hinten: -4, vorne: 3 };
+
+  document.querySelectorAll('[data-huelle]').forEach((wurzel) => {
+    const ort = wurzel.querySelector('[data-huelle-handy]');
+    const ansage = document.querySelector('[data-ansage]');
+    const gewaehlt = (name) => wurzel.querySelector(`input[name="${name}"]:checked`).value;
+    const z = { modell: ort.dataset.modell, huelle: gewaehlt('huelle-farbe'), handy: gewaehlt('huelle-vorschau'), ansicht: 'hinten' };
+
+    function zeichne() {
+      ort.dataset.modell = z.modell;
+      ort.innerHTML = handy({ ansicht: z.ansicht, modell: z.modell, farbe: z.handy, huelle: z.huelle, hoehe: null, drehung: DREHUNG[z.ansicht],
+        label: `${NAME[z.modell]} in ${z.handy} mit Hülle in ${z.huelle}, ${z.ansicht === 'hinten' ? 'Rückseite' : 'Vorderseite'}` });
+      wurzel.querySelectorAll('[data-modell-wahl]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.modellWahl === z.modell ? 'true' : 'false'));
+      wurzel.querySelectorAll('[data-ansicht]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.ansicht === z.ansicht ? 'true' : 'false'));
+    }
+    // Farbe im Farbwähler setzen (z.B. aus der Adresse): Radio-Knopf wählen und melden
+    function setzeFarbe(name, farbe) {
+      const radio = wurzel.querySelector(`input[name="${name}"][value="${farbe}"]`);
+      if (!radio) return;
+      radio.checked = true;
+      radio.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    wurzel.querySelectorAll('[data-modell-wahl]').forEach((b) => b.addEventListener('click', () => { z.modell = b.dataset.modellWahl; zeichne(); }));
+    wurzel.querySelectorAll('[data-ansicht]').forEach((b) => b.addEventListener('click', () => { z.ansicht = b.dataset.ansicht; zeichne(); }));
+    wurzel.addEventListener('change', (e) => {
+      if (e.target.name === 'huelle-farbe') z.huelle = e.target.value;
+      else if (e.target.name === 'huelle-vorschau') z.handy = e.target.value;
+      else return;
+      zeichne();
+    });
+    // Nur Modell und Hüllenfarbe, nie die Vorschau-Handyfarbe
+    wurzel.querySelector('[data-huelle-kaufen]').addEventListener('click', (e) => huelleKaufen(e.currentTarget, z.modell, z.huelle, ansage));
+
+    // Vorwahl aus der Adresse: ?modell=k1&farbe=Mattweiss
+    const q = new URLSearchParams(location.search);
+    if (NAME[q.get('modell')] && q.get('modell') !== z.modell) { z.modell = q.get('modell'); zeichne(); }
+    if (FARBNAMEN.includes(q.get('farbe'))) setzeFarbe('huelle-farbe', q.get('farbe'));
+  });
+</script>

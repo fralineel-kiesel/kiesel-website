@@ -1,0 +1,56 @@
+---
+// Fokusring um das gefundene Detail (Artboard „Funktionen“: weisser Ring, darunter
+// „✓ Gipfelkreuz entdeckt“). Liegt über dem Kamerabild, Lage und Grösse setzt kamera-zoom.js.
+// Nur Anzeige: Die Meldung für Screenreader kommt über die Ansage der Demo.
+import Icon from '../Icon.astro';
+---
+<div class="fokus" style="visibility: hidden" aria-hidden="true" data-fokusring>
+  <span class="ring"></span>
+  <span class="text"><Icon name="check" size={16} /><span data-fokustext></span></span>
+</div>
+
+<style>
+  /* --d = Durchmesser, wächst mit dem Zoom */
+  .fokus {
+    --d: 132px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    width: var(--d);
+    height: var(--d);
+    margin: calc(var(--d) / -2) 0 0 calc(var(--d) / -2);
+    pointer-events: none;
+  }
+  .ring {
+    position: absolute;
+    inset: 0;
+    border: 2px solid var(--glass-on);
+    border-radius: var(--radius-full);
+    box-shadow: 0 0 0 4px rgb(0 0 0 / 0.25);
+  }
+  .text {
+    position: absolute;
+    top: calc(100% + var(--space-3));
+    left: 50%;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 8px 14px;
+    border-radius: var(--radius-full);
+    background: var(--glass);
+    color: var(--glass-ink);
+    font-family: var(--body);
+    font-size: var(--fs-small);
+    font-weight: 500;
+    line-height: 1.4;
+    white-space: nowrap;
+    transform: translateX(-50%);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+  }
+  /* Frisch gefunden: Ring zieht sich einmal zusammen */
+  .fokus[data-neu] .ring { animation: einrasten 0.5s ease-out; }
+  @keyframes einrasten { from { transform: scale(1.35); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { .fokus[data-neu] .ring { animation: none; } }
+</style>

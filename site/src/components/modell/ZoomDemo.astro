@@ -6,9 +6,12 @@
 // nur zu erahnen.
 import GlasChip from '../GlasChip.astro';
 import ZoomSkala from './ZoomSkala.astro';
-import ZoomMarken from './ZoomMarken.astro';
-import ZoomDetails from './ZoomDetails.astro';
+import LinsenLeiste from './LinsenLeiste.astro';
+import FokusRing from './FokusRing.astro';
+import FundZaehler from './FundZaehler.astro';
+import KameraFunde from './KameraFunde.astro';
 import { panoramaQuelle, panoramaAnsicht } from '../../lib/kiesel-draw/index.js';
+import { STUFEN, LINSEN } from '../../data/kamera.js';
 
 const START = { zoom: 1.5, cx: 756, cy: 246 }; // 1x
 const quelle = panoramaQuelle();
@@ -18,20 +21,13 @@ const quelle = panoramaQuelle();
   <div class="fenster" data-fenster>
     <div class="ebene" data-ebene="haupt" set:html={panoramaAnsicht(quelle.id, START)} />
     <span class="vh" role="img" aria-label="Alpenpanorama bei 1x, scharf" data-bildtext></span>
-    <ZoomMarken />
+    <FokusRing />
     <div class="chip"><GlasChip><span data-zoom-text>1x · Hauptkamera, optisch</span></GlasChip></div>
+    <div class="chip-zaehler"><FundZaehler /></div>
   </div>
-  <div class="steuerung">
-    <ZoomSkala
-      max={5}
-      stufen={['0.5', '1', '2', '5']}
-      aktiv="1"
-      gruppe="zoom-demo"
-      label="Zoom"
-      abschnitte={[[0.5, 1, 'optisch', true], [1, 5, 'digital', false]]}
-    />
-  </div>
-  <ZoomDetails quelle={quelle.id} zoom={5} hinweis="Zoom rein, bis sie auftauchen, oder tipp auf ein Bild, und die Kamera fliegt hin. Mehr als 5x schafft der Kiesel 1 nicht, darum bleiben sie etwas verschwommen." />
+  <ZoomSkala max={5} stufen={STUFEN.k1} label="Zoom" />
+  <LinsenLeiste abschnitte={LINSEN.k1} />
+  <KameraFunde quelle={quelle.id} />
   <p class="vh" aria-live="polite" data-ansage></p>
 </div>
 
@@ -49,11 +45,12 @@ const quelle = panoramaQuelle();
   .ebene { position: absolute; inset: calc(-1 * var(--rand)); padding: var(--rand); }
   .ebene :global(svg) { width: 100%; height: 100%; overflow: visible; }
   .chip { position: absolute; top: var(--space-3); left: var(--space-3); z-index: 2; pointer-events: none; }
-  .steuerung { margin-top: var(--space-4); }
+  /* Zähler: auf dem Handy unten rechts (oben fehlt der Platz neben dem Zoom-Chip) */
+  .chip-zaehler { position: absolute; bottom: var(--space-3); right: var(--space-3); z-index: 2; pointer-events: none; }
   @media (min-width: 900px) {
     .fenster { height: 560px; border-radius: calc(var(--radius-l) + 4px); }
     .chip { top: var(--space-5); left: var(--space-5); }
-    .steuerung { margin-top: var(--space-5); }
+    .chip-zaehler { top: var(--space-5); right: var(--space-5); bottom: auto; }
   }
 </style>
 

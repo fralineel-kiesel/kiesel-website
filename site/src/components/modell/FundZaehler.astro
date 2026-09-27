@@ -1,0 +1,16 @@
+---
+// Zähler „x von 8 entdeckt“ als Glas-Chip auf dem Kamerabild (Artboard „Funktionen“: acht
+// Punkte, gefundene weiss). kamera-zoom.js setzt Text und data-an der Punkte.
+import GlasChip from '../GlasChip.astro';
+import { ZOOM_TARGETS } from '../../lib/kiesel-draw/ausschnitt.js';
+---
+<GlasChip>
+  <span class="punkte" aria-hidden="true">{ZOOM_TARGETS.map(() => <span class="punkt" data-fundpunkt></span>)}</span>
+  <span data-entdeckt>0 von {ZOOM_TARGETS.length} entdeckt</span>
+</GlasChip>
+
+<style>
+  .punkte { display: flex; gap: 4px; }
+  .punkt { width: 8px; height: 8px; border-radius: var(--radius-full); background: var(--glass-ink); opacity: 0.3; }
+  .punkt[data-an] { opacity: 1; }
+</style>

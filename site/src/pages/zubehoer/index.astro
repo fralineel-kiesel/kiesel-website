@@ -1,11 +1,173 @@
 ---
+// /zubehoer/ nach dem Artboard „Zubehör“ (design/generator/gen3.py): Kopf mit Filter, die zwei
+// Hüllen-Karten und die gestrichelte Platzhalter-Kachel „[Weiteres Zubehör]“ (bewusst so, kein
+// erfundenes Produkt), darunter „Frei kombinieren.“ mit Handy- und Hüllenfarbe.
+// Texte in src/data/zubehoer.js, Preis in data/modelle.js.
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import Platzhalter from '../../components/Platzhalter.astro';
+import Buehne from '../../components/Buehne.astro';
+import Chip from '../../components/Chip.astro';
+import Knopf from '../../components/Knopf.astro';
+import Icon from '../../components/Icon.astro';
+import Farbwaehler from '../../components/Farbwaehler.astro';
+import { handy } from '../../lib/kiesel-draw/index.js';
+import { FARBEN, FARBNAMEN } from '../../data/farben.js';
+import { HUELLE_PREIS } from '../../data/modelle.js';
+import { ZUBEHOER } from '../../data/zubehoer.js';
+import { chf } from '../../lib/format.js';
+import { pfad } from '../../lib/pfad.js';
+
+const NAME = { k1: 'Kiesel 1', pro: 'Kiesel 1 Pro' };
+const K = ZUBEHOER.kombi;
+const kombiBild = (farbe, huelle) => handy({ ansicht: 'hinten', modell: 'pro', farbe, huelle, hoehe: null, drehung: -5, label: `Kiesel 1 Pro in ${farbe} mit Hülle in ${huelle}` });
+const kaufenLink = (farbe, huelle) => pfad(`kaufen/?modell=pro&farbe=${encodeURIComponent(farbe)}&huelle=${encodeURIComponent(huelle)}`);
 ---
-<BaseLayout titel="Zubehör">
-  <Platzhalter
-    etappe={6}
-    titel="Zubehör"
-    einleitung="Alles, was zum Kiesel passt."
-  />
+<BaseLayout titel="Zubehör" beschreibung="Die Kiesel-Hülle für Kiesel 1 und Kiesel 1 Pro, in fünf Farben, frei kombinierbar.">
+  <section class="kopf container" aria-labelledby="zubehoer-titel">
+    <h1 class="t-display" id="zubehoer-titel">{ZUBEHOER.titel}</h1>
+    <p class="t-lead t-muted">{ZUBEHOER.einleitung}</p>
+    <div class="filter" role="group" aria-label="Filter">
+      {ZUBEHOER.filter.map(([wert, text]) => <Chip gruppe="zubehoer-filter" gedrueckt={wert === 'alle'} data-filter={wert}>{text}</Chip>)}
+    </div>
+  </section>
+
+  <section class="container produkte" aria-label="Produkte" data-produkte>
+    {ZUBEHOER.produkte.map((p) => (
+      <article class="karte" data-modell={p.modell}>
+        <div class="bild" set:html={handy({ ansicht: 'hinten', modell: p.modell, farbe: p.handy, huelle: p.huelle, hoehe: null, drehung: -6, label: `Kiesel-Hülle in ${p.huelle} auf einem ${NAME[p.modell]} in ${p.handy}` })} />
+        <h2 class="t-3">Kiesel-Hülle</h2>
+        <p class="t-muted fuer">für {NAME[p.modell]}</p>
+        <div class="farben" aria-label="in fünf Farben" role="img">
+          {FARBNAMEN.map((f) => <span style={`--farbe: ${FARBEN[f].frame}`}></span>)}
+        </div>
+        <div class="fuss">
+          <span class="preis">{chf(HUELLE_PREIS)}</span>
+          <div class="knoepfe">
+            <Knopf art="sekundaer" groesse="s" href={pfad(`zubehoer/huelle/?modell=${p.modell}&farbe=${p.huelle}`)}>Ansehen<span class="vh">: Kiesel-Hülle für {NAME[p.modell]}</span></Knopf>
+            <Knopf art="primaer" groesse="s" data-kaufen data-modell={p.modell} data-farbe={p.huelle}><span data-knopftext>In den Warenkorb</span><span class="vh">: Kiesel-Hülle für {NAME[p.modell]} in {p.huelle}</span></Knopf>
+          </div>
+        </div>
+      </article>
+    ))}
+    <article class="karte platzhalter">
+      <span class="plus"><Icon name="plus" size={26} /></span>
+      <h2 class="t-3">{ZUBEHOER.platzhalter.titel}</h2>
+      <p class="t-muted">{ZUBEHOER.platzhalter.text}</p>
+    </article>
+  </section>
+
+  <section class="abschnitt container kombi" aria-labelledby="kombi-titel" data-kombi>
+    <Buehne class="kombi-buehne">
+      <div class="kombi-handy" data-kombi-handy set:html={kombiBild(K.handy, K.huelle)} />
+    </Buehne>
+    <div class="kombi-text">
+      <h2 class="t-1" id="kombi-titel">{K.titel}</h2>
+      <p class="t-lead t-muted">{K.text}</p>
+      <Farbwaehler name="kombi-handy" wert={K.handy} legende="Handy" class="wahl" />
+      <Farbwaehler name="kombi-huelle" wert={K.huelle} legende="Hülle" class="wahl" />
+      <div class="kombi-knopf"><Knopf art="primaer" groesse="l" href={kaufenLink(K.handy, K.huelle)} data-kombi-kaufen>{K.knopf}</Knopf></div>
+    </div>
+  </section>
+  <p class="vh" aria-live="polite" data-ansage></p>
 </BaseLayout>
+
+<style>
+  .kopf { padding-top: var(--space-8); }
+  .kopf .t-lead { max-width: 640px; margin-top: var(--space-5); }
+  .filter { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-6); }
+  .filter :global(.chip) { min-height: 44px; padding: 0 16px; }
+
+  .produkte { display: grid; gap: var(--space-5); padding-top: var(--space-7); }
+  .karte {
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-5);
+    border: 1px solid var(--line);
+    border-radius: calc(var(--radius-l) + 4px);
+    background: var(--surface);
+  }
+  .karte[hidden] { display: none; }
+  .bild {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 340px;
+    margin-bottom: var(--space-5);
+    border-radius: var(--radius-m);
+    background: linear-gradient(180deg, var(--stage), var(--stage-lo));
+  }
+  .bild :global(svg) { height: 82%; width: auto; }
+  .karte[data-modell="k1"] .bild :global(svg) { height: 78%; }
+  .fuer { margin-top: var(--space-1); }
+  .farben { display: flex; gap: 6px; margin-top: var(--space-4); }
+  .farben span { width: 18px; height: 18px; border-radius: var(--radius-full); background: var(--farbe); box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.2); }
+  .fuss { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--space-3); margin-top: var(--space-5); }
+  .preis { font-size: var(--fs-lead); font-weight: 600; white-space: nowrap; }
+  .knoepfe { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+  .platzhalter {
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 280px;
+    border: 2px dashed var(--line);
+    background: transparent;
+    text-align: center;
+  }
+  .platzhalter p { max-width: 260px; }
+  .plus { display: flex; align-items: center; justify-content: center; width: 56px; height: 56px; border-radius: var(--radius-full); background: var(--raised); color: var(--ink); }
+
+  .abschnitt { padding-top: clamp(var(--space-8), 10vw, var(--space-10)); }
+  .kombi { display: grid; gap: var(--space-6); align-items: center; }
+  .kombi :global(.kombi-buehne) { height: 440px; }
+  .kombi-handy { height: 84%; display: flex; justify-content: center; }
+  .kombi-handy :global(svg) { height: 100%; width: auto; }
+  .kombi-text { display: flex; flex-direction: column; }
+  .kombi-text .t-lead { max-width: 480px; margin-top: var(--space-4); }
+  .kombi-text :global(.wahl) { margin-top: var(--space-5); }
+  .kombi-text :global(.wahl:first-of-type) { margin-top: var(--space-6); }
+  .kombi-knopf { margin-top: var(--space-6); }
+
+  @media (min-width: 900px) {
+    .kopf { padding-top: calc(var(--space-8) + var(--space-2)); }
+    .produkte { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-5); padding-top: calc(var(--space-7) + var(--space-2)); }
+    .karte { padding: var(--space-6); }
+    .bild { height: 400px; }
+    .kombi { grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); gap: var(--space-8); }
+    .kombi :global(.kombi-buehne) { height: 620px; }
+    .kombi-text h2 { font-size: calc(var(--fs-1) * 0.875); }
+  }
+</style>
+
+<script>
+  import { handy } from '../../lib/kiesel-draw/phone.js';
+  import { huelleKaufen } from '../../scripts/huelle-kaufen.js';
+  import { pfad } from '../../lib/pfad.js';
+
+  const ansage = document.querySelector('[data-ansage]');
+
+  // Filter: Alle / für Kiesel 1 / für Kiesel 1 Pro. Die Platzhalter-Kachel bleibt immer.
+  document.querySelectorAll('[data-filter]').forEach((knopf) => knopf.addEventListener('click', () => {
+    const wert = knopf.dataset.filter;
+    document.querySelectorAll('[data-produkte] [data-modell]').forEach((karte) => {
+      karte.hidden = wert !== 'alle' && karte.dataset.modell !== wert;
+    });
+  }));
+
+  // Karten: genau die gezeigte Hülle in den Warenkorb
+  document.querySelectorAll('[data-kaufen]').forEach((knopf) => knopf.addEventListener('click', () => {
+    huelleKaufen(knopf, knopf.dataset.modell, knopf.dataset.farbe, ansage);
+  }));
+
+  // Frei kombinieren: Handy neu zeichnen, Link zum Kaufen nachführen
+  document.querySelectorAll('[data-kombi]').forEach((kombi) => {
+    const ort = kombi.querySelector('[data-kombi-handy]');
+    const link = kombi.querySelector('[data-kombi-kaufen]');
+    const wahl = { handy: kombi.querySelector('input[name="kombi-handy"]:checked').value, huelle: kombi.querySelector('input[name="kombi-huelle"]:checked').value };
+    kombi.addEventListener('change', (e) => {
+      if (e.target.name === 'kombi-handy') wahl.handy = e.target.value;
+      else if (e.target.name === 'kombi-huelle') wahl.huelle = e.target.value;
+      else return;
+      ort.innerHTML = handy({ ansicht: 'hinten', modell: 'pro', farbe: wahl.handy, huelle: wahl.huelle, hoehe: null, drehung: -5, label: `Kiesel 1 Pro in ${wahl.handy} mit Hülle in ${wahl.huelle}` });
+      link.href = pfad(`kaufen/?modell=pro&farbe=${encodeURIComponent(wahl.handy)}&huelle=${encodeURIComponent(wahl.huelle)}`);
+    });
+  });
+</script>
