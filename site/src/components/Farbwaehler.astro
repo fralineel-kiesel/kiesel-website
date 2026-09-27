@@ -1,0 +1,62 @@
+---
+// Farbwähler mit den fünf Produktfarben.
+// Technik: echte Radio-Knöpfe (<input type="radio">), nur optisch versteckt.
+// Warum: Der Browser erledigt dann die Tastatur (Tab in die Gruppe, Pfeiltasten wechseln)
+// und Screenreader sagen „Himmelblau, Optionsfeld, 1 von 5“. Das müssten wir sonst nachbauen.
+//   name:    eindeutiger Name der Gruppe auf der Seite (Pflicht, wenn es mehrere gibt)
+//   wert:    anfangs gewählte Farbe
+//   legende: Beschriftung; zeigeName: gewählte Farbe daneben anzeigen
+//   groesse: Durchmesser des Farbpunkts (34 = 44 px Tippfläche, 28 auf dem Handy)
+import { FARBEN, FARBNAMEN } from '../data/farben.js';
+
+const { name = 'farbe', wert = 'Himmelblau', legende = 'Farbe', zeigeName = true, groesse = 34 } = Astro.props;
+---
+<fieldset class="farbwaehler" style={`--punkt: ${groesse}px`} data-farbwaehler>
+  <legend class:list={[{ vh: !zeigeName }]}>{legende}{zeigeName && <>: <span data-farbname>{wert}</span></>}</legend>
+  <div class="punkte">
+    {FARBNAMEN.map((farbe) => (
+      <label title={farbe}>
+        <input class="vh" type="radio" name={name} value={farbe} checked={farbe === wert} />
+        <span class="ring"><span class="punkt" style={`--farbe: ${FARBEN[farbe].frame}`}></span></span>
+        <span class="vh">{farbe}</span>
+      </label>
+    ))}
+  </div>
+</fieldset>
+
+<style>
+  .farbwaehler { border: 0; margin: 0; padding: 0; min-width: 0; }
+  legend { padding: 0; margin-bottom: var(--space-3); font-size: 15px; font-weight: 600; }
+  .punkte { display: flex; flex-wrap: wrap; gap: 6px; }
+  label { position: relative; display: block; cursor: pointer; }
+  .ring {
+    display: block;
+    width: calc(var(--punkt) + 10px);
+    height: calc(var(--punkt) + 10px);
+    padding: 3px;
+    border: 2px solid transparent;
+    border-radius: var(--radius-full);
+  }
+  .punkt {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: var(--radius-full);
+    background: var(--farbe);
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18);
+  }
+  input:checked + .ring { border-color: var(--ink); }
+  label:hover input:not(:checked) + .ring { border-color: var(--line); }
+  input:focus-visible + .ring { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+
+<script>
+  // Gewählten Farbnamen in der Beschriftung nachführen und ein Ereignis melden
+  document.querySelectorAll('[data-farbwaehler]').forEach((gruppe) => {
+    gruppe.addEventListener('change', (e) => {
+      const anzeige = gruppe.querySelector('[data-farbname]');
+      if (anzeige) anzeige.textContent = e.target.value;
+      gruppe.dispatchEvent(new CustomEvent('kiesel:farbe', { bubbles: true, detail: { farbe: e.target.value } }));
+    });
+  });
+</script>
