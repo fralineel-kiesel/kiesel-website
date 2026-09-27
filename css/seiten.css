@@ -1,6 +1,7 @@
 /* seiten.css – Layout der einzelnen Unterseiten */
 /* Hero */
-.hero{padding:clamp(36px,6vw,72px) 0 0;text-align:center}
+/* nur padding-top: das seitliche Padding kommt von .wrap und darf nicht überschrieben werden */
+.hero{padding-top:clamp(36px,6vw,72px);text-align:center}
 .hero h1{font-size:clamp(60px,12.5vw,160px);line-height:.9;letter-spacing:-.055em}
 .hero .tagline{font-family:var(--display);font-weight:500;font-size:clamp(20px,2.6vw,30px);letter-spacing:-.02em;margin-top:14px;color:var(--accent)}
 .hero .lead{margin:16px auto 0;text-align:center}
