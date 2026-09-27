@@ -10,7 +10,9 @@
     "pruefe:zeichenmotor": "node scripts/pruefe-zeichenmotor.mjs",
     "fotos:zeichenmotor": "astro build && node scripts/fotografiere-zeichenmotor.mjs",
     "fotos:startseite": "astro build && node scripts/fotografiere-startseite.mjs",
-    "pruefe:startseite": "astro build && node scripts/pruefe-startseite.mjs"
+    "pruefe:startseite": "astro build && node scripts/pruefe-startseite.mjs",
+    "fotos:modellseiten": "astro build && node scripts/fotografiere-modellseiten.mjs",
+    "pruefe:modellseiten": "astro build && node scripts/pruefe-modellseiten.mjs"
   },
   "dependencies": {
     "astro": "^7.3.5",

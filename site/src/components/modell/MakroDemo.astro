@@ -1,0 +1,167 @@
+---
+// Makro-Demo mit der Blume aus dem Zeichen-Motor („Ganz nah dran.“).
+//   modell: 'pro' = Makro, 3x-Tele-Nahfokus und Biene (Artboard)
+//           'k1'  = nur die Hauptkamera: Makro, Biene, Wiese
+//
+// Tiefenschärfe: Die Blume besteht aus vier Ebenen (Vordergrund-Gras, Biene, Blume,
+// Hintergrund), jede mit eigenem Unschärfe-Filter. Klickt man aufs Bild, wird die
+// getroffene Ebene zur Schärfeebene, die anderen verschwimmen je nach Abstand
+// (blumeUnschaerfe). Die Knöpfe darunter machen dasselbe per Tastatur.
+// „staerke“ = wie schnell die Unschärfe mit dem Abstand wächst: Tele stark, Makro der
+// Hauptkamera schwächer (kleinerer Bildwinkel = weniger Tiefenschärfe).
+import GlasChip from '../GlasChip.astro';
+import { blumeBild } from '../../lib/kiesel-draw/index.js';
+
+const { modell = 'pro' } = Astro.props;
+const MODI = modell === 'pro'
+  ? [
+      { name: 'Makro', fokus: 0.5, staerke: 9, chip: 'Makro · Hauptkamera' },
+      { name: '3x Nahfokus', fokus: 0.5, staerke: 24, chip: '3x Tele · ca. 25 cm', start: true },
+      { name: 'Fokus auf Biene', fokus: 0.3, staerke: 24, chip: '3x Tele · Fokus auf Biene' },
+    ]
+  : [
+      { name: 'Makro', fokus: 0.5, staerke: 9, chip: 'Makro · Hauptkamera', start: true },
+      { name: 'Fokus auf Biene', fokus: 0.3, staerke: 9, chip: 'Makro · Fokus auf Biene' },
+      { name: 'Fokus auf Wiese', fokus: 1, staerke: 9, chip: 'Makro · Fokus auf Wiese' },
+    ];
+const start = MODI.find((m) => m.start);
+const bild = blumeBild({ fokus: start.fokus, staerke: start.staerke, breite: null, hoehe: null, label: 'Blume mit Biene und Wiese. Tippe aufs Bild, um den Fokus zu setzen.' });
+---
+<div class="makro" data-makro data-staerke={start.staerke} data-fokus={start.fokus}>
+  <div class="bild" data-bild set:html={bild} />
+  <span class="ring" data-ring aria-hidden="true"></span>
+  <div class="chip"><GlasChip><span data-makro-text aria-live="polite">{start.chip}</span></GlasChip></div>
+  <div class="modi" role="group" aria-label="Fokus">
+    {MODI.map((m) => (
+      <button type="button" aria-pressed={m.start ? 'true' : 'false'} data-fokus={m.fokus} data-staerke={m.staerke} data-chip={m.chip}>{m.name}</button>
+    ))}
+  </div>
+</div>
+
+<style>
+  .makro {
+    position: relative;
+    height: 340px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-l);
+    background: var(--stage);
+  }
+  .bild { position: absolute; inset: 0; cursor: crosshair; }
+  .bild :global(svg) { width: 100%; height: 100%; }
+  .chip { position: absolute; top: var(--space-3); left: var(--space-3); pointer-events: none; }
+  /* Fokus-Markierung wie in der Kamera-App: kurz sichtbar, wo man hingetippt hat */
+  .ring {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 64px;
+    height: 64px;
+    margin: -32px 0 0 -32px;
+    border: 2px solid var(--glass-on);
+    border-radius: var(--radius-s);
+    box-shadow: 0 0 0 1px rgb(0 0 0 / 0.25);
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(var(--x, 0), var(--y, 0)) scale(1.25);
+    transition: opacity 0.6s 0.5s, transform 0.25s;
+  }
+  .ring[data-an] { opacity: 1; transform: translate(var(--x, 0), var(--y, 0)) scale(1); transition: opacity 0.1s, transform 0.25s; }
+  .modi {
+    position: absolute;
+    left: var(--space-3);
+    right: var(--space-3);
+    bottom: var(--space-3);
+    display: flex;
+    width: max-content;
+    max-width: calc(100% - 2 * var(--space-3));
+    gap: var(--space-1);
+    padding: var(--space-1);
+    border-radius: var(--radius-full);
+    background: var(--glass);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+  }
+  .modi button {
+    min-height: 44px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: var(--radius-full);
+    background: transparent;
+    color: var(--glass-ink);
+    font-size: var(--fs-small);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .modi button[aria-pressed="true"] { background: var(--glass-on); color: var(--glass-on-ink); }
+
+  @media (min-width: 900px) {
+    .makro { height: 480px; border-radius: calc(var(--radius-l) + 4px); }
+    .chip { top: var(--space-5); left: var(--space-5); }
+    .modi { left: var(--space-5); bottom: var(--space-5); padding: var(--space-1); }
+    .modi button { padding: 0 var(--space-4); }
+  }
+</style>
+
+<script>
+  import { blumeUnschaerfe, BLUME_TIEFE } from '../../lib/kiesel-draw/scene.js';
+
+  const ruhig = matchMedia('(prefers-reduced-motion: reduce)');
+
+  document.querySelectorAll('[data-makro]').forEach((wurzel) => {
+    const bild = wurzel.querySelector('[data-bild]');
+    const ring = wurzel.querySelector('[data-ring]');
+    const text = wurzel.querySelector('[data-makro-text]');
+    const knoepfe = [...wurzel.querySelectorAll('.modi button')];
+    // Die vier Filter (…c-bg, …c-fl, …c-fg, …c-bee), die blumeBild() angelegt hat
+    const filter = {};
+    for (const f of bild.querySelectorAll('filter[id]')) {
+      const ebene = f.id.split('c-')[1];
+      if (ebene) filter[ebene] = f.querySelector('feGaussianBlur');
+    }
+    let fokus = Number(wurzel.dataset.fokus), staerke = Number(wurzel.dataset.staerke), lauf = 0;
+    let modus = staerke; // Stärke des gewählten Modus (Makro oder Tele), gilt auch für Klicks aufs Bild
+
+    // Sanft von der alten zur neuen Schärfeebene (0.35 s)
+    function stelle(zielFokus, zielStaerke) {
+      const [f0, s0] = [fokus, staerke];
+      const t0 = performance.now(), nr = ++lauf;
+      const schritt = (jetzt) => {
+        if (nr !== lauf) return;
+        const t = ruhig.matches ? 1 : Math.min(1, (jetzt - t0) / 350);
+        const k = 1 - (1 - t) ** 3;
+        fokus = f0 + (zielFokus - f0) * k;
+        staerke = s0 + (zielStaerke - s0) * k;
+        const u = blumeUnschaerfe(fokus, staerke);
+        for (const [ebene, sd] of Object.entries(u)) filter[ebene]?.setAttribute('stdDeviation', sd.toFixed(2));
+        if (t < 1) requestAnimationFrame(schritt);
+      };
+      requestAnimationFrame(schritt);
+    }
+    const druecke = (knopf) => knoepfe.forEach((b) => b.setAttribute('aria-pressed', b === knopf ? 'true' : 'false'));
+
+    knoepfe.forEach((b) => b.addEventListener('click', () => {
+      druecke(b);
+      text.textContent = b.dataset.chip;
+      modus = Number(b.dataset.staerke);
+      stelle(Number(b.dataset.fokus), Number(b.dataset.staerke));
+    }));
+
+    // Klick/Tipp aufs Bild: Welche Ebene liegt dort? Die bestimmt die Schärfeebene.
+    const NAMEN = { fg: 'Gras', bee: 'Biene', fl: 'Blume', bg: 'Hintergrund' };
+    bild.addEventListener('click', (e) => {
+      const gruppe = e.target.closest('g[filter]');
+      const ebene = gruppe?.getAttribute('filter').match(/c-(\w+)\)/)?.[1] ?? 'bg';
+      const r = wurzel.getBoundingClientRect();
+      ring.style.setProperty('--x', `${e.clientX - r.left}px`);
+      ring.style.setProperty('--y', `${e.clientY - r.top}px`);
+      ring.setAttribute('data-an', '');
+      setTimeout(() => ring.removeAttribute('data-an'), 50);
+      // Passender Knopf gedrückt, falls es einen gibt, sonst keiner
+      const passend = knoepfe.find((b) => Number(b.dataset.fokus) === BLUME_TIEFE[ebene] && Number(b.dataset.staerke) === modus);
+      druecke(passend ?? null);
+      text.textContent = `${text.textContent.split(' · ')[0]} · Fokus auf ${NAMEN[ebene]}`;
+      stelle(BLUME_TIEFE[ebene], modus);
+    });
+  });
+</script>

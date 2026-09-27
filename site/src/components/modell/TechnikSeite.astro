@@ -1,0 +1,76 @@
+---
+// Unterseite „Technische Daten“ (/kiesel-1/technik/, /kiesel-1-pro/technik/).
+// Eine echte Tabelle: Merkmal in der ersten Spalte (th scope="row"), Wert daneben.
+// Auf dem Handy stehen Merkmal und Wert untereinander (display: block). Das kann die
+// Tabellen-Bedeutung für Screenreader kosten, darum die ausdrücklichen role-Attribute.
+// Speicher und Preise kommen aus data/modelle.js, alles andere aus data/technik.js.
+//   modell: 'k1' | 'pro'
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Knopf from '../Knopf.astro';
+import { MODELLE } from '../../data/modelle.js';
+import { TECHNIK, WEGGELASSEN } from '../../data/technik.js';
+import { chf } from '../../lib/format.js';
+import { pfad } from '../../lib/pfad.js';
+
+const { modell } = Astro.props;
+const m = MODELLE[modell];
+const spalte = modell === 'pro' ? 2 : 1;
+const zeilen = [
+  ...TECHNIK.map((z) => [z[0], z[spalte]]),
+  ['Speicher und Preis', m.speicher.map(([gb, preis]) => `${gb}: ${chf(preis)}`).join(' · ')],
+];
+---
+<BaseLayout titel={`${m.name} · Technische Daten`} beschreibung={`Alle technischen Daten des ${m.name} auf einen Blick. Ein Fan-Konzept, alle Werte sind Schätzungen.`} unterleiste={modell}>
+  <section class="technik container" aria-labelledby="technik-titel">
+    <h1 class="t-1" id="technik-titel">{m.name}: Technische Daten</h1>
+    <p class="t-lead t-muted einleitung">Alle Masse und Werte auf einen Blick. Der Kiesel ist ein Konzept, darum sind alle Angaben Schätzungen.</p>
+
+    <table class="tabelle" role="table">
+      <caption class="vh">Technische Daten des {m.name}</caption>
+      <tbody role="rowgroup">
+        {zeilen.map(([merkmal, wert]) => (
+          <tr role="row">
+            <th scope="row" role="rowheader">{merkmal}</th>
+            <td role="cell">{wert}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+
+    <h2 class="t-2 weg-titel">Bewusst weggelassen</h2>
+    <ul role="list" class="weg">
+      {WEGGELASSEN.map(([was, warum]) => (
+        <li><s>{was}</s><span class="t-muted">{warum}</span></li>
+      ))}
+    </ul>
+
+    <div class="knoepfe">
+      <Knopf art="sekundaer" href={pfad(m.pfad)}>Zurück zur Übersicht</Knopf>
+      <Knopf art="primaer" href={pfad(`kaufen/?modell=${modell}`)}>Kaufen</Knopf>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .technik { padding-top: var(--space-7); }
+  .einleitung { max-width: 640px; margin-top: var(--space-4); }
+  .tabelle { width: 100%; margin-top: var(--space-6); border-collapse: collapse; }
+  tr { border-top: 1px solid var(--line); }
+  tr:last-child { border-bottom: 1px solid var(--line); }
+  th, td { display: block; text-align: left; vertical-align: top; }
+  th { padding: var(--space-4) 0 var(--space-1); font-size: var(--fs-small); font-weight: 600; color: var(--muted); }
+  td { padding: 0 0 var(--space-4); font-size: var(--fs-4); font-weight: 500; line-height: 1.4; }
+  .weg-titel { margin-top: var(--space-8); }
+  .weg { display: grid; gap: var(--space-3); margin: var(--space-5) 0 0; }
+  .weg li { display: flex; flex-direction: column; gap: 2px; }
+  .weg s { font-weight: 600; text-decoration-color: var(--heat); text-decoration-thickness: 2px; }
+  .knoepfe { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-7); }
+
+  @media (min-width: 900px) {
+    .technik { padding-top: var(--space-9); }
+    /* Ab Desktop wieder eine echte zweispaltige Tabelle */
+    th, td { display: table-cell; padding: var(--space-4) 0; }
+    th { width: 30%; padding-right: var(--space-5); font-size: var(--fs-text); }
+    .weg { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-5); }
+  }
+</style>

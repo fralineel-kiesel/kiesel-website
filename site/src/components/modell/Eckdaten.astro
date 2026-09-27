@@ -1,0 +1,48 @@
+---
+// „Das Wichtigste auf einen Blick“: acht Eckdaten als Tabelle (spec_rows in gen2.py).
+// Im Artboard stehen sie in zwei Spalten, darum ist die Tabelle per CSS ein Raster.
+// Achtung: display: grid/flex auf Tabellen-Elementen nimmt ihnen in manchen Browsern die
+// Tabellen-Bedeutung für Screenreader. Die role-Attribute geben sie ausdrücklich zurück.
+import Knopf from '../Knopf.astro';
+import { MODELLE } from '../../data/modelle.js';
+import { pfad } from '../../lib/pfad.js';
+
+const { modell } = Astro.props;
+const m = MODELLE[modell];
+---
+<div class="kopf">
+  <h2 class="t-1" id={`eckdaten-${modell}`}>Das Wichtigste auf einen Blick</h2>
+  <Knopf art="text" icon="arrow" href={pfad(`${m.pfad}technik/`)}>Alle technischen Daten</Knopf>
+</div>
+<table class="eckdaten" role="table" aria-labelledby={`eckdaten-${modell}`}>
+  <tbody role="rowgroup">
+    {m.seite.eckdaten.map(([merkmal, wert]) => (
+      <tr role="row">
+        <th scope="row" role="rowheader">{merkmal}</th>
+        <td role="cell">{wert}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
+<style>
+  .kopf { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-3); }
+  .eckdaten { display: block; width: 100%; margin-top: var(--space-5); border-collapse: collapse; }
+  tbody { display: grid; column-gap: var(--space-7); }
+  tr {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    padding: calc(var(--space-4) + 2px) 0;
+    border-top: 1px solid var(--line);
+  }
+  th { font-size: var(--fs-small); font-weight: 600; color: var(--muted); text-align: left; }
+  td { font-size: var(--fs-4); font-weight: 500; line-height: 1.4; }
+
+  @media (min-width: 900px) {
+    .kopf { flex-direction: row; justify-content: space-between; align-items: flex-end; }
+    .kopf h2 { font-size: calc(var(--fs-1) * 0.875); }
+    .eckdaten { margin-top: calc(var(--space-6) + 4px); }
+    tbody { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+</style>

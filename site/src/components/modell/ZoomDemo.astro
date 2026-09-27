@@ -1,0 +1,78 @@
+---
+// Einfache Zoom-Demo auf /kiesel-1/: eine Kamera, 0.5x bis 1x optisch (variable Linse),
+// darüber digital bis 5x. Je weiter digital gezoomt wird, desto weicher wird das Bild.
+// Gleiche Technik wie der Zoom-Teaser der Startseite: Die Zoom-Leiste ändert nur die
+// viewBox des Panoramas, dazu passt ein Filter die Unschärfe an.
+import GlasChip from '../GlasChip.astro';
+import ZoomLeiste from '../ZoomLeiste.astro';
+import { panorama } from '../../lib/kiesel-draw/index.js';
+
+const START = { zoom: 1.5, cx: 760, cy: 360 };
+const bild = panorama({ ...START, breite: null, hoehe: null, label: 'Alpenpanorama bei 1x, scharf' })
+  .replace(/^(<svg[^>]*>)([\s\S]*)(<\/svg>)$/, '$1<g filter="url(#zd-k1)">$2</g>$3');
+---
+<div class="fenster" data-zoom-demo>
+  <svg width="0" height="0" style="position: absolute" aria-hidden="true"><filter id="zd-k1" x="0" y="0" width="100%" height="100%"><feGaussianBlur stdDeviation="0.01" /></filter></svg>
+  <div class="bild" set:html={bild} />
+  <div class="chip"><GlasChip><span data-zoom-text aria-live="polite">1x · Hauptkamera, optisch</span></GlasChip></div>
+  <div class="leiste"><ZoomLeiste stufen={['0.5', '1', '2', '5']} aktiv="1" label="Zoomstufe im Beispielbild" /></div>
+</div>
+
+<style>
+  .fenster {
+    position: relative;
+    height: 360px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-l);
+    background: var(--stage);
+  }
+  .bild, .bild :global(svg) { width: 100%; height: 100%; }
+  .chip { position: absolute; top: var(--space-3); left: var(--space-3); }
+  .leiste { position: absolute; left: 0; right: 0; bottom: var(--space-3); display: flex; justify-content: center; }
+  @media (min-width: 900px) {
+    .fenster { height: 560px; border-radius: calc(var(--radius-l) + 4px); }
+    .chip { top: var(--space-5); left: var(--space-5); }
+    .leiste { bottom: var(--space-5); }
+  }
+</style>
+
+<script>
+  import { crop, begrenze } from '../../lib/kiesel-draw/ausschnitt.js';
+
+  const STUFEN = {
+    0.5: { zoom: 1, cx: 800, cy: 500, text: '0.5x · Ultraweitwinkel, optisch' },
+    1: { zoom: 1.5, cx: 760, cy: 360, text: '1x · Hauptkamera, optisch' },
+    2: { zoom: 2.5, cx: 748, cy: 320, text: '2x · digital' },
+    5: { zoom: 5, cx: 756, cy: 246, text: '5x · digital, Maximum' },
+  };
+  const ruhig = matchMedia('(prefers-reduced-motion: reduce)');
+
+  document.querySelectorAll('[data-zoom-demo]').forEach((fenster) => {
+    const svg = fenster.querySelector('.bild svg');
+    const blur = fenster.querySelector('feGaussianBlur');
+    const text = fenster.querySelector('[data-zoom-text]');
+    let lauf = 0;
+    fenster.addEventListener('kiesel:zoom', (e) => {
+      const z = e.detail.stufe, s = STUFEN[z];
+      if (!s) return;
+      const [cx, cy] = begrenze(s.cx, s.cy, s.zoom);
+      const ziel = crop(cx, cy, s.zoom).split(' ').map(Number);
+      // Wie beim Vergleich auf der Pro-Seite: ab 1x 0.75 px Unschärfe pro Zoomstufe
+      const px = z <= 1 ? 0 : 0.75 * (z - 1);
+      blur.setAttribute('stdDeviation', Math.max(0.01, (px * 1600) / (600 * s.zoom)).toFixed(2));
+      text.textContent = s.text;
+      svg.setAttribute('aria-label', `Alpenpanorama bei ${z}x, ${z <= 1 ? 'scharf' : 'digital vergrössert und weicher'}`);
+      const start = svg.getAttribute('viewBox').split(' ').map(Number);
+      const t0 = performance.now(), nr = ++lauf;
+      const schritt = (jetzt) => {
+        if (nr !== lauf) return;
+        const t = ruhig.matches ? 1 : Math.min(1, (jetzt - t0) / 450);
+        const k = 1 - (1 - t) ** 3;
+        svg.setAttribute('viewBox', start.map((a, i) => (a + (ziel[i] - a) * k).toFixed(2)).join(' '));
+        if (t < 1) requestAnimationFrame(schritt);
+      };
+      requestAnimationFrame(schritt);
+    });
+  });
+</script>

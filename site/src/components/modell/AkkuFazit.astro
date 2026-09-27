@@ -1,0 +1,79 @@
+---
+// Nach der Akku-Story: „Mehr Akku. Gleiche Hand.“ mit Balken und der Legende zu den
+// Nummern im Innenleben (Artboard „Modellseite Kiesel 1 Pro“, rechte Hälfte des Akku-Abschnitts).
+//   modell: 'k1' | 'pro'
+import { phoneOpen } from '../../lib/kiesel-draw/index.js';
+import { AKKU } from '../../data/akku.js';
+import { MODELLE } from '../../data/modelle.js';
+
+const { modell } = Astro.props;
+const daten = AKKU[modell];
+const [, legende] = phoneOpen(modell, 0, 0, 1);
+const max = Math.max(...daten.balken.map(([, w]) => w));
+const zahl = (w) => w.toLocaleString('de-CH').replace(/[’']/g, '’');
+---
+<div class="fazit">
+  <div class="text">
+    <h2 class="t-1">Mehr Akku.<br />Gleiche Hand.</h2>
+    <p class="t-lead t-muted">{daten.fazit}</p>
+    <ul role="list" class="balken">
+      {daten.balken.map(([name, wert], i) => {
+        const kiesel = i === daten.balken.length - 1;
+        return (
+          <li class:list={{ kiesel }}>
+            <span class="name">{name}</span>
+            <span class="wert t-muted">{kiesel ? 'ca. ' : ''}{zahl(wert)} mAh</span>
+            <span class="spur" aria-hidden="true"><span style={`width: ${(wert / max * 100).toFixed(1)}%`}></span></span>
+          </li>
+        );
+      })}
+    </ul>
+  </div>
+  <div class="legende">
+    <h3 class="t-4">Was im {MODELLE[modell].name} steckt</h3>
+    <ol role="list">
+      {legende.map(([nr, name]) => <li><span class="nr" aria-hidden="true">{nr}</span>{name}</li>)}
+    </ol>
+  </div>
+</div>
+
+<style>
+  .fazit { display: grid; gap: var(--space-7); }
+  .text { display: flex; flex-direction: column; gap: var(--space-5); }
+  .balken { display: flex; flex-direction: column; gap: var(--space-4); margin: var(--space-2) 0 0; }
+  .balken li { display: grid; grid-template-columns: 1fr auto; row-gap: var(--space-2); }
+  .name { font-weight: 600; }
+  .spur {
+    grid-column: 1 / -1;
+    height: 14px;
+    border-radius: var(--radius-full);
+    background: var(--raised);
+    overflow: hidden;
+  }
+  .spur span { display: block; height: 100%; border-radius: var(--radius-full); background: var(--muted); }
+  .kiesel .spur span { background: var(--accent); }
+  .legende { display: flex; flex-direction: column; gap: var(--space-4); }
+  .legende ol { display: grid; gap: var(--space-2) var(--space-5); margin: 0; }
+  .legende li { display: flex; align-items: center; gap: var(--space-3); font-size: var(--fs-small); line-height: 1.3; }
+  .nr {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-full);
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-size: 12px;
+    font-weight: 600;
+  }
+  @media (min-width: 600px) {
+    .legende ol { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (min-width: 900px) {
+    .fazit { grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); gap: var(--space-8); align-items: center; }
+    .text h2 { font-size: calc(var(--fs-1) * 0.875); }
+    .legende ol { grid-template-columns: 1fr; }
+  }
+</style>
