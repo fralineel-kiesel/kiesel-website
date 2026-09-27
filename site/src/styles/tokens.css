@@ -46,6 +46,8 @@
   --fs-1:       clamp(32px, 20px + 3.05vw, 64px);    /* Titel 1: 56–64, Handy 32 */
   --fs-2:       clamp(26px, 23.8px + 0.571vw, 32px); /* Titel 2: 32 */
   --fs-3:       clamp(20px, 19.3px + 0.19vw, 22px);  /* Titel 3: 20–22 */
+  --fs-4:       clamp(17px, 16.3px + 0.19vw, 19px);  /* Titel 4: 17–19, Fragen im Akkordeon */
+  --fs-zahl:    clamp(40px, 34.1px + 1.52vw, 56px);  /* Kennzahl: 40–56, grosse Zahlen */
   --fs-lead:    clamp(17px, 15.5px + 0.381vw, 21px); /* Einleitung: 19–21 */
   --fs-text:    clamp(16px, 15.6px + 0.095vw, 17px); /* Text: 16–17 */
   --fs-small:   clamp(13px, 12.6px + 0.095vw, 14px); /* Klein: 13–14 */

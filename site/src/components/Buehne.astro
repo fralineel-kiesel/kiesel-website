@@ -1,0 +1,24 @@
+---
+// Bühne: der Verlaufs-Kasten, auf dem Handys stehen (stage() in design/generator/gen2.py).
+// Oben --stage, unten --stage-lo, dünner Rahmen. Der Inhalt wird mittig gesetzt.
+//   radius: 'l' | 'xl' (24 / 32 px)   class: eigene Klasse für Höhe und Breite
+// Alles, was per position: absolute auf der Bühne liegen soll (Chips), einfach mit
+// hineinlegen: die Bühne ist position: relative.
+const { radius = 'xl', class: klasse, ...rest } = Astro.props;
+---
+<div class:list={['buehne', klasse]} style={`--r: var(--radius-${radius})`} {...rest}>
+  <slot />
+</div>
+
+<style>
+  .buehne {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    background: linear-gradient(180deg, var(--stage), var(--stage-lo));
+  }
+</style>

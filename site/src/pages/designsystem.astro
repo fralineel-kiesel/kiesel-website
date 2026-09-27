@@ -13,6 +13,8 @@ import Schalter from '../components/Schalter.astro';
 import Zaehler from '../components/Zaehler.astro';
 import Feld from '../components/Feld.astro';
 import HandyPlatzhalter from '../components/HandyPlatzhalter.astro';
+import Akkordeon from '../components/Akkordeon.astro';
+import Buehne from '../components/Buehne.astro';
 import { FARBEN, FARBNAMEN } from '../data/farben.js';
 
 const TOKENS = [
@@ -28,6 +30,8 @@ const SCHRIFT = [
   ['Titel 1', 't-1', 'Welcher Kiesel?', 'Unbounded 600 · 56–64 px · −0.04em'],
   ['Titel 2', 't-2', 'Zwei Kameras. Eine Hand.', 'Unbounded 600 · 32 px'],
   ['Titel 3', 't-3', 'Privacy-Modus', 'Unbounded 600 · 20–22 px'],
+  ['Titel 4', 't-4', 'Passt die Hülle?', 'Unbounded 500 · 17–19 px · Fragen im Akkordeon'],
+  ['Kennzahl', 't-zahl', '3000', 'Unbounded 600 · 40–56 px · −0.04em'],
   ['Einleitung', 't-lead', 'Zwei kompakte Handys mit Akku bis in die Nacht.', 'Instrument Sans 400 · 19–21 px · 1.6'],
   ['Text', 't-text', 'Die Tele-Linse stellt schon ab rund 20 cm scharf.', 'Instrument Sans 400 · 16–17 px · 1.6'],
   ['Klein', 't-small t-muted', 'Preise inklusive MwSt.', 'Instrument Sans 400 · 13–14 px'],
@@ -145,6 +149,15 @@ const RADIEN = [['s', '8 · klein'], ['m', '16 · Felder'], ['l', '24 · Karten'
         <div class="feld-breite">
           <Feld id="ds-gravur" label="Gravur" placeholder="z.B. Linos Kiesel" maxlength="18" hinweis="Bis 18 Zeichen, erscheint auf der Rückseite unter dem Kiesel." />
         </div>
+        <div class="feld-breite">
+          <Akkordeon idVorsilbe="ds-akk" offen="a" eintraege={[
+            { id: 'a', frage: 'Akkordeon: offen', antwort: 'Button mit aria-expanded in einer Überschrift, Enter und Leertaste schalten um.' },
+            { id: 'b', frage: 'Akkordeon: zu', antwort: 'Die Antwort ist mit hidden versteckt, bis man die Frage öffnet.' },
+          ]} />
+        </div>
+        <div class="reihe">
+          <Buehne radius="l" class="ds-buehne"><p class="t-small t-muted">Bühne (--stage → --stage-lo)</p></Buehne>
+        </div>
         <div class="reihe">
           <HandyPlatzhalter modell="k1" hoehe={170} />
           <HandyPlatzhalter modell="pro" hoehe={180} />
@@ -157,6 +170,7 @@ const RADIEN = [['s', '8 · klein'], ['m', '16 · Felder'], ['l', '24 · Karten'
 
 <style>
   .ds { padding-top: var(--space-9); }
+  .reihe :global(.ds-buehne) { width: 320px; height: 160px; }
   .kopf { display: flex; align-items: center; gap: var(--space-4); }
   .intro { max-width: 760px; margin-top: var(--space-4); }
   code { font-size: 0.9em; }

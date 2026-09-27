@@ -1,0 +1,57 @@
+---
+// Vier Kennzahlen (stats() in design/generator/gen2.py).
+// Desktop: vier Spalten. Handy: zwei Spalten mit kürzeren Texten wie im Artboard
+// „Startseite Handy“. Beide Fassungen stehen im HTML, CSS zeigt nur eine
+// (display: none versteckt die andere auch vor Screenreadern, also nichts doppelt).
+const ZAHLEN = [
+  { zahl: '3000', titel: ['mAh im Kiesel 1'], text: ['fast doppelt so viel wie das SE'] },
+  { zahl: '3x', titel: ['Tele, echt optisch'], text: ['beim Kiesel 1 Pro'] },
+  { zahl: '9 mm', titel: ['flach genug'], text: ['1.4 mm mehr als das SE, für mehr Akku', 'für mehr Akku'] },
+  { zahl: '1–90', titel: ['Hertz, die mitdenken', 'Hertz'], text: ['das Display läuft nur so schnell wie nötig', 'nur so schnell wie nötig'] },
+];
+// [lang, kurz]: gibt es keine Kurzfassung, gilt die lange überall
+const zwei = ([lang, kurz]) => (kurz ? [lang, kurz] : [lang, null]);
+---
+<ul role="list" class="kennzahlen">
+  {ZAHLEN.map((z) => {
+    const [tl, tk] = zwei(z.titel);
+    const [xl, xk] = zwei(z.text);
+    return (
+      <li>
+        <span class="t-zahl">{z.zahl}</span>
+        <span class="titel">
+          {tk ? <><span class="lang">{tl}</span><span class="kurz">{tk}</span></> : tl}
+        </span>
+        <span class="text t-muted">
+          {xk ? <><span class="lang">{xl}</span><span class="kurz">{xk}</span></> : xl}
+        </span>
+      </li>
+    );
+  })}
+</ul>
+
+<style>
+  .kennzahlen {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-6);
+    margin: 0;
+  }
+  li {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding-top: var(--space-5);
+    border-top: 2px solid var(--ink);
+  }
+  .titel { font-size: var(--fs-text); font-weight: 600; line-height: 1.4; }
+  .text { font-size: var(--fs-text); line-height: 1.5; }
+  .lang { display: none; }
+
+  @media (min-width: 900px) {
+    .kennzahlen { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .text { font-size: var(--fs-small); }
+    .lang { display: inline; }
+    .kurz { display: none; }
+  }
+</style>

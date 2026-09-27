@@ -10,6 +10,7 @@
 // Bäume genau dort, wo sie in der Vorlage stehen.
 import { E, stop, f, py, pts, uid } from './svg.js';
 import { PyRandom } from './zufall.js';
+import { crop, begrenze } from './ausschnitt.js';
 
 // ------------------------------------------------------------------
 // ALPENPANORAMA 1600 × 1000
@@ -201,12 +202,9 @@ export function alpen(p) {
   return s;
 }
 
-// Bildausschnitt als viewBox: zoom 1 = ganzes Bild (1600 breit), zoom 8 = 200 breit.
-// ratio = Breite / Höhe des Ausschnitts
-export function crop(cx, cy, zoom, ratio = 1.6) {
-  const w = 1600 / zoom, h = w / ratio;
-  return `${f(cx - w / 2)} ${f(cy - h / 2)} ${f(w)} ${f(h)}`;
-}
+// crop() und begrenze() (Bildausschnitt als viewBox) stehen in ausschnitt.js, damit Seiten
+// sie ohne das ganze Panorama laden können. Hier nur weitergereicht.
+export { crop, begrenze };
 
 // Die Markierungen der Zoom-Ziele (Kreis + Name), wie im Artboard „Alpenpanorama“.
 // massstab verkleinert sie beim Reinzoomen (1 = wie in gen2.py).
@@ -219,13 +217,6 @@ export function zoomPunkte(massstab = 1) {
   return s;
 }
 
-// Mittelpunkt so verschieben, dass der Ausschnitt im Bild bleibt (sonst sähe man bei
-// Zoom 2 am Rand plötzlich Leere)
-export function begrenze(cx, cy, zoom, ratio = 1.6) {
-  const w = 1600 / zoom, h = w / ratio;
-  const klemme = (v, halb, max) => (halb * 2 >= max ? max / 2 : Math.min(max - halb, Math.max(halb, v)));
-  return [klemme(cx, w / 2, 1600), klemme(cy, h / 2, 1000)];
-}
 
 // Fertiges <svg> des Panoramas für die Seiten.
 //   zoom: 1…10   cx, cy: Mittelpunkt im 1600 × 1000-Bild   breite/hoehe: px (null = CSS)

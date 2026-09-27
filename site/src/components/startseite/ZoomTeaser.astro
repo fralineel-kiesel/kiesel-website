@@ -1,0 +1,107 @@
+---
+// Zoom-Teaser „Zoom, der nicht aufgibt.“ mit dem Alpenpanorama aus dem Zeichen-Motor.
+// Anfangs der 3x-Ausschnitt wie im Artboard (crop(740, 300, 3) in gen2.py).
+//
+// Die Zoom-Leiste funktioniert schon: Sie ändert nur die viewBox des SVGs, also welcher
+// Teil des 1600 × 1000 grossen Bilds zu sehen ist. Neu gezeichnet wird nichts, darum ist
+// das billig. Die echte Kamera-Demo (Unschärfe, Linsenwechsel) kommt in Etappe 5.
+import Knopf from '../Knopf.astro';
+import GlasChip from '../GlasChip.astro';
+import ZoomLeiste from '../ZoomLeiste.astro';
+import { panorama } from '../../lib/kiesel-draw/scene.js';
+import { pfad } from '../../lib/pfad.js';
+
+// breite/hoehe: null = Grösse per CSS. Die viewBox hat das Seitenverhältnis 1.6, und
+// preserveAspectRatio="slice" schneidet auf dem Handy (350 × 240) links und rechts ab.
+const bild = panorama({ zoom: 3, cx: 740, cy: 300, breite: null, hoehe: null, label: 'Alpenpanorama bei 3x Zoom' });
+---
+<div class="zoom">
+  <div class="text">
+    <h2 class="t-1">Zoom, der nicht aufgibt.</h2>
+    <p class="t-lead t-muted lang">Der Pro wechselt bei 3x auf eine echte Tele-Linse. Selbst bei 10x siehst du noch das Gipfelkreuz, und wer genau hinschaut, entdeckt die Seilschaft auf dem Grat.</p>
+    <p class="t-lead t-muted kurz">Bei 3x wechselt der Pro auf die Tele-Linse. Selbst bei 10x bleibt das Gipfelkreuz erkennbar.</p>
+    <div class="lang"><Knopf art="text" icon="arrow" href={pfad('kiesel-1-pro/#kamera')}>Zoom ausprobieren</Knopf></div>
+  </div>
+  <div class="fenster" data-zoom-teaser>
+    <div class="bild" set:html={bild} />
+    <div class="chip"><GlasChip><span data-zoom-text aria-live="polite">3x · optisch, Tele-Linse</span></GlasChip></div>
+    <div class="leiste"><ZoomLeiste aktiv="3" label="Zoomstufe im Beispielbild" /></div>
+  </div>
+</div>
+
+<style>
+  .zoom { display: grid; gap: var(--space-5); }
+  .text { display: flex; flex-direction: column; gap: var(--space-3); }
+  .text .lang { display: none; }
+  .fenster {
+    position: relative;
+    height: 240px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-l);
+    background: var(--stage);
+  }
+  .bild, .bild :global(svg) { width: 100%; height: 100%; }
+  .chip { position: absolute; top: var(--space-3); left: var(--space-3); }
+  .leiste { position: absolute; left: 0; right: 0; bottom: var(--space-3); display: flex; justify-content: center; }
+
+  @media (min-width: 900px) {
+    .zoom {
+      grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+      gap: var(--space-8);
+      align-items: center;
+    }
+    .text { gap: var(--space-4); }
+    /* Wie im Artboard das untere Ende von Titel 1 (56 px), sonst bricht der Titel
+       in der schmalen Spalte auf drei Zeilen um */
+    .text h2 { font-size: calc(var(--fs-1) * 0.875); }
+    .text .lang { display: block; }
+    .text .kurz { display: none; }
+    .fenster { height: 440px; }
+    .chip { top: calc(var(--space-4) + var(--space-1)); left: calc(var(--space-4) + var(--space-1)); }
+    .leiste { bottom: calc(var(--space-4) + var(--space-1)); }
+  }
+</style>
+
+<script>
+  import { crop, begrenze } from '../../lib/kiesel-draw/ausschnitt.js';
+
+  // Welche Stufe welchen Ausschnitt zeigt. zoom 1 = ganzes Panorama (1600 breit).
+  // 3x ist der Ausschnitt aus dem Artboard. 0.5x und 1x sind hier nur angedeutet
+  // (das Bild ist ja schon ganz zu sehen), die genaue Optik kommt in Etappe 5.
+  const STUFEN = {
+    0.5: { zoom: 1, cx: 800, cy: 500, text: '0.5x · Ultraweitwinkel' },
+    1: { zoom: 1.5, cx: 760, cy: 360, text: '1x · Hauptkamera' },
+    3: { zoom: 3, cx: 740, cy: 300, text: '3x · optisch, Tele-Linse' },
+    10: { zoom: 10, cx: 738, cy: 228, text: '10x · digital, aus der Tele' },
+  };
+  const ruhig = matchMedia('(prefers-reduced-motion: reduce)');
+
+  document.querySelectorAll('[data-zoom-teaser]').forEach((fenster) => {
+    const svg = fenster.querySelector('svg');
+    const text = fenster.querySelector('[data-zoom-text]');
+    let lauf = 0;
+
+    fenster.addEventListener('kiesel:zoom', (e) => {
+      const s = STUFEN[e.detail.stufe];
+      if (!s) return;
+      const [cx, cy] = begrenze(s.cx, s.cy, s.zoom);
+      const ziel = crop(cx, cy, s.zoom).split(' ').map(Number);
+      text.textContent = s.text;
+      svg.setAttribute('aria-label', `Alpenpanorama bei ${e.detail.stufe}x Zoom`);
+
+      // Sanft hinzoomen (0.45 s), ausser jemand wünscht weniger Bewegung
+      const start = svg.getAttribute('viewBox').split(' ').map(Number);
+      const t0 = performance.now();
+      const nr = ++lauf;
+      const schritt = (jetzt) => {
+        if (nr !== lauf) return; // ein neuerer Klick hat übernommen
+        const t = ruhig.matches ? 1 : Math.min(1, (jetzt - t0) / 450);
+        const k = 1 - (1 - t) ** 3; // bremst zum Schluss ab
+        svg.setAttribute('viewBox', start.map((a, i) => (a + (ziel[i] - a) * k).toFixed(2)).join(' '));
+        if (t < 1) requestAnimationFrame(schritt);
+      };
+      requestAnimationFrame(schritt);
+    });
+  });
+</script>

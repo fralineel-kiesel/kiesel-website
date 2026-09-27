@@ -18,4 +18,9 @@ export default defineConfig({
 
   // Die Entwickler-Leiste von Astro unten im Browser brauchen wir nicht.
   devToolbar: { enabled: false },
+
+  // three.js (3D-Bühne der Startseite) ist allein rund 600 KB gross (150 KB gepackt) und
+  // liegt bewusst in einer eigenen Datei, die nur bei Bedarf nachgeladen wird. Vite warnt
+  // ab 500 KB; die Grenze liegt darum etwas höher, damit echte Ausreisser auffallen.
+  vite: { build: { chunkSizeWarningLimit: 700 } },
 });

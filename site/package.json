@@ -8,10 +8,13 @@
     "build": "astro build",
     "preview": "astro preview",
     "pruefe:zeichenmotor": "node scripts/pruefe-zeichenmotor.mjs",
-    "fotos:zeichenmotor": "astro build && node scripts/fotografiere-zeichenmotor.mjs"
+    "fotos:zeichenmotor": "astro build && node scripts/fotografiere-zeichenmotor.mjs",
+    "fotos:startseite": "astro build && node scripts/fotografiere-startseite.mjs",
+    "pruefe:startseite": "astro build && node scripts/pruefe-startseite.mjs"
   },
   "dependencies": {
-    "astro": "^7.3.5"
+    "astro": "^7.3.5",
+    "three": "^0.186.1"
   },
   "devDependencies": {
     "playwright": "^1.56.1"
