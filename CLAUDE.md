@@ -76,9 +76,18 @@ Alles oben beschreibt die **alte Seite** im Repo-Root. Sie bleibt unverändert o
 - `src/layouts/BaseLayout.astro`: `<head>`, Thema-Skript, Header, optional Unterleiste (`unterleiste="k1|pro"`), Footer
 - `src/components/`: Bausteine als `.astro`, Namen deutsch ohne Umlaute
   - Gerüst: `Header`, `HandysMenue` (Aufklappmenü), `MobilMenue` (Burger, `<dialog>`), `Unterleiste`, `Footer`, `ThemaUmschalter`, `WarenkorbKnopf`, `Platzhalter`
-  - Bausteine: `Knopf`, `Chip`, `GlasChip`, `ZoomLeiste`, `Farbwaehler`, `Schalter`, `Zaehler`, `Feld`, `Icon`, `Logo`, `HandyPlatzhalter` (bis Etappe 2)
+  - Bausteine: `Knopf`, `Chip`, `GlasChip`, `ZoomLeiste`, `Farbwaehler`, `Schalter`, `Zaehler`, `Feld`, `Icon`, `Logo`, `HandyPlatzhalter` (wird ab Etappe 3 durch `handy()` ersetzt)
 - `src/styles/tokens.css`: **alle** Designwerte als CSS-Variablen. `global.css`: Schriften, Grundlagen, Schriftklassen `.t-display/.t-1/.t-2/.t-3/.t-lead/.t-text/.t-small`
 - `src/data/`: `farben.js` (5 Produktfarben à 7 Töne), `modelle.js` (Namen, Preise), `navigation.js` (alle Menüs, Etappen). Menüs und Preise nur hier ändern.
+- `src/lib/kiesel-draw/`: **Zeichen-Motor** (Etappe 2), Übersetzung von `lib.py`/`scene.py`. Reine Funktionen, liefern SVG als Text, laufen im Build (Frontmatter) und im Browser (`<script>`). Einstieg `index.js`:
+  - `handy({ ansicht: 'vorne'|'hinten'|'seite', modell: 'k1'|'pro', farbe, huelle, led, hoehe, drehung, boden })` → fertiges `<svg>`. `farbe`/`huelle`: PAL-Name, Hex (`palette()` leitet die 7 Töne ab) oder Palette. `led`: `off|call|msg|charge|full|low|privacy|flash` oder Hex. `hoehe: null` = Grösse per CSS
+  - `panorama({ zoom, cx, cy, breite, hoehe, punkte })`, `crop()`, `begrenze()`, `ZOOM_TARGETS`; `blumeBild({ fokus: 'Blume (3x Tele)'|…|0…1, staerke })`, `BLUME_FOKUS`, `blumeUnschaerfe()`; `innenleben({ modell: 'se'|'k1'|'pro' })` → `{ svg, legende }`
+  - Low-Level wie in Python: `backSvg/frontSvg/sideSvg(mk, col, pid, …)`, `lens`, `ledSvg`, `alpen(pid)`, `blume(pid, bg, fl, fg, bee)`, `phoneOpen(kind, ox, oy, s)`
+  - `PAL` = `FARBEN` aus `data/farben.js` (nur dort ändern), `MODELS`/`geo`/`camrow` 1:1 aus `lib.py`. LED-Farben aus der alten `css/handy.css`, mid/edge/o1/o2 an `kiesel-kamera.png` geeicht. Seitenansicht aus `side()` der alten Seite (lib.py hat keine)
+  - Jede Zeichnung braucht ein eigenes ID-Präfix (`pid`), sonst übernehmen Handys gegenseitig ihre Verläufe. `uid()` macht das automatisch, getrennt für Build und Browser
+  - `zufall.js`: Pythons `random.Random` bitgenau, damit Bäume/Blumen wie in der Vorlage stehen
+- `src/pages/designsystem/spielwiese.astro`: versteckte Werkbank (noindex) für alle Zeichenfunktionen; Einstellungen stehen in der Adresse (`?modell=k1&farbe=Mattschwarz&ansicht=hinten&huelle=Mattweiss&led=call`, `&zoom=8&cx=846&cy=331&punkte=1`, `&fokus=0.3&blende=24`)
+- `scripts/`: Prüfwerkzeuge für den Motor (siehe Werkzeuge), Ausgabe in `scripts/ausgabe/` (nicht im Repo)
 - `src/lib/pfad.js`: `pfad('kaufen/')` für jeden internen Link (setzt den base-Pfad davor). `format.js`: `chf(1200)` → `CHF 1’200.–`
 - `src/scripts/warenkorb.js`: Warenkorb in `localStorage["kiesel-warenkorb"]`
 - `src/assets/fonts/`: Unbounded + Instrument Sans (variable woff2, 400–600, latin) + OFL
@@ -101,3 +110,6 @@ Alles oben beschreibt die **alte Seite** im Repo-Root. Sie bleibt unverändert o
 - Entwickeln: `npm run dev` → http://localhost:4321/kiesel-website/v2/ (lädt bei jeder Änderung neu)
 - Bauen: `npm run build` → `site/dist/`; ansehen mit `npm run preview`
 - Prüfen: Playwright-Screenshots bei 1440 und 390 px, jeweils mit `colorScheme: 'dark'` und `'light'`, neben die Artboards legen
+- Zeichen-Motor prüfen (nach jeder Änderung in `src/lib/kiesel-draw/`):
+  - `npm run pruefe:zeichenmotor`: vergleicht 212 Fälle Zeichen für Zeichen mit den Python-Originalen in `design/generator/` (braucht Python 3; sonst `PYTHON=…`). Muss immer ✓ sein
+  - `npm run fotos:zeichenmotor`: Screenshots der Spielwiese + deckungsgleicher Vergleich mit den PNGs in `bilder/original/` (braucht Python 3 mit Pillow und einmalig `npx playwright install chromium`; dauert ca. 4 Min.). Nur eine Vorlage: `python scripts/vorlagen-vergleich.py hero` nach einem Lauf

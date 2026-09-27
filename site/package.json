@@ -6,9 +6,14 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
-    "preview": "astro preview"
+    "preview": "astro preview",
+    "pruefe:zeichenmotor": "node scripts/pruefe-zeichenmotor.mjs",
+    "fotos:zeichenmotor": "astro build && node scripts/fotografiere-zeichenmotor.mjs"
   },
   "dependencies": {
     "astro": "^7.3.5"
+  },
+  "devDependencies": {
+    "playwright": "^1.56.1"
   }
 }

@@ -4,3 +4,6 @@ node_modules/
 dist/
 # Zwischenspeicher von Astro (erzeugte Typen, Cache)
 .astro/
+
+# Ausgabe der Qualitätsschleife (npm run fotos:zeichenmotor)
+scripts/ausgabe/
