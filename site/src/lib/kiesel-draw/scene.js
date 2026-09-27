@@ -10,22 +10,13 @@
 // Bäume genau dort, wo sie in der Vorlage stehen.
 import { E, stop, f, py, pts, uid } from './svg.js';
 import { PyRandom } from './zufall.js';
-import { crop, begrenze } from './ausschnitt.js';
+import { crop, begrenze, ZOOM_TARGETS } from './ausschnitt.js';
 
 // ------------------------------------------------------------------
 // ALPENPANORAMA 1600 × 1000
 // ------------------------------------------------------------------
-// Die acht versteckten Details: [Name, x, y] im 1600 × 1000-Bild, 1:1 aus scene.py
-export const ZOOM_TARGETS = [
-  ['Gipfelkreuz', 760, 214],
-  ['Seilschaft auf dem Grat', 716, 242],
-  ['Steinbock', 846, 331],
-  ['SAC-Hütte mit Fahne', 616, 369],
-  ['Gondelbahn', 452, 500],
-  ['Gleitschirm', 1060, 306],
-  ['Segelboot', 1122, 770],
-  ['Dorf mit Kirche', 262, 668],
-];
+// Die acht versteckten Details (ZOOM_TARGETS) stehen in ausschnitt.js und werden hier weitergereicht.
+export { ZOOM_TARGETS };
 
 // Ein Mensch, nur etwa 5 Einheiten gross: bei 1x unsichtbar, bei 8x deutlich
 function person(x, y, col, s = 1.0) {
@@ -229,6 +220,26 @@ export function panorama({ zoom = 1, cx = 800, cy = 500, breite = 800, hoehe = 5
   const groesse = breite && hoehe ? { width: f(breite), height: f(hoehe) } : {};
   const inhalt = alpen(pid) + (punkte ? E('g', { 'data-zoompunkte': '' }, zoomPunkte(1 / Math.sqrt(zoom))) : '');
   return E('svg', { ...groesse, viewBox: crop(cx, cy, zoom, ratio), preserveAspectRatio: 'xMidYMid slice', role: 'img', 'aria-label': label, style: 'display: block' }, inhalt);
+}
+
+// Das Panorama einmal zeichnen, mehrmals zeigen (Kamera-Demos):
+// panoramaQuelle() legt die ganze Szene unsichtbar als <g id="…szene"> ab, jede Ansicht
+// ist dann nur noch ein kleines <svg> mit <use href="#…szene">. So steht die Szene mit
+// ihren rund 500 Formen nur einmal im HTML, auch wenn sie in einer Demo drei Ebenen und
+// acht Vorschaubilder füllt. Die Quelle ist 0 × 0 gross statt display: none, weil manche
+// Browser Verläufe aus versteckten SVGs nicht zeichnen.
+export function panoramaQuelle(pid = null) {
+  pid = pid ?? uid('al');
+  const id = pid + 'szene';
+  return { id, svg: E('svg', { width: '0', height: '0', style: 'position: absolute', 'aria-hidden': 'true', focusable: 'false' }, E('defs', {}, E('g', { id }, alpen(pid)))) };
+}
+
+//   quelle: id aus panoramaQuelle()   zoom, cx, cy: wie panorama()   label: für Screenreader
+//   label = null: nur Schmuck (aria-hidden), z.B. eine zweite Ebene über demselben Bild
+export function panoramaAnsicht(quelle, { zoom = 1, cx = 800, cy = 500, ratio = 1.6, label = null } = {}) {
+  [cx, cy] = begrenze(cx, cy, zoom, ratio);
+  const a11y = label ? { role: 'img', 'aria-label': label } : { 'aria-hidden': 'true' };
+  return E('svg', { viewBox: crop(cx, cy, zoom, ratio), preserveAspectRatio: 'xMidYMid slice', ...a11y, focusable: 'false', style: 'display: block' }, E('use', { href: '#' + quelle }));
 }
 
 // ------------------------------------------------------------------

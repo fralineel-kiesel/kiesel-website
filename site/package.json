@@ -12,7 +12,9 @@
     "fotos:startseite": "astro build && node scripts/fotografiere-startseite.mjs",
     "pruefe:startseite": "astro build && node scripts/pruefe-startseite.mjs",
     "fotos:modellseiten": "astro build && node scripts/fotografiere-modellseiten.mjs",
-    "pruefe:modellseiten": "astro build && node scripts/pruefe-modellseiten.mjs"
+    "pruefe:modellseiten": "astro build && node scripts/pruefe-modellseiten.mjs",
+    "fotos:kamera": "astro build && node scripts/fotografiere-kamera.mjs",
+    "pruefe:kamera": "astro build && node scripts/pruefe-kamera.mjs"
   },
   "dependencies": {
     "astro": "^7.3.5",

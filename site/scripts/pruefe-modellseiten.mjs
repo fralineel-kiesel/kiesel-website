@@ -10,7 +10,8 @@
 //    Nachbarschritten springen. Rückwärts muss dasselbe Bild entstehen wie vorwärts.
 //    Dazu echtes Mausrad-Scrollen mit Messung der Bildabstände (headless Chrome ohne
 //    Grafikkarte: nur Richtwerte). Bei „weniger Bewegung“ steht der Endzustand still da.
-// 3. Zoom-Vergleich: Regler mit Pfeiltasten, Maus und Finger. Makro: Klick auf die Biene.
+// 3. Zoom-Vergleich: Trennlinie mit Pfeiltasten, Maus und Finger (Zoom selbst: pruefe:kamera).
+//    Makro: Klick auf die Biene.
 // 4. Technische Daten, keine Skriptfehler, kein three.js.
 // Jeder Fall druckt ✓ oder ✗, bei einem ✗ endet das Skript mit Fehlercode 1.
 import { chromium } from 'playwright';
@@ -242,14 +243,17 @@ try {
     l = await lage();
     pruefe('Maus ziehen: Linie folgt bis 75 %', Math.abs(Number(l.wert) - 75) <= 1, l.pos);
 
+    // Zoom, Linsenwechsel und Details prüft pruefe:kamera ausführlich, hier nur das Zusammenspiel
     await seite.locator('[data-zoom-vergleich] [data-stufe="10"]').click();
-    await seite.waitForTimeout(600);
+    await seite.waitForTimeout(900);
     const z = await seite.evaluate(() => ({
-      breite: Number(document.querySelector('[data-bild="pro"] svg').getAttribute('viewBox').split(' ')[2]),
-      k1: document.querySelector('[data-text="k1"]').textContent, sd: Number(document.querySelector('#zv-k1 feGaussianBlur').getAttribute('stdDeviation')),
+      breite: Number(document.querySelector('[data-ebene="tele"] svg').getAttribute('viewBox').split(' ')[2]),
+      k1: document.querySelector('[data-text="k1"]').textContent,
+      blur: Number(/blur\(([\d.]+)px\)/.exec(document.querySelector('[data-ebene="k1"]').style.filter)?.[1] ?? 0),
     }));
-    // stdDeviation ist in Bild-Einheiten: bei 10x sind 160 Einheiten zu sehen, 1.3 davon = deutlich weich
-    pruefe('10x: enger Ausschnitt, Kiesel 1 „max. 5x“ und stark unscharf', z.breite === 160 && z.k1.includes('max. 5x') && z.sd / z.breite > 0.008, JSON.stringify(z));
+    pruefe('10x: enger Ausschnitt, Kiesel 1 „max. 5x“ und stark unscharf', z.breite === 160 && z.k1.includes('max. 5x') && z.blur > 8, JSON.stringify(z));
+    l = await lage();
+    pruefe('Zoomen verschiebt die Trennlinie nicht', Math.abs(Number(l.wert) - 75) <= 1, l.pos);
 
     await seite.locator('[data-vergleich-schalter]').click();
     const allein = await seite.evaluate(() => ({ allein: document.querySelector('[data-fenster]').hasAttribute('data-allein'), aus: document.querySelector('[data-regler]').disabled }));
