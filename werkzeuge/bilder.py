@@ -2,7 +2,8 @@
 
 Pro Produktbild entstehen mehrere Breiten, jeweils als WebP (klein, moderne
 Browser) und als JPEG (Fallback für alle anderen). Der Browser sucht sich über
-srcset/sizes selbst die passende Datei aus. Aus dem Icon werden die Favicons.
+srcset/sizes selbst die passende Datei aus. Aus dem Icon werden die Favicons,
+aus dem Hero-Bild das Vorschaubild für Link-Vorschauen (Open Graph).
 
 Nur beim Entwickeln nötig – die fertige Seite braucht kein Python.
 Aufruf im Ordner C:\\Kiesel:
@@ -17,7 +18,7 @@ WURZEL = Path(__file__).resolve().parent.parent
 QUELLE = WURZEL / "bilder" / "original"
 ZIEL = WURZEL / "bilder"
 
-BILDER = ["hero", "farben", "kamera", "huelle", "poster"]
+BILDER = ["hero", "farben", "kamera", "huelle"]
 BREITEN = [640, 1024, 1600, 2400]
 WEBP_QUALITAET = 80
 JPEG_QUALITAET = 82
@@ -26,6 +27,18 @@ JPEG_QUALITAET = 82
 # damit er im winzigen Favicon nicht zu klein wirkt.
 ICON_AUSSCHNITT = (273, 271, 1707, 1705)
 ICONS = {"favicon-32.png": 32, "favicon-192.png": 192, "apple-touch-icon.png": 180}
+
+# Vorschaubild für WhatsApp, Signal, Mastodon & Co. 1200x630 (1.91:1) ist das
+# Format, das Facebook, LinkedIn und X empfehlen. JPEG statt WebP, weil nicht
+# jede Plattform WebP als Vorschau annimmt.
+VORSCHAU = "vorschau.jpg"
+VORSCHAU_GROESSE = (1200, 630)
+# Die Handys füllen im Hero fast die ganze Höhe. Ein reiner Zuschnitt auf 1.91:1
+# würde sie oben und unten anschneiden. Darum etwas kleiner skalieren und links
+# und rechts verlängern. Der Rand des Hero ist ein reiner senkrechter Verlauf,
+# die äusserste Pixelspalte lässt sich also nahtlos in die Breite ziehen.
+VORSCHAU_HOEHE = 680   # Hero auf diese Höhe skalieren (Breite folgt)
+VORSCHAU_OBEN = 16     # so viele Pixel oben abschneiden, damit die Handys mittig stehen
 
 
 def kb(pfad):
@@ -55,6 +68,21 @@ def icons():
         print(f"  {datei:<22} {groesse:>4} px  {kb(ZIEL / datei):6.1f} KB")
 
 
+def vorschau():
+    breite, hoehe = VORSCHAU_GROESSE
+    hero = Image.open(QUELLE / "kiesel-hero.png").convert("RGB")
+    klein = hero.resize((round(hero.width * VORSCHAU_HOEHE / hero.height), VORSCHAU_HOEHE), Image.LANCZOS)
+    klein = klein.crop((0, VORSCHAU_OBEN, klein.width, VORSCHAU_OBEN + hoehe))
+    rand = (breite - klein.width) // 2
+    bild = Image.new("RGB", VORSCHAU_GROESSE)
+    # äusserste Spalte links bzw. rechts auf die Randbreite strecken
+    bild.paste(klein.crop((0, 0, 1, hoehe)).resize((rand, hoehe)), (0, 0))
+    bild.paste(klein.crop((klein.width - 1, 0, klein.width, hoehe)).resize((breite - rand - klein.width, hoehe)), (rand + klein.width, 0))
+    bild.paste(klein, (rand, 0))
+    bild.save(ZIEL / VORSCHAU, "JPEG", quality=JPEG_QUALITAET, optimize=True, progressive=True)
+    print(f"  {VORSCHAU:<22} {breite}x{hoehe}  {kb(ZIEL / VORSCHAU):6.1f} KB")
+
+
 def main():
     print(f"{'Datei':<16}{'Grösse':>12}{'WebP':>10}{'JPEG':>10}")
     summe_webp = summe_jpg = 0
@@ -68,6 +96,8 @@ def main():
     print(f"Summe aller Varianten: WebP {summe_webp:.0f} KB, JPEG {summe_jpg:.0f} KB")
     print("Icons:")
     icons()
+    print("Link-Vorschau:")
+    vorschau()
 
 
 if __name__ == "__main__":

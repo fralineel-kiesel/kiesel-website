@@ -27,8 +27,8 @@ Farben: Mattschwarz, Titangrau, Himmelblau, Mattweiss, Kieselbeige. Hülle: CHF 
   - Daten/Hilfen oben per Destrukturierung holen; Funktionen anderer Dateien nur im Rumpf als `K.name()` aufrufen
   - Neu zugewiesene Variablen (`CART`, `activePart`, `macroMode`, `manual`) bleiben in ihrer Datei, Zugriff nur über exportierte Funktionen
   - Handys: `front/back/side()` in `handy.js`, Platzhalter `data-phone` + `SLOTS`
-- `bilder/original/`: Quell-PNGs (hero, farben, kamera, huelle, icon, poster), werden nicht geladen
-- `bilder/*-{640,1024,1600,2400}.{webp,jpg}` + Favicons: erzeugt von `werkzeuge/bilder.py`
+- `bilder/original/`: Quell-PNGs (hero, farben, kamera, huelle, icon), werden nicht geladen
+- `bilder/*-{640,1024,1600,2400}.{webp,jpg}`, Favicons und `vorschau.jpg` (1200×630, Link-Vorschau): erzeugt von `werkzeuge/bilder.py`
 - `kiesel-familie.html`: alte Einzeldatei, nur Referenz
 
 ## Regeln
