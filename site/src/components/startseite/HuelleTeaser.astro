@@ -1,0 +1,44 @@
+---
+// Hülle-Teaser (Artboard „Startseite Desktop“): Kiesel 1 Pro in Himmelblau mit der
+// milchigen Hülle in Mattweiss, leicht gedreht. Das Handy-Artboard hat diesen Abschnitt
+// nicht, auf dem Handy steht die Bühne darum einfach über dem Text.
+import Buehne from '../Buehne.astro';
+import Knopf from '../Knopf.astro';
+import { handy } from '../../lib/kiesel-draw/phone.js';
+import { HUELLE_PREIS } from '../../data/modelle.js';
+import { chf } from '../../lib/format.js';
+import { pfad } from '../../lib/pfad.js';
+
+const svg = handy({
+  ansicht: 'hinten', modell: 'pro', farbe: 'Himmelblau', huelle: 'Mattweiss', drehung: -6, hoehe: null,
+  label: 'Kiesel 1 Pro in Himmelblau mit der Kiesel-Hülle in Mattweiss, Rückseite',
+});
+---
+<div class="huelle">
+  <Buehne radius="l" class="huelle-buehne"><div class="handy" set:html={svg} /></Buehne>
+  <div class="text">
+    <h2 class="t-1">Die Kiesel-Hülle</h2>
+    <p class="t-lead t-muted">Hinten milchig, damit Farbe und Kiesel durchschimmern. Am Rand fest und griffig. In denselben fünf Farben wie die Handys, für beide Modelle.</p>
+    <p class="preis">{chf(HUELLE_PREIS)}</p>
+    <div class="knoepfe">
+      <Knopf art="sekundaer" href={pfad('zubehoer/')}>Zum Zubehör</Knopf>
+      {/* Etappe 6: legt die Hülle wirklich in den Warenkorb */}
+      <Knopf art="primaer" href={pfad('zubehoer/huelle/')}>In den Warenkorb</Knopf>
+    </div>
+  </div>
+</div>
+
+<style>
+  .huelle { display: grid; gap: var(--space-6); align-items: center; }
+  .huelle :global(.huelle-buehne) { height: 400px; }
+  .handy { height: 85%; }
+  .handy :global(svg) { width: auto; height: 100%; }
+  .text { display: flex; flex-direction: column; gap: var(--space-4); }
+  .preis { font-size: var(--fs-3); font-weight: 600; }
+  .knoepfe { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+
+  @media (min-width: 900px) {
+    .huelle { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-8); }
+    .huelle :global(.huelle-buehne) { height: 520px; }
+  }
+</style>

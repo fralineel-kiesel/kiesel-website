@@ -7,12 +7,17 @@
 //   wert:    anfangs gewählte Farbe
 //   legende: Beschriftung; zeigeName: gewählte Farbe daneben anzeigen
 //   groesse: Durchmesser des Farbpunkts (34 = 44 px Tippfläche, 28 auf dem Handy)
+//   zeile:   Beschriftung nur für Screenreader, Farbname sichtbar rechts neben den Punkten
+//            (z.B. auf der 3D-Bühne). Farben von aussen über --fw-ink (Text und Ring).
+// Meldet jede Wahl als Ereignis „kiesel:farbe“ (detail.farbe = Name).
 import { FARBEN, FARBNAMEN } from '../data/farben.js';
 
-const { name = 'farbe', wert = 'Himmelblau', legende = 'Farbe', zeigeName = true, groesse = 34 } = Astro.props;
+const { name = 'farbe', wert = 'Himmelblau', legende = 'Farbe', zeigeName = true, groesse = 34, zeile = false, class: klasse } = Astro.props;
 ---
-<fieldset class="farbwaehler" style={`--punkt: ${groesse}px`} data-farbwaehler>
-  <legend class:list={[{ vh: !zeigeName }]}>{legende}{zeigeName && <>: <span data-farbname>{wert}</span></>}</legend>
+<fieldset class:list={['farbwaehler', { 'farbwaehler--zeile': zeile }, klasse]} style={`--punkt: ${groesse}px`} data-farbwaehler>
+  {zeile
+    ? <legend class="vh">{legende}</legend>
+    : <legend class:list={[{ vh: !zeigeName }]}>{legende}{zeigeName && <>: <span data-farbname>{wert}</span></>}</legend>}
   <div class="punkte">
     {FARBNAMEN.map((farbe) => (
       <label title={farbe}>
@@ -22,10 +27,12 @@ const { name = 'farbe', wert = 'Himmelblau', legende = 'Farbe', zeigeName = true
       </label>
     ))}
   </div>
+  {/* Der Screenreader sagt die gewählte Farbe schon beim Radio-Knopf, darum aria-hidden */}
+  {zeile && zeigeName && <span class="name" aria-hidden="true" data-farbname>{wert}</span>}
 </fieldset>
 
 <style>
-  .farbwaehler { border: 0; margin: 0; padding: 0; min-width: 0; }
+  .farbwaehler { border: 0; margin: 0; padding: 0; min-width: 0; color: var(--fw-ink, var(--ink)); }
   legend { padding: 0; margin-bottom: var(--space-3); font-size: 15px; font-weight: 600; }
   .punkte { display: flex; flex-wrap: wrap; gap: 6px; }
   label { position: relative; display: block; cursor: pointer; }
@@ -45,17 +52,26 @@ const { name = 'farbe', wert = 'Himmelblau', legende = 'Farbe', zeigeName = true
     background: var(--farbe);
     box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18);
   }
-  input:checked + .ring { border-color: var(--ink); }
-  label:hover input:not(:checked) + .ring { border-color: var(--line); }
+  input:checked + .ring { border-color: var(--fw-ink, var(--ink)); }
+  label:hover input:not(:checked) + .ring { border-color: var(--fw-hover, var(--line)); }
   input:focus-visible + .ring { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* Zeile: Punkte und Name nebeneinander (Richtung von aussen umstellbar) */
+  .farbwaehler--zeile {
+    display: flex;
+    flex-direction: var(--fw-richtung, row);
+    align-items: center;
+    gap: var(--fw-abstand, var(--space-2));
+  }
+  .farbwaehler--zeile .punkte { gap: 2px; flex-wrap: nowrap; }
+  .name { min-width: 96px; font-size: 15px; font-weight: 600; }
 </style>
 
 <script>
   // Gewählten Farbnamen in der Beschriftung nachführen und ein Ereignis melden
   document.querySelectorAll('[data-farbwaehler]').forEach((gruppe) => {
     gruppe.addEventListener('change', (e) => {
-      const anzeige = gruppe.querySelector('[data-farbname]');
-      if (anzeige) anzeige.textContent = e.target.value;
+      gruppe.querySelectorAll('[data-farbname]').forEach((anzeige) => { anzeige.textContent = e.target.value; });
       gruppe.dispatchEvent(new CustomEvent('kiesel:farbe', { bubbles: true, detail: { farbe: e.target.value } }));
     });
   });

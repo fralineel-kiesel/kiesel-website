@@ -55,6 +55,9 @@ Alles oben beschreibt die **alte Seite** im Repo-Root. Sie bleibt unverändert o
 
 - `main` = alte Seite (nicht anfassen). `v2` = Sammelbranch für Kiesel 2.0.
 - Jede Etappe auf eigenem Branch, **Pull Request immer nach `v2`**, nie nach `main`. Erst wenn alles fertig ist, geht `v2` nach `main`.
+- **Verboten, bis das ganze Projekt fertig ist und der Nutzer es ausdrücklich verlangt:** jeder Pull Request mit Basis `main`, auch `v2` → `main`, und jeder Push auf `main`. Beim Erstellen eines PR die Basis **immer ausdrücklich** auf `v2` setzen (`base: v2`) und vorher prüfen: GitHub und das PR-Werkzeug nehmen sonst den Standard-Branch. Der war bis 27.9.2026 `main`, so ist PR #5 passiert (v2 → main gemergt, danach `main` per Reset auf `950cbb1` zurückgesetzt). Seither ist der Standard-Branch auf GitHub `v2`; die ausdrückliche Basis bleibt trotzdem Pflicht.
+- Etappen-Branches starten von `origin/v2`, nicht von `main`. Neue Sitzungen bekommen ihren Branch vom Standard-Branch (jetzt `v2`). Startet einer trotzdem auf `main`: zuerst `git fetch origin v2 && git reset --hard origin/v2` (nur solange der Branch noch keine eigenen Commits hat) und mit `git log --oneline origin/v2..HEAD` prüfen, dass nur eigene Commits im PR landen.
+- Veröffentlicht wird über `.github/workflows/pages.yml`. Die Datei liegt nur auf `v2`, darum lösen nur Pushes auf `v2` (oder ein manueller Start unter Actions) ein Deployment aus. Eine Änderung an der alten Seite auf `main` geht erst damit online.
 - Etappen:
   1. Fundament (Astro, Designsystem, Bausteine, Seitengerüst, Deployment)
   2. Zeichen-Motor (Handys als SVG aus JS, nach `design/generator/lib.py`)
@@ -76,9 +79,10 @@ Alles oben beschreibt die **alte Seite** im Repo-Root. Sie bleibt unverändert o
 - `src/layouts/BaseLayout.astro`: `<head>`, Thema-Skript, Header, optional Unterleiste (`unterleiste="k1|pro"`), Footer
 - `src/components/`: Bausteine als `.astro`, Namen deutsch ohne Umlaute
   - Gerüst: `Header`, `HandysMenue` (Aufklappmenü), `MobilMenue` (Burger, `<dialog>`), `Unterleiste`, `Footer`, `ThemaUmschalter`, `WarenkorbKnopf`, `Platzhalter`
-  - Bausteine: `Knopf`, `Chip`, `GlasChip`, `ZoomLeiste`, `Farbwaehler`, `Schalter`, `Zaehler`, `Feld`, `Icon`, `Logo`, `HandyPlatzhalter` (wird ab Etappe 3 durch `handy()` ersetzt)
-- `src/styles/tokens.css`: **alle** Designwerte als CSS-Variablen. `global.css`: Schriften, Grundlagen, Schriftklassen `.t-display/.t-1/.t-2/.t-3/.t-lead/.t-text/.t-small`
-- `src/data/`: `farben.js` (5 Produktfarben à 7 Töne), `modelle.js` (Namen, Preise), `navigation.js` (alle Menüs, Etappen). Menüs und Preise nur hier ändern.
+  - Bausteine: `Knopf`, `Chip`, `GlasChip`, `ZoomLeiste`, `Farbwaehler` (`zeile` = Name rechts, Farben über `--fw-ink`), `Schalter`, `Zaehler`, `Feld`, `Icon`, `Logo`, `Akkordeon` (Button mit `aria-expanded` in Überschrift), `Buehne` (Verlaufskasten), `Buehne3D` (siehe unten), `HandyPlatzhalter` (alt, nur noch auf `/designsystem/`)
+  - `startseite/`: Abschnitte der Startseite (`ModellKarte`, `Kennzahlen`, `ZoomTeaser`, `FunktionsKacheln`, `HuelleTeaser`)
+- `src/styles/tokens.css`: **alle** Designwerte als CSS-Variablen. `global.css`: Schriften, Grundlagen, Schriftklassen `.t-display/.t-1/.t-2/.t-3/.t-4/.t-zahl/.t-lead/.t-text/.t-small`
+- `src/data/`: `farben.js` (5 Produktfarben à 7 Töne), `modelle.js` (Namen, Preise, Texte der Modellkarten), `navigation.js` (alle Menüs, Etappen), `faq.js` (Fragen und Antworten). Menüs, Preise und Texte nur hier ändern.
 - `src/lib/kiesel-draw/`: **Zeichen-Motor** (Etappe 2), Übersetzung von `lib.py`/`scene.py`. Reine Funktionen, liefern SVG als Text, laufen im Build (Frontmatter) und im Browser (`<script>`). Einstieg `index.js`:
   - `handy({ ansicht: 'vorne'|'hinten'|'seite', modell: 'k1'|'pro', farbe, huelle, led, hoehe, drehung, boden })` → fertiges `<svg>`. `farbe`/`huelle`: PAL-Name, Hex (`palette()` leitet die 7 Töne ab) oder Palette. `led`: `off|call|msg|charge|full|low|privacy|flash` oder Hex. `hoehe: null` = Grösse per CSS
   - `panorama({ zoom, cx, cy, breite, hoehe, punkte })`, `crop()`, `begrenze()`, `ZOOM_TARGETS`; `blumeBild({ fokus: 'Blume (3x Tele)'|…|0…1, staerke })`, `BLUME_FOKUS`, `blumeUnschaerfe()`; `innenleben({ modell: 'se'|'k1'|'pro' })` → `{ svg, legende }`
@@ -86,8 +90,14 @@ Alles oben beschreibt die **alte Seite** im Repo-Root. Sie bleibt unverändert o
   - `PAL` = `FARBEN` aus `data/farben.js` (nur dort ändern), `MODELS`/`geo`/`camrow` 1:1 aus `lib.py`. LED-Farben aus der alten `css/handy.css`, mid/edge/o1/o2 an `kiesel-kamera.png` geeicht. Seitenansicht aus `side()` der alten Seite (lib.py hat keine)
   - Jede Zeichnung braucht ein eigenes ID-Präfix (`pid`), sonst übernehmen Handys gegenseitig ihre Verläufe. `uid()` macht das automatisch, getrennt für Build und Browser
   - `zufall.js`: Pythons `random.Random` bitgenau, damit Bäume/Blumen wie in der Vorlage stehen
+  - `ausschnitt.js`: `crop()`/`begrenze()` einzeln, damit Seiten den Panorama-Ausschnitt im Browser ändern können, ohne `scene.js` zu laden
+- `src/lib/kiesel-3d/`: **3D-Kiesel** (Etappe 3, three.js). `pruefen.js` (ohne three.js!) sagt, ob 3D erlaubt ist: nicht bei `prefers-reduced-motion`, unter 4 Kernen, Datensparmodus, ohne WebGL 2 oder nur mit Software-Grafik (`failIfMajorPerformanceCaveat`). `buehne.js` (Renderer, Licht, Steuerung, Schleife, Wächter), `modell.js` (Formen und Materialien, Masse aus `models.js`, Farben aus `PAL`), `texturen.js` (Rückseite, Sperrbildschirm per Canvas 2D)
+  - `Buehne3D.astro` zeigt immer zuerst die 2D-Grafik und lädt `buehne.js` (samt three.js, eigene Datei) nur per `import()`, wenn `pruefen.js` ja sagt. Zustand steht auf dem Element: `data-modus="2d|laedt|3d"`, `data-grund`
+  - Notausgänge zur Laufzeit: WebGL-Kontextverlust und Wächter (nach 3 Aufwärmbildern Median der Bilder 4–15 über 40 ms, Notbremse bei 3 Bildern hintereinander über 100 ms) → zurück auf 2D. Rendert nur bei Bewegung, max. 60 fps, Pause ausser Sicht/im Hintergrund, Pixeldichte max. 1.5 (Touch) bzw. 2
+  - Drehteller statt Kamerafahrt: OrbitControls steuert eine unsichtbare Kamera, gedreht wird das Handy, Licht bleibt fest
+  - Testschalter in der Adresse: `?3d=software` (Software-Grafik erlaubt, für Tests), `?3d=foto` (dazu Wächter aus, nur fürs Foto-Skript)
 - `src/pages/designsystem/spielwiese.astro`: versteckte Werkbank (noindex) für alle Zeichenfunktionen; Einstellungen stehen in der Adresse (`?modell=k1&farbe=Mattschwarz&ansicht=hinten&huelle=Mattweiss&led=call`, `&zoom=8&cx=846&cy=331&punkte=1`, `&fokus=0.3&blende=24`)
-- `scripts/`: Prüfwerkzeuge für den Motor (siehe Werkzeuge), Ausgabe in `scripts/ausgabe/` (nicht im Repo)
+- `scripts/`: Prüfwerkzeuge (siehe Werkzeuge), Ausgabe in `scripts/ausgabe/` (nicht im Repo). `dist-server.mjs`: Mini-Server für `dist/` unter `/kiesel-website/v2/`, mit gzip
 - `src/lib/pfad.js`: `pfad('kaufen/')` für jeden internen Link (setzt den base-Pfad davor). `format.js`: `chf(1200)` → `CHF 1’200.–`
 - `src/scripts/warenkorb.js`: Warenkorb in `localStorage["kiesel-warenkorb"]`
 - `src/assets/fonts/`: Unbounded + Instrument Sans (variable woff2, 400–600, latin) + OFL
@@ -113,3 +123,7 @@ Alles oben beschreibt die **alte Seite** im Repo-Root. Sie bleibt unverändert o
 - Zeichen-Motor prüfen (nach jeder Änderung in `src/lib/kiesel-draw/`):
   - `npm run pruefe:zeichenmotor`: vergleicht 212 Fälle Zeichen für Zeichen mit den Python-Originalen in `design/generator/` (braucht Python 3; sonst `PYTHON=…`). Muss immer ✓ sein
   - `npm run fotos:zeichenmotor`: Screenshots der Spielwiese + deckungsgleicher Vergleich mit den PNGs in `bilder/original/` (braucht Python 3 mit Pillow und einmalig `npx playwright install chromium`; dauert ca. 4 Min.). Nur eine Vorlage: `python scripts/vorlagen-vergleich.py hero` nach einem Lauf
+- Startseite prüfen (nach Änderungen an Startseite oder `src/lib/kiesel-3d/`):
+  - `npm run pruefe:startseite`: Playwright-Tests, u.a. greift die 2D-Ausweichlösung (reduced motion, 2 Kerne, Datensparen, Software-Grafik, Kontextverlust, Wächter) und lädt dann kein three.js, FAQ mit Tastatur, keine andere Seite lädt three.js. Muss immer ✓ sein
+  - `npm run fotos:startseite`: Artboards und Seite (1440/390, hell/dunkel) nebeneinander plus 3D-Bühne in allen Farben → `scripts/ausgabe/startseite/`
+  - Headless Chrome hat keine Grafikkarte: `--use-angle=swiftshader --enable-unsafe-swiftshader` erzwingt Software-WebGL. Damit bleibt `requestAnimationFrame` nach ein paar Bildern stehen; `--disable-gpu-vsync --disable-frame-rate-limit` löst das, aber dann hängen Screenshots (darum misst `pruefe:startseite` Pixel direkt aus der Leinwand)

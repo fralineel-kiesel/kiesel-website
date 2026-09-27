@@ -1,0 +1,65 @@
+---
+// Modellkarte „Welcher Kiesel passt zu dir?“ (model_card() in design/generator/gen2.py).
+// Das Handy zeichnet der Zeichen-Motor schon beim Build: fertiges SVG im HTML, kein JS.
+//
+// Echter Massstab: Beide SVGs bekommen dieselbe Anzahl Pixel pro Zeichen-Einheit (--px).
+// Die Höhe eines SVGs ist dann (Handyhöhe + 2 × 200 Rand) × --px. So ist der Kiesel 1
+// auf dem Bildschirm genau 1238/1315 so hoch wie der Pro, wie in echt.
+import Knopf from '../Knopf.astro';
+import { handy } from '../../lib/kiesel-draw/phone.js';
+import { MODELS } from '../../lib/kiesel-draw/models.js';
+import { MODELLE, abPreis } from '../../data/modelle.js';
+import { pfad } from '../../lib/pfad.js';
+
+const { modell } = Astro.props;
+const m = MODELLE[modell];
+const vbh = MODELS[modell].H + 400; // Höhe der viewBox (siehe handy() in phone.js)
+const svg = handy({ ansicht: 'vorne', modell, farbe: m.karte.farbe, hoehe: null, label: `${m.name} in ${m.karte.farbe}, Vorderseite` });
+---
+<article class="karte">
+  <div class="bild" style={`--vbh: ${vbh}`} set:html={svg} />
+  <h3 class="t-2">{m.name}</h3>
+  <p class="unter t-muted">{m.karte.unter}</p>
+  <ul role="list" class="eckdaten">
+    {m.karte.eckdaten.map((e) => <li>{e}</li>)}
+  </ul>
+  <p class="preis">{abPreis(modell)}</p>
+  <div class="knoepfe">
+    <Knopf art="primaer" href={pfad(m.pfad)}>Mehr erfahren<span class="vh"> über den {m.name}</span></Knopf>
+    <Knopf art="sekundaer" href={pfad('kaufen/')}>Kaufen<span class="vh">: {m.name}</span></Knopf>
+  </div>
+</article>
+
+<style>
+  .karte {
+    /* Pixel pro Zeichen-Einheit: Desktop 440 px für die Pro-viewBox (1715), Handy 300 px */
+    --px: calc(300px / 1715);
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-5);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-l);
+    background: var(--surface);
+  }
+  .bild {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    /* Platz für das grössere Handy (Pro) plus 10 %, beide Karten gleich hoch */
+    height: calc(1715 * var(--px) * 1.1);
+    margin-bottom: calc(var(--space-5) + var(--space-1));
+  }
+  .bild :global(svg) {
+    width: auto;
+    height: calc(var(--vbh) * var(--px));
+  }
+  .unter { margin: var(--space-2) 0 var(--space-5); }
+  .eckdaten { margin: 0 0 var(--space-5); }
+  .eckdaten li { padding: var(--space-3) 0; border-top: 1px solid var(--line); }
+  .preis { margin-bottom: var(--space-4); font-size: var(--fs-text); font-weight: 600; }
+  .knoepfe { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+
+  @media (min-width: 900px) {
+    .karte { --px: calc(440px / 1715); padding: calc(var(--space-6) + var(--space-2)); }
+  }
+</style>
