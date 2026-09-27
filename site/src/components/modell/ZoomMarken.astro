@@ -1,0 +1,65 @@
+---
+// Markierungen der acht versteckten Details (ZOOM_TARGETS), liegen über dem Kamerabild.
+// Sie sind HTML statt SVG, damit sie bei jedem Zoom gleich gross und scharf bleiben (das
+// Bild darunter wird ja absichtlich unscharf). Lage und Deckkraft setzt kamera-zoom.js
+// in jedem Bild: Ab 3.5x tauchen sie auf, ab 5x sind sie ganz da. Klick = hinfliegen.
+// Echte Knöpfe: Solange eine Marke unsichtbar ist (visibility: hidden), ist sie auch
+// nicht per Tab erreichbar.
+import { ZOOM_TARGETS } from '../../lib/kiesel-draw/ausschnitt.js';
+---
+<div class="marken">
+  {ZOOM_TARGETS.map(([name], i) => (
+    <button type="button" class="marke" data-marke={i} style="visibility: hidden" aria-label={`${name}: hinzoomen`}>
+      <span class="ring" aria-hidden="true"></span>
+      <span class="name" aria-hidden="true">{name}</span>
+    </button>
+  ))}
+</div>
+
+<style>
+  .marken { position: absolute; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+  /* --d = Durchmesser des Rings, wächst mit dem Zoom (setzt kamera-zoom.js), damit der
+     Ring das Detail umrahmt statt es zu verdecken. Wie im Artboard: Kreis um den Punkt. */
+  .marke {
+    --d: 44px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: var(--d);
+    height: var(--d);
+    margin: calc(var(--d) / -2) 0 0 calc(var(--d) / -2);
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-full);
+    background: transparent;
+    cursor: zoom-in;
+    pointer-events: auto;
+  }
+  .ring {
+    position: absolute;
+    inset: 0;
+    border: 2.5px solid var(--marke);
+    border-radius: var(--radius-full);
+    box-shadow: 0 0 0 1px rgb(12 17 22 / 0.3), inset 0 0 0 1px rgb(12 17 22 / 0.3);
+  }
+  .name {
+    position: absolute;
+    top: 50%;
+    left: calc(100% + var(--space-2));
+    transform: translateY(-50%);
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+    background: var(--glass);
+    color: var(--glass-ink);
+    font-family: var(--body);
+    font-size: var(--fs-small);
+    font-weight: 600;
+    line-height: 1.3;
+    white-space: nowrap;
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+  }
+  .marke[data-seite="links"] .name { left: auto; right: calc(100% + var(--space-2)); }
+  .marke:hover .ring { border-width: 3.5px; }
+  .marke:focus-visible { outline: 3px solid var(--glass-on); outline-offset: 2px; }
+</style>

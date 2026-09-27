@@ -1,0 +1,118 @@
+---
+// Zoom-Skala unter den Kamera-Demos: ein stufenloser Regler und darunter die Stufen als Chips.
+// Der Regler ist ein echtes <input type="range">, logarithmisch (0.5x … max): Sonst lägen
+// 0.5x bis 3x auf dem ersten Viertel. Werte 0…1000, die Umrechnung macht kamera-zoom.js.
+// Die Spur zeigt, welche Kamera gerade arbeitet (z.B. Hauptkamera | Tele).
+//   max: grösster Zoom   stufen: Chips   aktiv: gedrückter Chip beim Laden
+//   abschnitte: [[von, bis, Name, betont], …] für die Beschriftung der Spur
+//   label: für Screenreader   gruppe: Name der Chip-Gruppe (pro Seite eindeutig)
+//   Slot: steht rechts neben den Chips (z.B. der Schalter „Mit Kiesel 1 vergleichen“)
+import Chip from '../Chip.astro';
+
+const { max, stufen, aktiv, abschnitte, label = 'Zoom', gruppe } = Astro.props;
+const lage = (z) => Math.log(z / 0.5) / Math.log(max / 0.5); // 0 … 1 auf der Spur
+---
+<div class="zoom-skala">
+  <div class="spur-rahmen">
+    <div class="abschnitte" aria-hidden="true">
+      {abschnitte.map(([von, bis, name, betont]) => (
+        <span class:list={['abschnitt', { betont }]} style={`--von: ${lage(von)}; --bis: ${lage(bis)}`}>
+          <span class="name">{name}</span>
+        </span>
+      ))}
+      {stufen.map((s) => <span class="strich" style={`--an: ${lage(Number(s))}`}></span>)}
+    </div>
+    <input class="regler" type="range" min="0" max="1000" step="1" aria-label={label} data-zoom-regler />
+  </div>
+  <div class="zeile">
+    <div class="stufen" role="group" aria-label="Zoomstufen">
+      {stufen.map((s) => <Chip gruppe={gruppe} gedrueckt={s === aktiv} data-stufe={s}>{s}x</Chip>)}
+    </div>
+    <slot />
+  </div>
+</div>
+
+<style>
+  /* Der Griff ist 28 px breit. Seine Mitte fährt darum von 14 px bis Breite − 14 px,
+     und genau dort liegen auch die Abschnitte und Striche. */
+  .zoom-skala { --griff: 28px; display: flex; flex-direction: column; gap: var(--space-3); }
+  .spur-rahmen { position: relative; padding-top: 22px; }
+  .abschnitte { position: absolute; inset: 22px 0 auto; height: 44px; pointer-events: none; }
+  .abschnitt {
+    position: absolute;
+    top: 20px;
+    height: 4px;
+    left: calc(var(--griff) / 2 + (100% - var(--griff)) * var(--von));
+    width: calc((100% - var(--griff)) * (var(--bis) - var(--von)));
+    border-radius: var(--radius-full);
+    background: var(--line);
+  }
+  .abschnitt.betont { background: var(--accent); }
+  .name {
+    position: absolute;
+    bottom: 16px;
+    left: var(--space-1);
+    font-family: var(--body);
+    font-size: var(--fs-small);
+    font-weight: 600;
+    line-height: 1;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .betont .name { color: var(--accent); }
+  .strich {
+    position: absolute;
+    top: 14px;
+    left: calc(var(--griff) / 2 + (100% - var(--griff)) * var(--an));
+    width: 2px;
+    height: 16px;
+    margin-left: -1px;
+    border-radius: 1px;
+    background: var(--muted);
+    opacity: 0.6;
+  }
+
+  /* Regler: nur der Griff ist sichtbar, die Spur zeichnen die Abschnitte darunter */
+  .regler {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 44px;
+    margin: 0;
+    background: transparent;
+    -webkit-appearance: none;
+    appearance: none;
+    cursor: pointer;
+    touch-action: pan-y;
+  }
+  .regler::-webkit-slider-runnable-track { height: 44px; background: transparent; }
+  .regler::-moz-range-track { height: 44px; background: transparent; }
+  .regler::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: var(--griff);
+    height: var(--griff);
+    margin-top: 8px;
+    border: 3px solid var(--bg);
+    border-radius: var(--radius-full);
+    background: var(--ink);
+    box-shadow: 0 1px 6px rgb(0 0 0 / 0.25);
+  }
+  .regler::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+    border: 3px solid var(--bg);
+    border-radius: var(--radius-full);
+    background: var(--ink);
+    box-shadow: 0 1px 6px rgb(0 0 0 / 0.25);
+  }
+  .regler:focus-visible { outline: none; }
+  .regler:focus-visible::-webkit-slider-thumb { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .regler:focus-visible::-moz-range-thumb { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  .zeile { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-3); }
+  .stufen { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+  .stufen :global(.chip) { min-height: 44px; min-width: 52px; justify-content: center; }
+  @media (min-width: 900px) {
+    .zeile { flex-direction: row; justify-content: space-between; align-items: center; }
+  }
+</style>
