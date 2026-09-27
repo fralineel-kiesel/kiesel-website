@@ -11,6 +11,8 @@
 //   Knöpfe      abgerundete Quader an den Seiten (Positionen aus geo())
 //   Linsen      Metallring, dunkle Fassung, farbig schimmerndes Linsenglas, Deckglas
 //   Blitz, Mikrofon
+//   Unterkante  USB-C-Buchse und Lautsprecher-Löcher (unterkante.js), nur aus Licht und
+//               Schatten, ohne echte Löcher im Rahmen
 import {
   Group, Mesh, Shape, ExtrudeGeometry, ShapeGeometry, LatheGeometry, CircleGeometry, SphereGeometry, PlaneGeometry,
   MeshPhysicalMaterial, MeshStandardMaterial, MeshBasicMaterial, CanvasTexture, SRGBColorSpace, NoColorSpace,
@@ -20,6 +22,7 @@ import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.j
 import { MODELS, DICKE, geo, camrow } from '../kiesel-draw/models.js';
 import { palette } from '../kiesel-draw/colors.js';
 import { leinwand, zeichneRuecken, zeichneRauheit, zeichneBildschirm, zeichneBodenschatten } from './texturen.js';
+import { unterkante } from './unterkante.js';
 
 const MM = 0.1;
 
@@ -191,6 +194,18 @@ export async function baueKiesel({ modell = 'pro', farbe = 'Himmelblau', maxAnis
   teil(new CircleGeometry(1.7, 32), blitzLed, px(fl), py(c), hinten + 0.5);
   teil(new CircleGeometry(1.5, 32), deckglas, px(fl), py(c), hinten + 0.95);
   teil(new CircleGeometry(0.6, 16), mikro, px(mic), py(c), hinten + 0.01);
+
+  // ── Unterkante: USB-C und Lautsprecher ──────────────────────────────────
+  // Fase im polierten Metall der Linsenringe, Innenwand im dunklen Rahmenton (färbt beim
+  // Farbwechsel mit), Grund fast schwarz ohne Umgebungsglanz, Zunge der USB-C-Buchse etwas
+  // heller. Alles bekannte Materialarten, also kein zusätzliches Shader-Programm.
+  const lochGrund = merke(new MeshStandardMaterial({ color: '#030405', roughness: 1, envMapIntensity: 0.1 }));
+  const usbZunge = merke(new MeshStandardMaterial({ color: '#1E2328', roughness: 0.5, envMapIntensity: 0.6 }));
+  const unten = unterkante({ H, flachBis: W / 2 - R });
+  teil(unten.fase, ringe);
+  teil(unten.wand, mikro);
+  teil(unten.grund, lochGrund);
+  teil(unten.zunge, usbZunge);
 
   // ── Bodenschatten ───────────────────────────────────────────────────────
   // Statt echter Schatten (Shadow Maps = die Szene ein zweites Mal zeichnen) ein weicher
