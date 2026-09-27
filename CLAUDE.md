@@ -27,19 +27,20 @@ Farben: Mattschwarz, Titangrau, Himmelblau, Mattweiss, Kieselbeige. Hülle: CHF 
   - Daten/Hilfen oben per Destrukturierung holen; Funktionen anderer Dateien nur im Rumpf als `K.name()` aufrufen
   - Neu zugewiesene Variablen (`CART`, `activePart`, `macroMode`, `manual`) bleiben in ihrer Datei, Zugriff nur über exportierte Funktionen
   - Handys: `front/back/side()` in `handy.js`, Platzhalter `data-phone` + `SLOTS`
-- `bilder/original/`: Quell-PNGs (hero, farben, kamera, huelle, icon, poster), werden nicht geladen
-- `bilder/*-{640,1024,1600,2400}.{webp,jpg}` + Favicons: erzeugt von `werkzeuge/bilder.py`
+- `bilder/original/`: Quell-PNGs (hero, farben, kamera, huelle, icon), werden nicht geladen
+- `bilder/*-{640,1024,1600,2400}.{webp,jpg}`, Favicons und `vorschau.jpg` (1200×630, Link-Vorschau): erzeugt von `werkzeuge/bilder.py`
+- `schriften/`: Unbounded und Instrument Sans als variable woff2 (nur Stärke 400–600, Zeichensatz latin) + OFL-Lizenzen, eingebunden per `@font-face` oben in `basis.css`
 - `kiesel-familie.html`: alte Einzeldatei, nur Referenz
 
 ## Regeln
 
 - **Interaktives bleibt SVG aus JS** (Farbwähler, Bauteile, Explosion, Simulator, Zoom, LED, Zen, Privacy, Makro, Vergleich, Hülle, Kaufen). **Statisches nutzt PNG-Grafiken** über `<picture>` (WebP + JPEG-Fallback, `srcset`/`sizes`, `width`/`height`, `loading="lazy"` ausser Hero mit `fetchpriority="high"`) in `<figure class="shot">`.
-- **Ohne Server lauffähig** (Doppelklick, `file://`): keine ES-Module, kein `fetch()`, keine externen SVG-Sprites. Nur Google Fonts sind extern.
+- **Ohne Server lauffähig** (Doppelklick, `file://`): keine ES-Module, kein `fetch()`, keine externen SVG-Sprites. Nichts wird extern geladen, auch die Schriften liegen lokal.
 - **Design:** Schriften Unbounded (`--display`) und Instrument Sans (`--body`). Farben nur über CSS-Variablen auf `:root`; Handyfarben `--k-*`, Hüllenfarben `--c-*`. Hell- und Dunkelmodus müssen beide funktionieren (`prefers-color-scheme` + `data-theme`).
 - **Sprache:** Schweizer Hochdeutsch, immer „ss“ statt „ß“ (Grösse, gross, schliessen).
 
 ## Werkzeuge
 
 - Bilder neu erzeugen: `python werkzeuge/bilder.py` (Python 3.12 + Pillow; falls `python` nicht gefunden: `%LOCALAPPDATA%\Programs\Python\Python312\python.exe`)
-- Git: Repo https://github.com/fralineel-kiesel/kiesel-website, Branch `main`. Falls `git` nicht gefunden: `C:\Program Files\Git\cmd\git.exe`. Erzeugte Bilder werden bewusst mit versioniert (Seite muss ohne Build laufen).
+- Git: Repo https://github.com/fralineel-kiesel/kiesel-website, Branch `main`. Online über GitHub Pages: https://fralineel-kiesel.github.io/kiesel-website/ (darum nur relative Pfade, nie mit `/` am Anfang; Gross-/Kleinschreibung muss exakt stimmen). Falls `git` nicht gefunden: `C:\Program Files\Git\cmd\git.exe`. Erzeugte Bilder werden bewusst mit versioniert (Seite muss ohne Build laufen).
 - Testen unter `file://`: headless Chrome (`C:\Program Files\Google\Chrome\Application\chrome.exe --headless=new --dump-dom|--screenshot=…`), Unterseite per Hash in der URL. Headless ist mindestens ca. 504 px breit, also Handy-Breite im eingebauten Browser mit Viewport „mobile“ prüfen. Die Vorschau zeigt lokale Dateien nur als statischen Schnappschuss, für Klicktests einen temporären lokalen Server nutzen.
