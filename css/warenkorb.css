@@ -8,13 +8,14 @@
 .dr-head h2{font-size:22px}
 .xbtn{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--bg);cursor:pointer;font-size:20px;line-height:1}
 .dr-body{flex:1;overflow-y:auto;padding:8px 22px 22px}
-.item{display:grid;grid-template-columns:44px 1fr auto;gap:14px;padding:16px 0;border-bottom:1px solid var(--line)}
+/* minmax(0,1fr): die Mittelspalte darf schmaler als ihr Inhalt werden, sonst schiebt sie den Preis aus dem Drawer */
+.item{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:14px;padding:16px 0;border-bottom:1px solid var(--line)}
 .item .sw-dot{width:44px;height:44px;border-radius:12px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
 .item .sw-dot.case{border-radius:50%;box-shadow:inset 0 0 0 6px var(--cc),inset 0 0 0 44px rgba(255,255,255,.55)}
 .item h4{margin:0;font-size:16px;font-weight:600}
 .item .meta{color:var(--muted);font-size:14px}
 .item .pr{font-weight:600;text-align:right;white-space:nowrap}
-.qty{display:flex;align-items:center;gap:8px;margin-top:8px}
+.qty{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px}
 .qty button{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:var(--bg);cursor:pointer}
 .qty .rm{width:auto;border:0;background:none;color:var(--muted);text-decoration:underline;margin-left:8px;font-size:14px;height:auto}
 .dr-up{margin-top:18px;padding:16px;border-radius:16px;background:var(--accent-soft);display:flex;justify-content:space-between;gap:12px;align-items:center}
