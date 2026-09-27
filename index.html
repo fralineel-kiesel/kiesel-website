@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kiesel 1 und Kiesel 1 Pro</title>
+<link rel="icon" type="image/png" sizes="32x32" href="bilder/favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="bilder/favicon-192.png">
+<link rel="apple-touch-icon" href="bilder/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;500;600&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/basis.css">
+<link rel="stylesheet" href="css/handy.css">
+<link rel="stylesheet" href="css/seiten.css">
+<link rel="stylesheet" href="css/warenkorb.css">
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <clipPath id="pebClip"><path d="M54 18C79 17 96 31 95 52C94 72 76 84 50 84C24 84 5 73 5 53C5 33 27 19 54 18Z"/></clipPath>
+    <symbol id="pebble" viewBox="0 0 100 100">
+      <path d="M54 18C79 17 96 31 95 52C94 72 76 84 50 84C24 84 5 73 5 53C5 33 27 19 54 18Z" style="fill:var(--pb,currentColor)"/>
+      <g clip-path="url(#pebClip)">
+        <path d="M-4 70C26 62 56 50 104 34" fill="none" style="stroke:var(--pv,#fff)" stroke-width="7" stroke-linecap="round"/>
+        <path d="M-4 80C30 72 64 60 104 46" fill="none" style="stroke:var(--pv,#fff)" stroke-width="2.2" stroke-linecap="round" opacity=".7"/>
+      </g>
+    </symbol>
+  </defs>
+</svg>
+
+<header class="top">
+  <div class="wrap nav">
+    <a class="brand" href="#/uebersicht" aria-label="Kiesel, zur Übersicht">
+      <svg viewBox="0 0 100 100" aria-hidden="true"><use href="#pebble" style="--pb:var(--ink);--pv:var(--accent)"/></svg>
+      <span>kiesel</span>
+    </a>
+    <nav class="links" aria-label="Hauptnavigation">
+      <a href="#/uebersicht">Übersicht</a>
+      <a href="#/design">Design</a>
+      <a href="#/funktionen">Funktionen</a>
+      <a href="#/technik">Technik</a>
+      <a href="#/vergleich">Vergleich</a>
+      <a href="#/akku">Akku</a>
+      <a href="#/zubehoer">Zubehör</a>
+    </nav>
+    <button class="cartbtn" id="cartBtn" aria-label="Warenkorb öffnen">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1.2 11.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8L5 8Z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg>
+      <b id="cartCount"></b>
+    </button>
+    <a class="buy" href="#/kaufen">Kaufen</a>
+  </div>
+</header>
+
+<main>
+
+<!-- ================= ÜBERSICHT ================= -->
+<div class="view" data-view="uebersicht">
+  <section class="hero wrap">
+    <h1 class="rise">Kiesel 1</h1>
+    <p class="tagline rise d2">Jetzt auch als Pro.</p>
+    <p class="lead rise d2">Zwei Handys, die in jede Hand passen. Der Kiesel 1 in der Grösse vom SE, der Kiesel 1 Pro so gross wie das 13 mini, mit Tele-Kamera. Beide halten bis in die Nacht.</p>
+    <div class="cta rise d2">
+      <a class="btn btn-primary" href="#/kaufen">Jetzt konfigurieren</a>
+      <a class="btn btn-ghost" href="#/vergleich">Grösse vergleichen</a>
+    </div>
+    <p class="price rise d2">ab CHF 1’200.– in fünf Farben</p>
+    <!-- Hero-Bild: grösstes Element beim Start, darum fetchpriority="high" und kein loading="lazy" -->
+    <figure class="shot hero-shot rise d2">
+      <picture>
+        <source type="image/webp" srcset="bilder/hero-640.webp 640w, bilder/hero-1024.webp 1024w, bilder/hero-1600.webp 1600w, bilder/hero-2400.webp 2400w" sizes="(max-width: 1200px) calc(100vw - 48px), 1152px">
+        <img src="bilder/hero-1024.jpg" srcset="bilder/hero-640.jpg 640w, bilder/hero-1024.jpg 1024w, bilder/hero-1600.jpg 1600w, bilder/hero-2400.jpg 2400w" sizes="(max-width: 1200px) calc(100vw - 48px), 1152px" width="2880" height="1800" fetchpriority="high" decoding="async" alt="Kiesel 1 Pro in Himmelblau von hinten mit zwei Kameras in der Ecke, daneben der Kiesel 1 von vorne mit Sperrbildschirm um 07:32">
+      </picture>
+    </figure>
+  </section>
+
+  <section class="sec">
+    <div class="wrap">
+      <h2>Zwei Grössen.<br>Eine Idee.</h2>
+      <p class="lead">Beide im echten Massstab zueinander. Gleiche Farben, gleiche Tasten, gleicher Chip. Der Pro hat etwas mehr Fläche, mehr Akku und eine zweite Kamera.</p>
+      <div class="pick">
+        <div class="pick-col">
+          <div class="pick-ph" data-phone="pick-k1"></div>
+          <h3>Kiesel 1</h3>
+          <p class="pick-sub">So gross wie das iPhone SE von 2016.</p>
+          <ul class="pick-list"><li>ca. 4.7″ OLED, 1 bis 90 Hz</li><li>Eine Kamera, 0.5x bis 1x, digital bis 5x</li><li>ca. 3000 mAh</li><li>256 GB bis 1 TB</li></ul>
+          <p class="pick-price">ab CHF 1’200.–</p>
+          <div class="cta-row"><a class="btn btn-primary" href="#/kaufen" data-go-model="k1">Kaufen</a><a class="btn btn-ghost" href="#/design" data-go-model="k1">Ansehen</a></div>
+        </div>
+        <div class="pick-col">
+          <div class="pick-ph" data-phone="pick-pro"></div>
+          <h3>Kiesel 1 Pro</h3>
+          <p class="pick-sub">So gross wie das iPhone 13 mini.</p>
+          <ul class="pick-list"><li>ca. 5.4″ OLED, 1 bis 90 Hz</li><li>0.5x bis 1x plus 3x Tele mit OIS</li><li>ca. 3600 mAh und Mini-Vapor-Chamber</li><li>256 GB bis 2 TB</li></ul>
+          <p class="pick-price">ab CHF 1’500.–</p>
+          <div class="cta-row"><a class="btn btn-primary" href="#/kaufen" data-go-model="pro">Kaufen</a><a class="btn btn-ghost" href="#/design" data-go-model="pro">Ansehen</a></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap">
+      <h2>Weniger drin.<br>Mehr Akku.</h2>
+      <p class="lead">Das SE von 2016 hatte 1624 mAh. Der Kiesel 1 hat dieselbe Grundfläche, aber fast doppelt so viel. Scroll weiter und schau, woher der Platz kommt.</p>
+      <div class="story" style="margin-top:24px">
+        <div class="story-vis">
+          <div class="mah"><span id="mahNum">1624</span><small>mAh</small></div>
+          <p class="mah-note">Grobe Schätzung</p>
+          <svg class="xray" viewBox="0 0 420 480" role="img" aria-label="Röntgenblick ins Gehäuse: Akku wächst, weggelassene Teile verschwinden">
+            <rect class="xr-out" x="70" y="20" width="200" height="422" rx="32"/>
+            <rect class="xr-part" x="92" y="40" width="156" height="82" rx="10"/>
+            <text class="xr-lab" x="170" y="86" text-anchor="middle">Platine</text>
+            <rect class="xr-bat" id="xrBat" x="92" y="136" width="156" height="270" rx="14"/>
+            <g id="xrJack"><rect class="xr-part" x="92" y="414" width="40" height="16" rx="6"/><line class="xr-strike" x1="88" y1="432" x2="136" y2="412"/></g>
+            <g id="xrSim"><rect class="xr-part" x="256" y="190" width="10" height="72" rx="4"/><line class="xr-strike" x1="252" y1="266" x2="270" y2="186"/></g>
+            <g id="xrHome"><circle class="xr-part" cx="170" cy="422" r="14"/><line class="xr-strike" x1="154" y1="438" x2="186" y2="406"/></g>
+            <rect class="xr-side" id="xrSide" x="320" y="20" width="36" height="422" rx="12"/>
+            <text class="xr-lab" x="338" y="462" text-anchor="middle" id="xrThick">7.6 mm</text>
+            <text class="xr-lab" x="170" y="462" text-anchor="middle">Rückseite, geöffnet</text>
+          </svg>
+        </div>
+        <div class="steps" id="steps">
+          <div class="step" data-step="0"><h3>2016: das Original</h3><p>1624 mAh. Der Akku musste sich den Platz mit Kopfhörerbuchse, SIM-Schlitten und Home-Button teilen.</p></div>
+          <div class="step" data-step="1"><h3>Klinke raus</h3><p>Die Buchse unten links samt Elektronik dahinter fällt weg. Wer Kabel will, nimmt USB-C.</p><span class="delta">+ Platz unten</span></div>
+          <div class="step" data-step="2"><h3>SIM-Schlitten raus</h3><p>Nur noch eSIM. Kein Schlitten, keine Feder, kein Auswurfloch mehr an der Seite.</p><span class="delta">+ Platz an der Seite</span></div>
+          <div class="step" data-step="3"><h3>Home-Button raus</h3><p>Face ID übernimmt. Das Display darf bis an den Rand, und die Mechanik darunter verschwindet.</p><span class="delta">+ Platz unten und grösseres Display</span></div>
+          <div class="step" data-step="4"><h3>1.4 mm dicker</h3><p>Aus 7.6 werden 9 mm. In der Hand fällt das kaum auf, beim Akku-Volumen macht es viel aus.</p><span class="delta">+ Volumen für alles</span></div>
+          <div class="step" data-step="5"><h3>Silizium-Kohlenstoff</h3><p>Neue Zellchemie mit mehr Energie pro Kubikzentimeter. Beim Pro bringt dasselbe Rezept aus den 2438 mAh vom 13 mini rund 3600 mAh.</p><span class="delta">ca. 3000 mAh im Kiesel 1</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap two">
+      <div class="stage-c sim-stage" data-phone="sim"></div>
+      <div>
+        <h2>Denkt mit,<br>spart mit.</h2>
+        <p class="lead">Display, Chip und Modem arbeiten nur so viel, wie gerade nötig ist. Wähl eine Situation und schau zu.</p>
+        <div class="scen" role="group" aria-label="Nutzungssituation">
+          <button class="chip-btn" data-scen="lock" aria-pressed="false">Sperrbildschirm</button>
+          <button class="chip-btn" data-scen="chat" aria-pressed="true">Chatten</button>
+          <button class="chip-btn" data-scen="scroll" aria-pressed="false">Scrollen</button>
+          <button class="chip-btn" data-scen="video" aria-pressed="false">Video</button>
+          <button class="chip-btn" data-scen="download" aria-pressed="false">Grosser Download</button>
+          <button class="chip-btn" data-scen="photo" aria-pressed="false">Foto</button>
+        </div>
+        <div class="meters">
+          <div class="meter"><small>Display</small><b id="mHz">60 Hz</b><span class="sub">LTPO, 1 bis 90 Hz</span></div>
+          <div class="meter"><small>CPU-Kerne</small><div class="cores" id="mCores" aria-hidden="true"><i class="s"></i><i class="e"></i><i class="e"></i><i class="e"></i></div><span class="sub" id="mClock"></span></div>
+          <div class="meter"><small>Modem</small><b id="mNet">4G</b><span class="sub" id="mNetSub">5G schläft</span></div>
+          <div class="meter"><small>Wärme an der Rückseite</small><div class="heat" id="mHeat" aria-hidden="true"><i></i><i></i><i></i></div><span class="sub" id="mHeatSub"></span></div>
+        </div>
+        <p class="note" id="mNote" aria-live="polite"></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap">
+      <div class="head-row">
+        <h2>Zoom ohne<br>Kamerabuckel.</h2>
+        <div class="mswitch" data-mswitch role="group" aria-label="Modell"></div>
+      </div>
+      <p class="lead" id="camLead"></p>
+      <div class="cam-view" style="margin-top:36px">
+        <svg id="camSvg" viewBox="0 0 800 500" preserveAspectRatio="xMidYMid slice" aria-label="Beispielbild: Bergsee mit Alpen, zoombar">
+          <g id="scene">
+            <rect width="800" height="500" fill="#BFD9EA"/>
+            <circle cx="640" cy="110" r="40" fill="#F6D58A"/>
+            <polygon points="0,300 120,176 210,250 330,118 440,236 548,150 664,262 800,184 800,500 0,500" fill="#8DA6B9"/>
+            <polygon points="330,118 306,150 318,146 330,160 344,146 356,152" fill="#FFFFFF"/>
+            <polygon points="548,150 530,172 540,170 548,180 558,168 566,172" fill="#FFFFFF"/>
+            <polygon points="120,176 104,196 114,194 122,202 130,192 138,196" fill="#FFFFFF"/>
+            <circle cx="330" cy="116" r="1.6" fill="#C0392B"/><rect x="329.6" y="108" width=".8" height="8" fill="#5B3A28"/>
+            <polygon points="0,362 150,302 300,352 470,292 640,344 800,300 800,500 0,500" fill="#5D7E66"/>
+            <rect x="0" y="400" width="800" height="100" fill="#6BA0C2"/>
+            <rect x="80" y="430" width="120" height="3" rx="1.5" fill="#fff" opacity=".45"/>
+            <rect x="420" y="455" width="160" height="3" rx="1.5" fill="#fff" opacity=".45"/>
+            <rect x="170" y="318" width="34" height="22" fill="#8B5A3C"/>
+            <polygon points="164,320 187,302 210,320" fill="#5B3A28"/>
+            <polygon points="520,420 520,390 540,420" fill="#F4F1E6"/>
+            <rect x="508" y="420" width="42" height="6" rx="3" fill="#7A4F36"/>
+            <polygon points="700,330 690,356 710,356" fill="#3E5C47"/><polygon points="724,322 712,356 736,356" fill="#3E5C47"/>
+          </g>
+        </svg>
+        <div class="cam-hud"><span id="zMode">optisch, variable Linse</span><span><b id="zVal">1.0x</b></span></div>
+      </div>
+      <div class="zoom-row">
+        <input type="range" id="zoom" min="0.5" max="5" step="0.1" value="1" aria-label="Zoomstufe">
+        <div class="zoom-pre" id="zoomPre"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap">
+      <h2>Kleine Ideen,<br>die viel ausmachen.</h2>
+      <div class="feat">
+        <a href="#/funktionen"><h3><span class="dot" style="background:#35D07F"></span>RGB-Licht</h3><p>Der Blitz neben der Kamera leuchtet farbig bei Anrufen, Nachrichten und beim Laden.</p></a>
+        <a href="#/funktionen"><h3>Zen-Modus</h3><p>Ein Druck auf den Action-Button, und alles ist still. Keine Anrufe, kein Brummen, kein Licht.</p></a>
+        <a href="#/funktionen"><h3>Privacy-Modus</h3><p>Kamera, Mikrofon und GPS werden elektrisch getrennt. Nicht nur gesperrt, wirklich ab.</p></a>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap">
+      <h2>Tiefer eintauchen</h2>
+      <div class="tiles">
+        <a class="tile" href="#/design"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#pebble" style="--pb:var(--k-frame);--pv:var(--bg)"/></svg><div><h3>Design</h3><p>Fünf Farben, Kameras in der Ecke, der Blitz gleich daneben.</p></div></a>
+        <a class="tile" href="#/funktionen"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#pebble" style="--pb:var(--k-frame);--pv:var(--bg)"/></svg><div><h3>Funktionen</h3><p>RGB-Licht, Zen, Privacy und Makro zum Ausprobieren.</p></div></a>
+        <a class="tile" href="#/technik"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#pebble" style="--pb:var(--k-frame);--pv:var(--bg)"/></svg><div><h3>Technik</h3><p>Zerleg beide Kiesel Schicht für Schicht und vergleich die Daten.</p></div></a>
+        <a class="tile" href="#/vergleich"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#pebble" style="--pb:var(--k-frame);--pv:var(--bg)"/></svg><div><h3>Vergleich</h3><p>Neben SE, 13 mini und 18 Pro, im echten Massstab.</p></div></a>
+        <a class="tile" href="#/akku"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#pebble" style="--pb:var(--k-frame);--pv:var(--bg)"/></svg><div><h3>Akku</h3><p>Rechne aus, wie lange sie bei deinem Alltag halten.</p></div></a>
+        <a class="tile" href="#/zubehoer"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#pebble" style="--pb:var(--k-frame);--pv:var(--bg)"/></svg><div><h3>Zubehör</h3><p>Die Kiesel-Hülle, milchig hinten und fest am Rand.</p></div></a>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ================= DESIGN ================= -->
+<div class="view" data-view="design" hidden>
+  <section class="sec">
+    <div class="wrap">
+      <div class="head-row">
+        <h2>Rund wie ein Kiesel.<br>Matt wie ein Bachstein.</h2>
+        <div class="mswitch" data-mswitch role="group" aria-label="Modell"></div>
+      </div>
+      <p class="lead">Titanrahmen, matte Rückseite, sanfte Kanten. Tipp auf die Kameras, den Blitz oder eine Taste, um mehr zu erfahren.</p>
+      <div class="design-stage">
+        <div data-phone="d-front"></div>
+        <div data-phone="d-side"></div>
+        <div data-phone="d-back"></div>
+      </div>
+      <div class="design-bar">
+        <div>
+          <div class="color-name" data-color-name></div>
+          <p class="color-note" data-color-note></p>
+        </div>
+        <div class="swatches" data-swatches role="group" aria-label="Farbe wählen"></div>
+      </div>
+      <div class="detail" id="dDetail" aria-live="polite">
+        <h3>Tipp auf ein Bauteil</h3>
+        <p>Die Kameras, den Blitz, die Tasten oder den MagSafe-Ring anklicken.</p>
+      </div>
+      <div class="facts3">
+        <div><h3>Kamera in der Ecke</h3><p>Die Hauptkamera sitzt genau im Mittelpunkt der Gehäuserundung. Der Abstand zu beiden Kanten ist gleich, dadurch wirkt die Rückseite ruhig.</p></div>
+        <div><h3>Pro: zwei Linsen in einer Reihe</h3><p>Wie beim iPhone 7 Plus nebeneinander statt im Quadrat, aber jede Linse mit eigenem Ring. Mikrofon und Blitz folgen in derselben Linie.</p></div>
+        <div><h3>Ein Blitz, der mehr kann</h3><p>Die LED ist RGB. Beim Fotografieren neutral weiss, sonst ein kleines farbiges Signal für Anrufe, Nachrichten und den Akkustand.</p></div>
+      </div>
+      <h2 style="margin-top:88px">Fünf Farben</h2>
+      <figure class="shot" style="margin-top:28px">
+        <picture>
+          <source type="image/webp" srcset="bilder/farben-640.webp 640w, bilder/farben-1024.webp 1024w, bilder/farben-1600.webp 1600w, bilder/farben-2400.webp 2400w" sizes="(max-width: 1200px) calc(100vw - 48px), 1152px">
+          <img src="bilder/farben-1024.jpg" srcset="bilder/farben-640.jpg 640w, bilder/farben-1024.jpg 1024w, bilder/farben-1600.jpg 1600w, bilder/farben-2400.jpg 2400w" sizes="(max-width: 1200px) calc(100vw - 48px), 1152px" width="2880" height="1600" loading="lazy" decoding="async" alt="Fünf Kiesel von hinten nebeneinander: Himmelblau, Mattschwarz, Titangrau, Mattweiss und Kieselbeige">
+        </picture>
+      </figure>
+    </div>
+  </section>
+</div>
+
+<!-- ================= FUNKTIONEN ================= -->
+<div class="view" data-view="funktionen" hidden>
+  <section class="sec" style="padding-bottom:0">
+    <div class="wrap">
+      <div class="head-row">
+        <h2>Funktionen</h2>
+        <div class="mswitch" data-mswitch role="group" aria-label="Modell"></div>
+      </div>
+      <p class="lead">Vier Dinge, die es so bei keinem aktuellen iPhone gibt. Alle zum Ausprobieren.</p>
+      <figure class="shot shot-narrow" style="margin-top:36px">
+        <picture>
+          <source type="image/webp" srcset="bilder/kamera-640.webp 640w, bilder/kamera-1024.webp 1024w, bilder/kamera-1600.webp 1600w, bilder/kamera-2400.webp 2400w" sizes="(max-width: 928px) calc(100vw - 48px), 880px">
+          <img src="bilder/kamera-1024.jpg" srcset="bilder/kamera-640.jpg 640w, bilder/kamera-1024.jpg 1024w, bilder/kamera-1600.jpg 1600w, bilder/kamera-2400.jpg 2400w" sizes="(max-width: 928px) calc(100vw - 48px), 880px" width="2400" height="1600" loading="lazy" decoding="async" alt="Nahaufnahme der Kameraecke eines Kiesel 1 Pro in Kieselbeige: zwei Linsen, das Mikrofon und der RGB-Blitz, der blau leuchtet">
+        </picture>
+        <figcaption>Blau pulsierend: ein Anruf. Die anderen Signale kannst du gleich darunter ausprobieren.</figcaption>
+      </figure>
+    </div>
+  </section>
+  <section class="sec" style="border-top:0">
+    <div class="wrap two">
+      <div class="stage-c led-stage" id="ledStage" data-led="call"><div data-phone="fx-led"></div></div>
+      <div>
+        <h2>Ein Punkt,<br>der Bescheid gibt.</h2>
+        <p class="lead">Die Blitz-LED ist RGB. Liegt das Handy mit dem Display nach unten, siehst du trotzdem, was los ist. Ohne dass das Display aufwacht.</p>
+        <div class="scen" role="group" aria-label="Ereignis">
+          <button class="chip-btn" data-led-btn="call" aria-pressed="true">Anruf</button>
+          <button class="chip-btn" data-led-btn="msg" aria-pressed="false">Nachricht</button>
+          <button class="chip-btn" data-led-btn="charge" aria-pressed="false">Lädt</button>
+          <button class="chip-btn" data-led-btn="full" aria-pressed="false">Voll geladen</button>
+          <button class="chip-btn" data-led-btn="low" aria-pressed="false">Akku tief</button>
+          <button class="chip-btn" data-led-btn="privacy" aria-pressed="false">Privacy-Modus</button>
+          <button class="chip-btn" data-led-btn="flash" aria-pressed="false">Fotoblitz</button>
+          <button class="chip-btn" data-led-btn="off" aria-pressed="false">Aus</button>
+        </div>
+        <p class="led-desc" id="ledDesc" aria-live="polite"></p>
+      </div>
+    </div>
+  </section>
+  <section class="sec">
+    <div class="wrap two rev">
+      <div>
+        <h2>Zen-Modus</h2>
+        <p class="lead">Ein Druck auf den Action-Button, und das Handy ist still. Keine Anrufe, keine Benachrichtigungen, keine Vibration und kein RGB-Licht. Nochmal drücken, und alles ist wieder da.</p>
+        <div style="margin-top:28px"><button class="tgl" id="zenBtn" aria-pressed="false"><span class="tr" aria-hidden="true"></span><span id="zenLbl">Zen-Modus einschalten</span></button></div>
+        <p class="fine">Reine Software, braucht also keinen Millimeter Platz.</p>
+      </div>
+      <div class="stage-c zen-stage" id="zenStage"><div data-phone="fx-zen"></div></div>
+    </div>
+  </section>
+  <section class="sec">
+    <div class="wrap two">
+      <div>
+        <svg class="priv-svg" id="privSvg" viewBox="0 0 640 380" role="img" aria-label="Schema: Kamera, Mikrofon und GPS sind über Schalter mit der Platine verbunden">
+          <g id="pvRows"></g>
+          <rect class="pv-box" x="440" y="120" width="170" height="140" rx="16"/>
+          <text class="pv-t" x="525" y="178" text-anchor="middle">Platine</text>
+          <text class="pv-s" x="525" y="200" text-anchor="middle" id="pvMain">alles verbunden</text>
+          <circle class="pv-ind" id="pvInd" cx="525" cy="232" r="9" fill="var(--line)"/>
+        </svg>
+      </div>
+      <div>
+        <h2>Privacy-Modus</h2>
+        <p class="lead">Halte den Action-Button zwei Sekunden, und drei Schalter trennen Kamera, Mikrofon und GPS von der Stromversorgung. Das ist keine Software-Sperre: Ohne Strom kann auch eine gehackte App nichts aufnehmen.</p>
+        <div style="margin-top:28px"><button class="tgl" id="privBtn" aria-pressed="false"><span class="tr" aria-hidden="true"></span><span id="privLbl">Privacy-Modus einschalten</span></button></div>
+        <p class="fine">Solange der Modus aktiv ist, leuchtet der RGB-Punkt dauerhaft orange. Nachrichten und Internet funktionieren weiter. Telefonieren geht erst wieder, wenn das Mikrofon zurück ist.</p>
+      </div>
+    </div>
+  </section>
+  <section class="sec">
+    <div class="wrap">
+      <h2>Ganz nah dran.</h2>
+      <p class="lead">Die Ultraweitwinkel-Stellung fokussiert bis auf wenige Zentimeter, bei beiden Modellen. Der Pro kann mit der 3x-Tele zusätzlich ab ca. 20 cm scharfstellen. Die Blume bleibt gross, der Hintergrund verschwimmt weich.</p>
+      <div class="macro-view" style="margin-top:36px">
+        <svg id="mBg" viewBox="0 0 800 500" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+          <rect width="800" height="500" fill="#CFE6F2"/>
+          <ellipse cx="200" cy="330" rx="320" ry="120" fill="#9CC49A"/>
+          <ellipse cx="640" cy="320" rx="300" ry="110" fill="#8DB88C"/>
+          <circle cx="120" cy="250" r="46" fill="#5E8C5E"/><circle cx="170" cy="230" r="38" fill="#6A9A69"/>
+          <circle cx="660" cy="240" r="52" fill="#5E8C5E"/><circle cx="600" cy="258" r="34" fill="#6A9A69"/>
+          <rect x="0" y="350" width="800" height="150" fill="#7FB07A"/>
+          <circle cx="90" cy="400" r="9" fill="#F4D35E"/><circle cx="230" cy="430" r="8" fill="#E98AA8"/><circle cx="560" cy="410" r="10" fill="#F4D35E"/><circle cx="700" cy="440" r="8" fill="#FFFFFF"/><circle cx="330" cy="460" r="7" fill="#FFFFFF"/><circle cx="480" cy="470" r="9" fill="#E98AA8"/>
+        </svg>
+        <svg viewBox="0 0 800 500" preserveAspectRatio="xMidYMid slice" aria-label="Blume im Vordergrund">
+          <g id="flower">
+            <path d="M400 300 C404 380 396 440 402 560" stroke="#3E7A46" stroke-width="10" fill="none"/>
+            <ellipse cx="438" cy="420" rx="40" ry="14" fill="#4E8F57" transform="rotate(-28 438 420)"/>
+            <g fill="#F2A7C3">
+              <ellipse cx="400" cy="230" rx="30" ry="72"/><ellipse cx="400" cy="230" rx="30" ry="72" transform="rotate(45 400 300)"/>
+              <ellipse cx="400" cy="230" rx="30" ry="72" transform="rotate(90 400 300)"/><ellipse cx="400" cy="230" rx="30" ry="72" transform="rotate(135 400 300)"/>
+              <ellipse cx="400" cy="230" rx="30" ry="72" transform="rotate(180 400 300)"/><ellipse cx="400" cy="230" rx="30" ry="72" transform="rotate(225 400 300)"/>
+              <ellipse cx="400" cy="230" rx="30" ry="72" transform="rotate(270 400 300)"/><ellipse cx="400" cy="230" rx="30" ry="72" transform="rotate(315 400 300)"/>
+            </g>
+            <circle cx="400" cy="300" r="38" fill="#F4C542"/>
+            <circle cx="390" cy="290" r="4" fill="#C98F17"/><circle cx="410" cy="296" r="4" fill="#C98F17"/><circle cx="398" cy="312" r="4" fill="#C98F17"/><circle cx="414" cy="314" r="3" fill="#C98F17"/><circle cx="384" cy="306" r="3" fill="#C98F17"/>
+          </g>
+        </svg>
+        <div class="cam-hud"><span id="macroLbl">Hauptkamera 1x</span></div>
+      </div>
+      <div class="macro-row" role="group" aria-label="Aufnahmeart">
+        <button class="chip-btn" data-macro="main" aria-pressed="true">1x normal</button>
+        <button class="chip-btn" data-macro="macro" aria-pressed="false">Makro</button>
+        <button class="chip-btn" data-macro="tele" aria-pressed="false">3x Tele-Nahfokus</button>
+      </div>
+      <p class="fine" id="macroNote"></p>
+    </div>
+  </section>
+</div>
+
+<!-- ================= TECHNIK ================= -->
+<div class="view" data-view="technik" hidden>
+  <section class="sec" style="padding-bottom:0">
+    <div class="wrap">
+      <div class="head-row">
+        <h2>Was drinsteckt</h2>
+        <div class="mswitch" data-mswitch role="group" aria-label="Modell"></div>
+      </div>
+      <p class="lead">Scroll langsam weiter. Der Kiesel nimmt sich selbst auseinander.</p>
+    </div>
+  </section>
+  <div class="xp-track" id="xpTrack">
+    <div class="xp-sticky wrap">
+      <svg class="xp-svg" id="xpSvg" viewBox="0 0 640 680" role="img" aria-label="Explosionszeichnung"></svg>
+      <div class="xp-side">
+        <h2 id="xpTitle"></h2>
+        <p class="lead" id="xpText" aria-live="polite"></p>
+        <label class="fine" for="xpRange" style="display:block;margin-top:22px">Zerlegen</label>
+        <input class="xp-range" type="range" id="xpRange" min="0" max="100" value="0">
+      </div>
+    </div>
+  </div>
+  <section class="sec">
+    <div class="wrap">
+      <h2>Technische Daten</h2>
+      <div class="tbl-wrap">
+      <table class="spec-table">
+        <thead><tr><th scope="col"><span style="position:absolute;left:-9999px">Merkmal</span></th><th scope="col">Kiesel 1</th><th scope="col">Kiesel 1 Pro</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Masse</th><td><em>123.8 × 58.6 × 9 mm</em></td><td><em>131.5 × 64.2 × 9 mm</em></td></tr>
+          <tr><th scope="row">Gewicht</th><td>ca. 140 g</td><td>ca. 170 g</td></tr>
+          <tr><th scope="row">Display</th><td>ca. 4.7″ OLED, LTPO 1 bis 90 Hz</td><td>ca. 5.4″ OLED, LTPO 1 bis 90 Hz</td></tr>
+          <tr><th scope="row">Chip</th><td>A20 Pro abgespeckt: 1 Super- und 3 Effizienz-Kerne, ca. 4 GPU-Kerne, max. 4 GHz, 2 nm</td><td>gleich</td></tr>
+          <tr><th scope="row">Kühlung</th><td>passiv über die Rückseite</td><td><em>Mini-Vapor-Chamber</em> plus Rückseite</td></tr>
+          <tr><th scope="row">Akku</th><td><em>ca. 3000 mAh</em>, Silizium-Kohlenstoff</td><td><em>ca. 3600 mAh</em>, Silizium-Kohlenstoff</td></tr>
+          <tr><th scope="row">Hauptkamera</th><td>variable Linse 0.5x bis 1x (ca. 13 bis 26 mm), 50 MP, Makro</td><td>gleich</td></tr>
+          <tr><th scope="row">Tele</th><td>–</td><td><em>3x (ca. 78 mm)</em>, OIS, Nahfokus ab ca. 20 cm</td></tr>
+          <tr><th scope="row">Zoom</th><td>digital bis 5x</td><td>optisch 3x, digital bis 10x</td></tr>
+          <tr><th scope="row">Licht</th><td>RGB-Blitz mit Benachrichtigungen</td><td>gleich</td></tr>
+          <tr><th scope="row">Privacy</th><td>Hardware-Trennung von Kamera, Mikrofon und GPS</td><td>gleich</td></tr>
+          <tr><th scope="row">Tasten</th><td>Action-Button, Kamera-Knopf, Lautstärke, Seitentaste</td><td>gleich</td></tr>
+          <tr><th scope="row">Anschlüsse</th><td>USB-C, MagSafe, Qi, nur eSIM</td><td>gleich</td></tr>
+          <tr><th scope="row">Mobilfunk</th><td>4G als Standard, 5G nur bei hoher Datenlast</td><td>gleich</td></tr>
+          <tr><th scope="row">Software</th><td>iOS 27 mit schlankem Look, Zen- und Privacy-Modus</td><td>gleich</td></tr>
+          <tr><th scope="row">Farben</th><td>Mattschwarz, Titangrau, Himmelblau, Mattweiss, Kieselbeige</td><td>gleich</td></tr>
+          <tr><th scope="row">Speicher</th><td>256 GB, 512 GB, 1 TB</td><td>256 GB, 512 GB, 1 TB, <em>2 TB</em></td></tr>
+          <tr><th scope="row">Preis</th><td><em>CHF 1’200.–</em> bis 1’600.–</td><td><em>CHF 1’500.–</em> bis 2’300.–</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <h2 style="margin-top:88px">Bewusst weggelassen</h2>
+      <ul class="gone">
+        <li><s>Kopfhörer-Klinke</s><span>Platz geht an den Akku.</span></li>
+        <li><s>SIM-Schlitten</s><span>eSIM spart Schlitten, Feder und Mechanik.</span></li>
+        <li><s>Home-Button</s><span>Face ID erlaubt ein randloses Display.</span></li>
+        <li><s>Periskop-Kamera</s><span>Beim Pro reicht eine gerade 3x-Linse, beim Kiesel 1 die Kompaktkamera.</span></li>
+        <li><s>Grosse Vapor Chamber</s><span>Der gedrosselte Chip braucht höchstens eine kleine.</span></li>
+        <li><s>120 Hz</s><span>90 Hz fühlen sich fast gleich an und sparen Strom.</span></li>
+        <li><s>Zweiter Super-Kern</s><span>Im Alltag laufen fast nur die Effizienz-Kerne.</span></li>
+        <li><s>Dauer-5G</s><span>Das Modem schaltet nur bei Bedarf hoch.</span></li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<!-- ================= VERGLEICH ================= -->
+<div class="view" data-view="vergleich" hidden>
+  <section class="sec">
+    <div class="wrap">
+      <h2>Im echten Massstab</h2>
+      <p class="lead">Alle Geräte sind im selben Verhältnis gezeichnet. Wähl deinen Kiesel und einen Gegner.</p>
+      <div class="cmp-controls">
+        <div class="mswitch" data-mswitch role="group" aria-label="Modell"></div>
+        <div class="grp" role="group" aria-label="Vergleichsgerät" id="vsGrp"><span>gegen</span></div>
+      </div>
+      <div class="cmp-controls" style="margin-top:14px">
+        <div class="grp" role="group" aria-label="Darstellung"><span>Ansicht</span>
+          <button class="chip-btn" data-mode="side" aria-pressed="true">Nebeneinander</button>
+          <button class="chip-btn" data-mode="over" aria-pressed="false">Übereinander</button>
+        </div>
+        <button class="chip-btn" id="cardBtn" aria-pressed="false">Kreditkarte einblenden</button>
+      </div>
+      <div class="cmp-box">
+        <svg class="cmp-svg" id="cmpSvg" viewBox="0 0 640 510" role="img" aria-label="Grössenvergleich im Massstab"></svg>
+      </div>
+      <div class="stats" id="stats"></div>
+      <p class="fine">Kiesel-Werte sind Konzept-Schätzungen. Die Werte der iPhones stammen aus Herstellerangaben, die Akkukapazität des 13 mini aus Teardowns.</p>
+    </div>
+  </section>
+</div>
+
+<!-- ================= AKKU ================= -->
+<div class="view" data-view="akku" hidden>
+  <section class="sec">
+    <div class="wrap">
+      <h2>Hält er bei dir durch?</h2>
+      <p class="lead">Stell deinen typischen Tag ein. Der Rechner startet um 07:00 mit 100&nbsp;% und rechnet bis 23:00. Die restliche Zeit liegt das Handy im Standby.</p>
+      <div class="calc">
+        <div>
+          <div class="sl-row"><label for="hSurf">Surfen und Social Media <output id="oSurf"></output></label><input type="range" id="hSurf" min="0" max="10" step="0.5" value="3"></div>
+          <div class="sl-row"><label for="hVideo">Video <output id="oVideo"></output></label><input type="range" id="hVideo" min="0" max="6" step="0.5" value="1.5"></div>
+          <div class="sl-row"><label for="hMusic">Musik und Podcasts <output id="oMusic"></output></label><input type="range" id="hMusic" min="0" max="8" step="0.5" value="1"></div>
+          <div class="sl-row"><label for="hCam">Kamera und Navigation <output id="oCam"></output></label><input type="range" id="hCam" min="0" max="4" step="0.5" value="0.5"></div>
+          <p class="err" id="calcErr" role="alert"></p>
+        </div>
+        <div class="res" aria-live="polite">
+          <div class="res-big" id="rBig"></div>
+          <div class="batt"><div class="bh"><b>Kiesel 1</b><span id="rK"></span></div><div class="shell"><div class="fill" id="fK"></div></div><p id="pK"></p></div>
+          <div class="batt"><div class="bh"><b>Kiesel 1 Pro</b><span id="rP"></span></div><div class="shell"><div class="fill" id="fP"></div></div><p id="pP"></p></div>
+          <div class="batt se"><div class="bh"><b>iPhone SE (2016)</b><span id="rS"></span></div><div class="shell"><div class="fill" id="fS"></div></div><p id="pS"></p></div>
+        </div>
+      </div>
+      <p class="fine">So wird gerechnet: Basis sind die offiziellen SE-Werte (13 h Video und Surfen, 50 h Musik, 10 Tage Standby, Kamera und Navigation geschätzt mit 5 h). Der Kiesel 1 bekommt das Akkuverhältnis 3000 zu 1624 mAh obendrauf, Effizienzgewinne und Mehrverbrauch gelten als ausgeglichen. Beim Pro kommen 3600 mAh dazu, minus 10 % für das grössere Display.</p>
+    </div>
+  </section>
+</div>
+
+<!-- ================= ZUBEHÖR ================= -->
+<div class="view" data-view="zubehoer" hidden>
+  <section class="sec">
+    <div class="wrap">
+      <div class="head-row">
+        <h2>Die Kiesel-Hülle</h2>
+        <div class="mswitch" data-mswitch role="group" aria-label="Modell"></div>
+      </div>
+      <p class="lead">Hinten milchig, damit Farbe und Kiesel durchschimmern. Am Rand fest und griffig, in denselben fünf Farben wie die Handys. Und ein kleines bisschen höher als Display und Kamera.</p>
+      <figure class="shot shot-narrow" style="margin-top:36px">
+        <picture>
+          <source type="image/webp" srcset="bilder/huelle-640.webp 640w, bilder/huelle-1024.webp 1024w, bilder/huelle-1600.webp 1600w, bilder/huelle-2400.webp 2400w" sizes="(max-width: 928px) calc(100vw - 48px), 880px">
+          <img src="bilder/huelle-1024.jpg" srcset="bilder/huelle-640.jpg 640w, bilder/huelle-1024.jpg 1024w, bilder/huelle-1600.jpg 1600w, bilder/huelle-2400.jpg 2400w" sizes="(max-width: 928px) calc(100vw - 48px), 880px" width="2400" height="1800" loading="lazy" decoding="async" alt="Kiesel 1 Pro in Himmelblau mit milchiger Kiesel-Hülle, von hinten und von vorne">
+        </picture>
+        <figcaption>Unten kannst du Hüllenfarbe und Modell selbst ausprobieren.</figcaption>
+      </figure>
+      <div class="acc-stage">
+        <div data-phone="acc-front"></div>
+        <div data-phone="acc-side"></div>
+        <div data-phone="acc-back"></div>
+      </div>
+      <div class="acc-bar">
+        <div class="swatches" data-case-swatches role="group" aria-label="Farbe der Hülle"></div>
+        <button class="tgl" id="caseTgl" aria-pressed="true"><span class="tr" aria-hidden="true"></span><span>Hülle anzeigen</span></button>
+      </div>
+      <div class="facts3">
+        <div><h3>Milchige Rückseite</h3><p>Halbtransparent wie Eis auf einem Bergsee. Handyfarbe, Kiesel-Logo und MagSafe-Ring schimmern durch.</p></div>
+        <div><h3>Fester Rand</h3><p>Die Kanten sind aus griffigem, dämpfendem Material in Farbe. Trägt nur ca. 1.2 mm pro Seite auf.</p></div>
+        <div><h3>Erhöhter Rahmen</h3><p>Steht ca. 0.8 mm über das Display und ca. 0.6 mm über die Kameras. Flach auf den Tisch gelegt, berührt nur die Hülle die Oberfläche.</p></div>
+      </div>
+      <div class="acc-buy">
+        <div><div class="fine" style="margin:0" id="accWhat"></div><div class="total">CHF 59.–</div></div>
+        <button class="btn btn-primary" id="accAdd">Hülle in den Warenkorb</button>
+        <span class="added" id="accAdded" aria-live="polite"></span>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ================= KAUFEN ================= -->
+<div class="view" data-view="kaufen" hidden>
+  <section class="sec">
+    <div class="wrap">
+      <h2>Dein Kiesel</h2>
+      <div class="shop">
+        <div class="shop-vis">
+          <div data-phone="shop"></div>
+          <div class="flip" role="group" aria-label="Ansicht">
+            <button class="chip-btn" data-flip="back" aria-pressed="true">Rückseite</button>
+            <button class="chip-btn" data-flip="front" aria-pressed="false">Vorderseite</button>
+          </div>
+        </div>
+        <div>
+          <div class="opt" style="border-top:0;padding-top:0">
+            <h3>Modell</h3>
+            <div class="models" role="group" aria-label="Modell wählen">
+              <button data-model-card="k1" aria-pressed="true"><b>Kiesel 1</b><span>SE-Grösse, ab CHF 1’200.–</span></button>
+              <button data-model-card="pro" aria-pressed="false"><b>Kiesel 1 Pro</b><span>13-mini-Grösse, ab CHF 1’500.–</span></button>
+            </div>
+          </div>
+          <div class="opt">
+            <h3>Farbe: <span data-color-name></span></h3>
+            <div class="swatches" data-swatches role="group" aria-label="Farbe wählen"></div>
+            <p class="hint" data-color-note></p>
+          </div>
+          <div class="opt">
+            <h3>Speicher</h3>
+            <div class="store" id="storeGrp" role="group" aria-label="Speicher wählen"></div>
+          </div>
+          <div class="opt">
+            <h3>Gravur, kostenlos</h3>
+            <label for="engr" class="hint" style="display:block;margin:0 0 8px">Bis 18 Zeichen, erscheint auf der Rückseite unter dem Kiesel.</label>
+            <input class="engr-in" id="engr" maxlength="18" autocomplete="off" placeholder="z.B. Linos Kiesel" aria-describedby="engrErr">
+            <p class="err" id="engrErr"></p>
+          </div>
+          <div class="sum">
+            <div><div class="what" id="sumWhat"></div><div class="total" id="sumTotal"></div></div>
+            <button class="btn btn-primary" id="addPhone">In den Warenkorb legen</button>
+          </div>
+          <p class="added" id="phoneAdded" aria-live="polite"></p>
+          <div class="upsell">
+            <div class="mini" data-phone="shop-case"></div>
+            <div>
+              <h3>Hülle dazu?</h3>
+              <p>Milchig hinten, fest am Rand, passend zu deinem <span id="upModel"></span>. CHF 59.–</p>
+              <div class="swatches" data-case-swatches role="group" aria-label="Farbe der Hülle"></div>
+              <button class="btn btn-ghost" id="upAdd" style="margin-top:14px">Hülle hinzufügen</button>
+              <p class="added" id="caseAdded" aria-live="polite"></p>
+            </div>
+          </div>
+          <p class="fine">Im Lieferumfang: dein Kiesel und ein USB-C-Kabel. Lieferzeit: sobald in Cupertino jemand zuhört.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+</main>
+
+<div class="drawer-bg" id="drawerBg"></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drT" aria-hidden="true">
+  <div class="dr-head"><h2 id="drT">Warenkorb</h2><button class="xbtn" id="drClose" aria-label="Warenkorb schliessen">×</button></div>
+  <div class="dr-body" id="drBody"></div>
+  <div class="dr-foot" id="drFoot"></div>
+</aside>
+
+<dialog id="orderDlg" aria-labelledby="dlgT">
+  <h3 id="dlgT">Fast geschafft</h3>
+  <p>Deine Bestellung:</p>
+  <ul id="dlgList"></ul>
+  <p id="dlgP"></p>
+  <div class="cta-row">
+    <button class="btn btn-primary" id="dlgClose">Weiterträumen</button>
+    <button class="btn btn-ghost" id="dlgEmpty">Warenkorb leeren</button>
+  </div>
+</dialog>
+
+<footer>
+  <div class="wrap">
+    <span>Kiesel 1 und Kiesel 1 Pro sind Fan-Konzepte und keine echten Produkte. Preise, Laufzeiten und Kiesel-Werte sind Schätzungen.</span>
+    <span>iPhone ist eine Marke von Apple Inc.</span>
+  </div>
+</footer>
+
+<!-- Reihenfolge ist wichtig: kern zuerst, start zuletzt -->
+<script src="js/kern.js" defer></script>
+<script src="js/daten.js" defer></script>
+<script src="js/handy.js" defer></script>
+<script src="js/auswahl.js" defer></script>
+<script src="js/startseite.js" defer></script>
+<script src="js/funktionen.js" defer></script>
+<script src="js/technik.js" defer></script>
+<script src="js/vergleich.js" defer></script>
+<script src="js/akku.js" defer></script>
+<script src="js/warenkorb.js" defer></script>
+<script src="js/router.js" defer></script>
+<script src="js/start.js" defer></script>
+</body>
+</html>

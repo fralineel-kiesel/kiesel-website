@@ -1,0 +1,15 @@
+# Lokale Claude-Einstellungen dieses Rechners (Berechtigungen, nicht teilen)
+.claude/settings.local.json
+
+# Python-Zwischenspeicher, entsteht beim Ausführen von werkzeuge/bilder.py
+__pycache__/
+*.pyc
+
+# Dateien, die Windows und macOS selbst anlegen
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Editor-Einstellungen
+.vscode/
+.idea/
