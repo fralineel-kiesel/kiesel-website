@@ -1,0 +1,204 @@
+---
+// Aufklappmenü „Handys“ nach Artboard „Menü «Handys» aufgeklappt“.
+//
+// Aufbau: ein echter <button> und direkt danach im HTML das Panel.
+// Warum direkt danach? Dann stimmt die Tab-Reihenfolge von selbst:
+// Handys → Links im Panel → Funktionen → …
+//
+// Bedienung:
+//   Maus:     Klick auf „Handys“ öffnet/schliesst, Klick daneben schliesst
+//   Tastatur: Enter/Leertaste öffnet/schliesst (macht der <button> von selbst),
+//             Escape schliesst und setzt den Fokus zurück auf „Handys“,
+//             mit Tab aus dem Panel hinaus schliesst es ebenfalls
+//   aria-expanded sagt Screenreadern, ob das Menü offen ist.
+import Icon from './Icon.astro';
+import HandyPlatzhalter from './HandyPlatzhalter.astro';
+import { MODELLE, abPreis } from '../data/modelle.js';
+import { HANDYS_SPALTEN } from '../data/navigation.js';
+import { pfad } from '../lib/pfad.js';
+
+const { aktiv = false } = Astro.props;
+---
+<div class="handys-menue" data-handys-menue>
+  <button type="button" class:list={['ausloeser', { aktiv }]} aria-expanded="false" aria-controls="handys-panel" data-ausloeser>
+    Handys
+    <Icon name="down" size={16} class="pfeil" />
+  </button>
+
+  <div class="panel" id="handys-panel" hidden data-panel>
+    <div class="container raster">
+      {(['k1', 'pro']).map((id) => {
+        const m = MODELLE[id];
+        return (
+          <a class="kachel" href={pfad(m.pfad)}>
+            <span class="bild"><HandyPlatzhalter modell={id} hoehe={id === 'pro' ? 180 : 170} /></span>
+            <span class="text">
+              <span class="name">{m.name}</span>
+              <span class="kurz">{m.kurz}</span>
+              <span class="preis">{abPreis(id)}</span>
+              <span class="mehr">Mehr erfahren <Icon name="arrow" size={16} /></span>
+            </span>
+          </a>
+        );
+      })}
+      {HANDYS_SPALTEN.map((spalte, i) => (
+        <div class="spalte">
+          <h2 class="spalten-titel" id={`handys-spalte-${i}`}>{spalte.titel}</h2>
+          <ul role="list" aria-labelledby={`handys-spalte-${i}`}>
+            {spalte.links.map((l) => <li><a href={pfad(l.pfad)}>{l.name}</a></li>)}
+          </ul>
+        </div>
+      ))}
+    </div>
+  </div>
+</div>
+
+<style>
+  .ausloeser {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: 8px 14px;
+    border: 0;
+    border-radius: var(--radius-full);
+    background: transparent;
+    color: var(--muted);
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.6;
+  }
+  .ausloeser:hover { color: var(--ink); }
+  .ausloeser.aktiv,
+  .ausloeser[aria-expanded="true"] { color: var(--ink); background: var(--raised); }
+  .ausloeser :global(.pfeil) { transition: transform 0.2s; }
+  .ausloeser[aria-expanded="true"] :global(.pfeil) { transform: rotate(180deg); }
+
+  /* Das Panel hängt unter der ganzen Kopfzeile, nicht nur unter dem Knopf.
+     Darum ist es absolut zur Kopfzeile (position: sticky/relative dort) positioniert. */
+  .panel {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    padding: 36px 0 44px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+    max-height: calc(100vh - var(--header-h));
+    overflow-y: auto;
+  }
+  .raster {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--space-5);
+  }
+  @media (min-width: 1180px) {
+    .raster { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 220px 220px; }
+  }
+
+  .kachel {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 20px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-l);
+    background: var(--bg);
+    color: var(--ink);
+    text-decoration: none;
+    transition: border-color 0.15s;
+  }
+  .kachel:hover { border-color: var(--muted); }
+  .bild {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 110px;
+    height: 190px;
+    flex-shrink: 0;
+  }
+  .text { display: flex; flex-direction: column; gap: 6px; }
+  .name {
+    font-family: var(--display);
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+  }
+  .kurz { font-size: 15px; color: var(--muted); }
+  .preis { margin-top: 6px; font-size: 15px; font-weight: 600; }
+  .mehr {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--accent);
+  }
+  .kachel:hover .mehr { text-decoration: underline; text-underline-offset: 4px; }
+
+  .spalte { display: flex; flex-direction: column; gap: 14px; }
+  .spalten-titel {
+    font-family: var(--body);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--muted);
+  }
+  .spalte ul { display: flex; flex-direction: column; gap: 14px; margin: 0; }
+  .spalte a {
+    font-size: 17px;
+    font-weight: 500;
+    line-height: 1.6;
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .spalte a:hover { color: var(--accent); }
+</style>
+
+<script>
+  document.querySelectorAll('[data-handys-menue]').forEach((menue) => {
+    const knopf = menue.querySelector('[data-ausloeser]');
+    const panel = menue.querySelector('[data-panel]');
+    // Der Schleier über der Seite gehört zur Kopfzeile (Header.astro)
+    const schleier = document.querySelector('[data-menue-schleier]');
+
+    const istOffen = () => knopf.getAttribute('aria-expanded') === 'true';
+
+    function oeffnen() {
+      knopf.setAttribute('aria-expanded', 'true');
+      panel.hidden = false;
+      if (schleier) schleier.hidden = false;
+    }
+    function schliessen(fokusZurueck = false) {
+      if (!istOffen()) return;
+      knopf.setAttribute('aria-expanded', 'false');
+      panel.hidden = true;
+      if (schleier) schleier.hidden = true;
+      if (fokusZurueck) knopf.focus();
+    }
+
+    // Maus und Tastatur: Ein <button> löst "click" auch bei Enter und Leertaste aus.
+    knopf.addEventListener('click', () => (istOffen() ? schliessen() : oeffnen()));
+
+    // Escape schliesst, egal wo im Menü der Fokus gerade ist
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && istOffen()) {
+        schliessen(menue.contains(document.activeElement));
+      }
+    });
+
+    // Klick ausserhalb von Knopf und Panel schliesst (auch Klick auf den Schleier)
+    document.addEventListener('pointerdown', (e) => {
+      if (istOffen() && !menue.contains(e.target)) schliessen();
+    });
+
+    // Fokus verlässt das Menü (Tab hinter den letzten Link oder Shift+Tab vor den Knopf)
+    menue.addEventListener('focusout', (e) => {
+      if (e.relatedTarget && !menue.contains(e.relatedTarget)) schliessen();
+    });
+
+    // Wird das Fenster schmal (Burger-Menü), das Desktop-Menü zu machen
+    matchMedia('(max-width: 899px)').addEventListener('change', (e) => { if (e.matches) schliessen(); });
+  });
+</script>

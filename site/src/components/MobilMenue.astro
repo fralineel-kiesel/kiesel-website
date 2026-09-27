@@ -1,0 +1,227 @@
+---
+// Burger-Menü fürs Handy (unter 900 px).
+// Das Artboard „Startseite Handy“ zeigt nur den geschlossenen Knopf. Das offene Menü ist
+// abgestimmt: Panel über die ganze Höhe, oben die zwei Modelle, darunter die übrigen
+// Menüpunkte, unten Kaufen als breiter Knopf.
+//
+// Technik: das HTML-Element <dialog> mit showModal(). Das bringt vieles gratis mit:
+//   • Escape schliesst
+//   • der Fokus springt hinein und bleibt drin (Tab läuft nicht in die Seite dahinter)
+//   • die Seite dahinter ist für Screenreader und Maus gesperrt
+//   • ::backdrop ist der Schleier dahinter
+// Wir müssen nur aria-expanded am Burger nachführen und den Fokus zurückgeben.
+import Icon from './Icon.astro';
+import Logo from './Logo.astro';
+import Knopf from './Knopf.astro';
+import HandyPlatzhalter from './HandyPlatzhalter.astro';
+import { MODELLE, abPreis } from '../data/modelle.js';
+import { HAUPTMENUE } from '../data/navigation.js';
+import { pfad, istAktiv } from '../lib/pfad.js';
+
+const aktuell = Astro.url.pathname;
+const weitere = HAUPTMENUE.filter((p) => !p.menue);
+---
+<button type="button" class="burger" aria-label="Menü öffnen" aria-expanded="false" aria-controls="mobil-menue" data-burger>
+  <Icon name="menu" size={24} />
+</button>
+
+<dialog class="mobil-menue" id="mobil-menue" aria-label="Menü" data-mobil-menue>
+  <div class="kopf">
+    <a class="marke" href={pfad()} aria-label="Kiesel, zur Startseite">
+      <Logo size={26} /><span>kiesel</span>
+    </a>
+    <button type="button" class="zu" aria-label="Menü schliessen" data-schliessen>
+      <Icon name="close" size={24} />
+    </button>
+  </div>
+
+  <nav class="inhalt" aria-label="Hauptnavigation">
+    <h2 class="gruppe">Handys</h2>
+    <ul role="list" class="modelle">
+      {(['k1', 'pro']).map((id) => {
+        const m = MODELLE[id];
+        return (
+          <li>
+            <a class="modell" href={pfad(m.pfad)} aria-current={istAktiv(aktuell, m.pfad) ? 'page' : undefined}>
+              <span class="bild"><HandyPlatzhalter modell={id} hoehe={id === 'pro' ? 76 : 72} /></span>
+              <span class="text">
+                <span class="name">{m.name}</span>
+                <span class="kurz">{m.kurz}</span>
+                <span class="preis">{abPreis(id)}</span>
+              </span>
+              <Icon name="arrow" size={20} class="pfeil" />
+            </a>
+          </li>
+        );
+      })}
+    </ul>
+
+    <ul role="list" class="links">
+      {weitere.map((p) => (
+        <li><a href={pfad(p.pfad)} aria-current={istAktiv(aktuell, p.pfad) ? 'page' : undefined}>{p.name}</a></li>
+      ))}
+      <li><a href={pfad('warenkorb/')}>Warenkorb</a></li>
+    </ul>
+
+    <div class="unten">
+      <Knopf href={pfad('kaufen/')} art="primaer" groesse="l" breit>Kaufen ab {abPreis('k1').replace('ab ', '')}</Knopf>
+    </div>
+  </nav>
+</dialog>
+
+<style>
+  .burger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-full);
+    background: transparent;
+    color: var(--ink);
+  }
+
+  /* Das <dialog> füllt den ganzen Bildschirm */
+  .mobil-menue {
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: var(--bg);
+    color: var(--ink);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .mobil-menue[open] { display: flex; flex-direction: column; animation: herein 0.2s ease-out; }
+  .mobil-menue::backdrop { background: var(--overlay); }
+  @keyframes herein { from { opacity: 0; transform: translateY(-8px); } }
+
+  .kopf {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    height: 56px;
+    flex-shrink: 0;
+    padding: 0 12px 0 20px;
+    border-bottom: 1px solid var(--line);
+  }
+  .marke {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-grow: 1;
+    color: var(--ink);
+    text-decoration: none;
+    font-family: var(--display);
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1;
+  }
+  .zu {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-full);
+    background: transparent;
+    color: var(--ink);
+  }
+
+  .inhalt {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    padding: var(--space-5) 20px var(--space-6);
+  }
+  .gruppe {
+    font-family: var(--body);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--muted);
+    margin-bottom: var(--space-3);
+  }
+  .modelle { display: flex; flex-direction: column; gap: var(--space-3); margin: 0; }
+  .modell {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-3) var(--space-4) var(--space-3) var(--space-3);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-l);
+    background: var(--surface);
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .modell[aria-current="page"] { border-color: var(--ink); }
+  .bild {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 84px;
+    flex-shrink: 0;
+  }
+  .text { display: flex; flex-direction: column; gap: 2px; flex-grow: 1; min-width: 0; }
+  .name {
+    font-family: var(--display);
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.03em;
+  }
+  .kurz { font-size: 14px; line-height: 1.4; color: var(--muted); }
+  .preis { font-size: 14px; line-height: 1.4; font-weight: 600; }
+  .modell :global(.pfeil) { color: var(--accent); }
+
+  .links { display: flex; flex-direction: column; margin: var(--space-5) 0 0; }
+  .links a {
+    display: block;
+    padding: var(--space-4) 0;
+    border-bottom: 1px solid var(--line);
+    color: var(--ink);
+    text-decoration: none;
+    font-family: var(--display);
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+  .links a[aria-current="page"] { color: var(--accent); }
+
+  .unten { margin-top: auto; padding-top: var(--space-6); }
+</style>
+
+<script>
+  document.querySelectorAll('[data-mobil-menue]').forEach((dialog) => {
+    const burger = document.querySelector(`[data-burger][aria-controls="${dialog.id}"]`);
+    const zu = dialog.querySelector('[data-schliessen]');
+
+    burger.addEventListener('click', () => {
+      dialog.showModal();
+      burger.setAttribute('aria-expanded', 'true');
+      document.documentElement.style.overflow = 'hidden'; // Seite dahinter scrollt nicht mit
+    });
+    zu.addEventListener('click', () => dialog.close());
+
+    // "close" kommt bei jedem Schliessen: Knopf, Escape oder dialog.close()
+    dialog.addEventListener('close', () => {
+      burger.setAttribute('aria-expanded', 'false');
+      document.documentElement.style.overflow = '';
+      burger.focus();
+    });
+
+    // Fenster breiter als 900 px: Burger verschwindet, also Menü schliessen
+    matchMedia('(min-width: 900px)').addEventListener('change', (e) => { if (e.matches && dialog.open) dialog.close(); });
+  });
+</script>

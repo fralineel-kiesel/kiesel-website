@@ -1,0 +1,94 @@
+---
+// Mitscrollende Unterleiste der Modellseiten (Artboard „Modellseite Kiesel 1 Pro“).
+// Klebt oben, sobald die Kopfzeile weggescrollt ist.
+//   modell: 'k1' | 'pro'
+// Die aktive Seite ermittelt sie selbst aus der Adresse.
+import Knopf from './Knopf.astro';
+import { MODELLE } from '../data/modelle.js';
+import { pfad, istAktiv } from '../lib/pfad.js';
+
+const { modell } = Astro.props;
+const m = MODELLE[modell];
+const aktuell = Astro.url.pathname;
+const links = [
+  { name: 'Übersicht', pfad: m.pfad },
+  { name: 'Technische Daten', pfad: `${m.pfad}technik/` },
+  { name: 'Vergleichen', pfad: 'vergleichen/' },
+];
+---
+<nav class="unterleiste" aria-label={m.name}>
+  <div class="container innen">
+    <a class="name" href={pfad(m.pfad)}>{m.name}</a>
+    <ul role="list" class="links">
+      {links.map((l) => (
+        <li><a href={pfad(l.pfad)} aria-current={istAktiv(aktuell, l.pfad) ? 'page' : undefined}>{l.name}</a></li>
+      ))}
+    </ul>
+    <Knopf href={pfad(`kaufen/?modell=${modell}`)} art="primaer" groesse="s" class="kaufen">Kaufen</Knopf>
+  </div>
+</nav>
+
+<style>
+  .unterleiste {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+  }
+  .innen {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    height: var(--subnav-h);
+  }
+  .name {
+    flex-shrink: 0;
+    font-family: var(--display);
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    color: var(--ink);
+    text-decoration: none;
+  }
+  /* Auf dem Handy passen nicht alle Links: die Liste scrollt dann seitlich */
+  .links {
+    display: flex;
+    gap: 20px;
+    flex-grow: 1;
+    min-width: 0;
+    height: 100%;
+    margin: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    mask-image: linear-gradient(90deg, #000 85%, transparent);
+  }
+  .links::-webkit-scrollbar { display: none; }
+  .links li { display: flex; flex-shrink: 0; }
+  .links a {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    border-bottom: 2px solid transparent;
+    padding-top: 2px; /* gleicht die Linie unten aus, damit der Text mittig bleibt */
+    color: var(--muted);
+    font-size: 15px;
+    font-weight: 500;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .links a:hover { color: var(--ink); }
+  .links a[aria-current="page"] {
+    color: var(--ink);
+    font-weight: 600;
+    border-bottom-color: var(--accent);
+  }
+  .innen :global(.kaufen) { flex-shrink: 0; }
+
+  @media (min-width: 900px) {
+    .innen { gap: 28px; }
+    .name { flex-grow: 1; font-size: 18px; }
+    .links { flex-grow: 0; gap: 28px; overflow: visible; mask-image: none; }
+  }
+</style>
