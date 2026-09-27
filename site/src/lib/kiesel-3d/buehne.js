@@ -138,7 +138,7 @@ export async function starte3D({ ziel, modell = 'pro', farbe = 'Himmelblau', lab
   steuerung.dampingFactor = 0.08;
   steuerung.rotateSpeed = 0.8;
   steuerung.minPolarAngle = MathUtils.degToRad(50); // nicht kopfüber drehen
-  steuerung.maxPolarAngle = MathUtils.degToRad(120);
+  steuerung.maxPolarAngle = MathUtils.degToRad(135); // weit genug, um die Unterkante zu sehen
   steuerung.autoRotate = true;
   steuerung.autoRotateSpeed = 60 / SEKUNDEN_PRO_RUNDE; // 1 = eine Runde pro Minute
   steuerung.update();
