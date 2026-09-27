@@ -44,3 +44,60 @@ Farben: Mattschwarz, Titangrau, Himmelblau, Mattweiss, Kieselbeige. Hülle: CHF 
 - Bilder neu erzeugen: `python werkzeuge/bilder.py` (Python 3.12 + Pillow; falls `python` nicht gefunden: `%LOCALAPPDATA%\Programs\Python\Python312\python.exe`)
 - Git: Repo https://github.com/fralineel-kiesel/kiesel-website, Branch `main`. Online über GitHub Pages: https://fralineel-kiesel.github.io/kiesel-website/ (darum nur relative Pfade, nie mit `/` am Anfang; Gross-/Kleinschreibung muss exakt stimmen). Falls `git` nicht gefunden: `C:\Program Files\Git\cmd\git.exe`. Erzeugte Bilder werden bewusst mit versioniert (Seite muss ohne Build laufen).
 - Testen unter `file://`: headless Chrome (`C:\Program Files\Google\Chrome\Application\chrome.exe --headless=new --dump-dom|--screenshot=…`), Unterseite per Hash in der URL. Headless ist mindestens ca. 504 px breit, also Handy-Breite im eingebauten Browser mit Viewport „mobile“ prüfen. Die Vorschau zeigt lokale Dateien nur als statischen Schnappschuss, für Klicktests einen temporären lokalen Server nutzen.
+
+---
+
+# Kiesel 2.0 (Neuaufbau in `site/`)
+
+Alles oben beschreibt die **alte Seite** im Repo-Root. Sie bleibt unverändert online, bis Kiesel 2.0 fertig ist. Kiesel 2.0 ist ein Astro-Projekt in `site/` und läuft unter https://fralineel-kiesel.github.io/kiesel-website/v2/.
+
+## Branches und Etappen
+
+- `main` = alte Seite (nicht anfassen). `v2` = Sammelbranch für Kiesel 2.0.
+- Jede Etappe auf eigenem Branch, **Pull Request immer nach `v2`**, nie nach `main`. Erst wenn alles fertig ist, geht `v2` nach `main`.
+- Etappen:
+  1. Fundament (Astro, Designsystem, Bausteine, Seitengerüst, Deployment)
+  2. Zeichen-Motor (Handys als SVG aus JS, nach `design/generator/lib.py`)
+  3. Startseite mit 3D
+  4. Modellseiten mit Akku-Story
+  5. Kamera-Demos (Zoom, Makro, nach `design/generator/scene.py`)
+  6. Funktionen, Zubehör, Kaufen, Warenkorb
+  7. Vergleichen, FAQ, Feinschliff
+
+## Vorlagen
+
+- `design/kiesel-2.0/Kiesel 2.0.html`: Export der Design-Leinwand (Designsystem, Startseite Desktop/Handy, Menü aufgeklappt, Modellseite Pro, Kaufen, Warenkorb-Schublade, Illustrationen). Öffnet nur im Browser mit JavaScript.
+- `design/generator/`: Python-Skripte, die diese Vorlagen erzeugt haben. **Exakte Masse, Farben und Texte dort nachlesen** statt aus Screenshots messen: `gen2.py` (Seiten, Bausteine, `THEMES`), `lib.py` (Handys, `PAL`, Logo), `scene.py` (Alpenpanorama, Blume, Innenleben).
+
+## Dateien in `site/`
+
+- `astro.config.mjs`: `base: '/kiesel-website/v2'`, `trailingSlash: 'always'` (jede Seite = Ordner mit index.html)
+- `src/pages/`: jede Datei = eine Adresse (`kiesel-1/technik.astro` → `/kiesel-1/technik/`). `404.astro`, `designsystem.astro` (versteckt, noindex: alle Tokens und Bausteine)
+- `src/layouts/BaseLayout.astro`: `<head>`, Thema-Skript, Header, optional Unterleiste (`unterleiste="k1|pro"`), Footer
+- `src/components/`: Bausteine als `.astro`, Namen deutsch ohne Umlaute
+  - Gerüst: `Header`, `HandysMenue` (Aufklappmenü), `MobilMenue` (Burger, `<dialog>`), `Unterleiste`, `Footer`, `ThemaUmschalter`, `WarenkorbKnopf`, `Platzhalter`
+  - Bausteine: `Knopf`, `Chip`, `GlasChip`, `ZoomLeiste`, `Farbwaehler`, `Schalter`, `Zaehler`, `Feld`, `Icon`, `Logo`, `HandyPlatzhalter` (bis Etappe 2)
+- `src/styles/tokens.css`: **alle** Designwerte als CSS-Variablen. `global.css`: Schriften, Grundlagen, Schriftklassen `.t-display/.t-1/.t-2/.t-3/.t-lead/.t-text/.t-small`
+- `src/data/`: `farben.js` (5 Produktfarben à 7 Töne), `modelle.js` (Namen, Preise), `navigation.js` (alle Menüs, Etappen). Menüs und Preise nur hier ändern.
+- `src/lib/pfad.js`: `pfad('kaufen/')` für jeden internen Link (setzt den base-Pfad davor). `format.js`: `chf(1200)` → `CHF 1’200.–`
+- `src/scripts/warenkorb.js`: Warenkorb in `localStorage["kiesel-warenkorb"]`
+- `src/assets/fonts/`: Unbounded + Instrument Sans (variable woff2, 400–600, latin) + OFL
+- `.github/workflows/pages.yml` (im Repo-Root): baut `main` + `v2` zu einem Pages-Deployment
+
+## Regeln für Kiesel 2.0
+
+- **Designsystem:** Farben, Schriftgrössen, Abstände und Radien nur über die Variablen aus `tokens.css` (`--bg`, `--surface`, `--raised`, `--ink`, `--muted`, `--line`, `--accent`, `--accent-ink`, `--heat`, `--stage`, `--stage-lo`, `--overlay`, `--glass*`, `--fs-*`, `--space-1…10` = 4/8/12/16/24/32/48/64/96/140, `--radius-s/m/l/xl/full` = 8/16/24/32/rund). Neue Werte zuerst in `tokens.css` und auf `/designsystem/` ergänzen.
+- **Themen:** Jede Farbe als `light-dark(hell, dunkel)`. Ohne Wahl folgt die Seite `prefers-color-scheme`; `data-theme="light|dark"` auf `<html>` (Umschalter im Footer, `localStorage["kiesel-thema"]`) übersteuert. Immer beide Themen prüfen.
+- **Breakpoint:** 900 px (darunter Burger-Menü, Footer-Akkordeon). Vorlagen: Desktop 1440 px (Inhalt 1200 px), Handy 390 px (Rand 20 px).
+- **Links:** nie `/…` fest schreiben, immer `pfad()`. Bilder/Schriften über `src/assets/` importieren, damit Astro den base-Pfad setzt.
+- **Zugänglichkeit:** echte `<button>`/`<a>`/Radio-Knöpfe statt `div`s, `aria-expanded`/`aria-pressed`/`aria-checked` nachführen, Escape schliesst Menüs, Tab-Reihenfolge = HTML-Reihenfolge, Tippflächen mind. 44 px.
+- **Skripte** in Komponenten laufen pro Seite nur einmal, auch wenn die Komponente mehrfach vorkommt: immer alle Instanzen per `querySelectorAll('[data-…]')` suchen.
+- Die alte Regel „ohne Server lauffähig (`file://`)“ gilt für v2 **nicht**: Astro braucht einen Build. Nichts extern laden (keine CDNs, kein Google Fonts) gilt weiterhin.
+- Sprache wie oben: Schweizer Hochdeutsch, „ss“ statt „ß“.
+
+## Werkzeuge Kiesel 2.0
+
+- Einmalig: `cd site && npm install` (Node 22.12 oder neuer)
+- Entwickeln: `npm run dev` → http://localhost:4321/kiesel-website/v2/ (lädt bei jeder Änderung neu)
+- Bauen: `npm run build` → `site/dist/`; ansehen mit `npm run preview`
+- Prüfen: Playwright-Screenshots bei 1440 und 390 px, jeweils mit `colorScheme: 'dark'` und `'light'`, neben die Artboards legen
