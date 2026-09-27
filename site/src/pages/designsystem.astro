@@ -1,0 +1,234 @@
+---
+// Versteckte Seite /designsystem/: alle Tokens und Bausteine auf einen Blick,
+// nach dem Artboard „Designsystem“. Steht in keinem Menü, noindex für Suchmaschinen.
+// Nützlich zum Vergleichen mit der Vorlage und als Nachschlagewerk für spätere Etappen.
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Logo from '../components/Logo.astro';
+import Knopf from '../components/Knopf.astro';
+import Chip from '../components/Chip.astro';
+import GlasChip from '../components/GlasChip.astro';
+import ZoomLeiste from '../components/ZoomLeiste.astro';
+import Farbwaehler from '../components/Farbwaehler.astro';
+import Schalter from '../components/Schalter.astro';
+import Zaehler from '../components/Zaehler.astro';
+import Feld from '../components/Feld.astro';
+import HandyPlatzhalter from '../components/HandyPlatzhalter.astro';
+import { FARBEN, FARBNAMEN } from '../data/farben.js';
+
+const TOKENS = [
+  ['bg', 'Seitenhintergrund'], ['surface', 'Karten, Leisten'], ['raised', 'Aktive Menüpunkte'],
+  ['ink', 'Text, Kaufen-Knopf'], ['muted', 'Nebentext'], ['line', 'Linien, Rahmen'],
+  ['accent', 'Akzent, Hauptknöpfe'], ['accent-ink', 'Text auf Akzent'], ['heat', 'Warnung, «fällt weg»'],
+  ['stage', 'Bühne oben'], ['stage-lo', 'Bühne unten'],
+];
+const THEMEN = [['dark', 'Dunkel'], ['light', 'Hell']];
+
+const SCHRIFT = [
+  ['Display', 't-display', 'Kiesel', 'Unbounded 600 · 112–128 px · −0.05em'],
+  ['Titel 1', 't-1', 'Welcher Kiesel?', 'Unbounded 600 · 56–64 px · −0.04em'],
+  ['Titel 2', 't-2', 'Zwei Kameras. Eine Hand.', 'Unbounded 600 · 32 px'],
+  ['Titel 3', 't-3', 'Privacy-Modus', 'Unbounded 600 · 20–22 px'],
+  ['Einleitung', 't-lead', 'Zwei kompakte Handys mit Akku bis in die Nacht.', 'Instrument Sans 400 · 19–21 px · 1.6'],
+  ['Text', 't-text', 'Die Tele-Linse stellt schon ab rund 20 cm scharf.', 'Instrument Sans 400 · 16–17 px · 1.6'],
+  ['Klein', 't-small t-muted', 'Preise inklusive MwSt.', 'Instrument Sans 400 · 13–14 px'],
+];
+const ABSTAENDE = [4, 8, 12, 16, 24, 32, 48, 64, 96, 140];
+const RADIEN = [['s', '8 · klein'], ['m', '16 · Felder'], ['l', '24 · Karten'], ['xl', '32 · Bühnen'], ['full', 'rund · Knöpfe']];
+---
+<BaseLayout titel="Designsystem" noindex beschreibung="Farben, Schriften, Abstände und Bausteine von Kiesel 2.0.">
+  <div class="container ds">
+    <header class="kopf">
+      <Logo size={56} />
+      <h1 class="t-1">Kiesel Designsystem</h1>
+    </header>
+    <p class="t-lead t-muted intro">Alle Farben, Schriften, Abstände und Bausteine der Kiesel-Website an einem Ort. Beide Themen verwenden dieselben Namen, damit der Code nur ein Set Variablen braucht. Quelle: <code>src/styles/tokens.css</code>.</p>
+
+    <section>
+      <h2 class="t-2">Farben</h2>
+      <div class="themen">
+        {THEMEN.map(([wert, name]) => (
+          <div class="thema-spalte" data-theme={wert}>
+            <h3 class="t-3">Thema {name}</h3>
+            {TOKENS.map(([token, zweck]) => (
+              <div class="farbzeile">
+                <span class="muster" style={`background: var(--${token})`} data-muster></span>
+                <span class="token">--{token}</span>
+                <span class="hex" data-hex>…</span>
+                <span class="zweck">{zweck}</span>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <section>
+      <h2 class="t-2">Produktfarben</h2>
+      <p class="t-muted">Aus <code>src/data/farben.js</code>, in beiden Themen gleich.</p>
+      <div class="produkte">
+        {FARBNAMEN.map((n) => {
+          const p = FARBEN[n];
+          return (
+            <div class="produkt">
+              <span class="verlauf" style={`background: linear-gradient(135deg, ${p.backHi}, ${p.back} 55%, ${p.backLo})`}>
+                <span class="rahmen" style={`background: ${p.frame}`}></span>
+              </span>
+              <span class="produkt-name">{n}</span>
+              <span class="t-small t-muted">Rahmen {p.frame} · Rücken {p.back}</span>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+
+    <section>
+      <h2 class="t-2">Schrift</h2>
+      <div class="schrift">
+        {SCHRIFT.map(([name, klasse, muster, info]) => (
+          <div class="schriftzeile">
+            <span class="label">{name}</span>
+            <span class={klasse}>{muster}</span>
+            <span class="t-small t-muted">{info} · <code>.{klasse.split(' ')[0]}</code></span>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <section>
+      <h2 class="t-2">Abstände</h2>
+      <div class="abstaende">
+        {ABSTAENDE.map((px, i) => (
+          <div class="abstand">
+            <span class="balken" style={`width: var(--space-${i + 1})`}></span>
+            <span class="t-small t-muted">{px}<br /><code>--space-{i + 1}</code></span>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <section>
+      <h2 class="t-2">Radien</h2>
+      <div class="radien">
+        {RADIEN.map(([k, text]) => (
+          <div class="radius">
+            <span class="form" style={`border-radius: var(--radius-${k})`}></span>
+            <span class="t-small t-muted">{text}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <section>
+      <h2 class="t-2">Bausteine</h2>
+      <div class="bausteine">
+        <div class="reihe">
+          <Knopf art="primaer" groesse="l" href="#">Hauptknopf</Knopf>
+          <Knopf art="sekundaer" groesse="l" href="#">Zweitknopf</Knopf>
+          <Knopf art="ink" groesse="s" href="#">Kaufen</Knopf>
+          <Knopf art="text" icon="arrow" href="#">Textlink</Knopf>
+          <Knopf art="primaer" groesse="m">Mittel</Knopf>
+          <Knopf art="sekundaer" groesse="s">Klein</Knopf>
+        </div>
+        <div class="reihe">
+          <Chip gruppe="ds" gedrueckt>Ausgewählt</Chip>
+          <Chip gruppe="ds">Normal</Chip>
+          <Chip gruppe="ds">256 GB</Chip>
+          <span class="glasgrund"><ZoomLeiste /></span>
+          <span class="glasgrund"><GlasChip icon="rotate">Glas-Chip</GlasChip></span>
+        </div>
+        <div class="reihe">
+          <Farbwaehler name="ds-farbe" />
+          <Schalter an>An</Schalter>
+          <Schalter>Aus</Schalter>
+          <Zaehler wert={2} />
+        </div>
+        <div class="feld-breite">
+          <Feld id="ds-gravur" label="Gravur" placeholder="z.B. Linos Kiesel" maxlength="18" hinweis="Bis 18 Zeichen, erscheint auf der Rückseite unter dem Kiesel." />
+        </div>
+        <div class="reihe">
+          <HandyPlatzhalter modell="k1" hoehe={170} />
+          <HandyPlatzhalter modell="pro" hoehe={180} />
+          <p class="t-small t-muted">Handy-Platzhalter bis zum Zeichen-Motor (Etappe 2)</p>
+        </div>
+      </div>
+    </section>
+  </div>
+</BaseLayout>
+
+<style>
+  .ds { padding-top: var(--space-9); }
+  .kopf { display: flex; align-items: center; gap: var(--space-4); }
+  .intro { max-width: 760px; margin-top: var(--space-4); }
+  code { font-size: 0.9em; }
+  section { display: flex; flex-direction: column; gap: var(--space-5); padding-top: var(--space-8); }
+
+  .themen { display: grid; gap: var(--space-7); }
+  @media (min-width: 900px) { .themen { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  /* Jede Spalte hat ihr eigenes Thema (data-theme), darum stimmen die Farben darin. */
+  .thema-spalte {
+    padding: var(--space-6);
+    border-radius: var(--radius-l);
+    background: var(--bg);
+    color: var(--ink);
+    border: 1px solid var(--line);
+  }
+  .thema-spalte h3 { margin-bottom: 14px; }
+  .farbzeile {
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr) 90px;
+    gap: var(--space-2) var(--space-4);
+    align-items: center;
+    padding: 10px 0;
+    border-top: 1px solid var(--line);
+  }
+  .muster { width: 48px; height: 48px; border-radius: 14px; border: 1px solid rgba(128, 128, 128, 0.35); }
+  .token { font-size: 15px; font-weight: 600; }
+  .hex, .zweck { font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .zweck { grid-column: 2 / -1; margin-top: -6px; }
+  @media (min-width: 600px) {
+    .farbzeile { grid-template-columns: 48px 130px 90px minmax(0, 1fr); }
+    .zweck { grid-column: auto; margin-top: 0; }
+  }
+
+  .produkte { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px; }
+  .produkt { display: flex; flex-direction: column; gap: 10px; }
+  .verlauf { display: flex; align-items: flex-end; height: 120px; padding: 12px; border-radius: 20px; border: 1px solid var(--line); }
+  .rahmen { width: 28px; height: 28px; border-radius: var(--radius-full); border: 2px solid rgba(255, 255, 255, 0.6); }
+  .produkt-name { font-size: 16px; font-weight: 600; }
+
+  .schriftzeile {
+    display: grid;
+    gap: var(--space-2) var(--space-5);
+    align-items: center;
+    padding: 18px 0;
+    border-top: 1px solid var(--line);
+  }
+  @media (min-width: 900px) { .schriftzeile { grid-template-columns: 140px minmax(0, 1fr) 320px; } }
+  .label { font-size: 14px; font-weight: 600; color: var(--muted); }
+
+  .abstaende { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 28px; }
+  .abstand { display: flex; flex-direction: column; gap: var(--space-2); }
+  .balken { height: 24px; border-radius: 4px; background: var(--accent); }
+
+  .radien { display: flex; flex-wrap: wrap; gap: 36px; }
+  .radius { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); }
+  .form { width: 84px; height: 84px; background: var(--surface); border: 2px solid var(--ink); }
+
+  .bausteine { display: flex; flex-direction: column; gap: 28px; }
+  .reihe { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+  .glasgrund { display: inline-flex; padding: 10px; border-radius: var(--radius-full); background: #2B3440; }
+  .feld-breite { max-width: 420px; }
+</style>
+
+<script>
+  // Hex-Werte aus dem tatsächlich berechneten CSS lesen. So zeigt die Seite immer,
+  // was in tokens.css steht, und nicht eine Kopie, die veralten kann.
+  function hex(rgb) {
+    const [r, g, b, a] = rgb.match(/[\d.]+/g).map(Number);
+    const h = '#' + [r, g, b].map((x) => x.toString(16).padStart(2, '0')).join('').toUpperCase();
+    return a !== undefined && a < 1 ? `${h} · ${Math.round(a * 100)} %` : h;
+  }
+  document.querySelectorAll('[data-muster]').forEach((m) => {
+    m.parentElement.querySelector('[data-hex]').textContent = hex(getComputedStyle(m).backgroundColor);
+  });
+</script>
