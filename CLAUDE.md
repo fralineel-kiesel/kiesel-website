@@ -55,6 +55,9 @@ Alles oben beschreibt die **alte Seite** im Repo-Root. Sie bleibt unverändert o
 
 - `main` = alte Seite (nicht anfassen). `v2` = Sammelbranch für Kiesel 2.0.
 - Jede Etappe auf eigenem Branch, **Pull Request immer nach `v2`**, nie nach `main`. Erst wenn alles fertig ist, geht `v2` nach `main`.
+- **Verboten, bis das ganze Projekt fertig ist und der Nutzer es ausdrücklich verlangt:** jeder Pull Request mit Basis `main`, auch `v2` → `main`, und jeder Push auf `main`. Beim Erstellen eines PR die Basis **immer ausdrücklich** auf `v2` setzen (`base: v2`) und vorher prüfen: GitHub und das PR-Werkzeug nehmen sonst den Standard-Branch, und das ist `main`. So ist es mit PR #5 passiert (v2 → main, am 27.9.2026 gemergt, danach `main` per Reset auf `950cbb1` zurückgesetzt).
+- Etappen-Branches starten von `origin/v2`, nicht von `main`. Neue Sitzungen bekommen ihren Branch oft vom Standard-Branch `main`: dann zuerst `git fetch origin v2 && git reset --hard origin/v2` (nur solange der Branch noch keine eigenen Commits hat) und mit `git log --oneline origin/v2..HEAD` prüfen, dass nur eigene Commits im PR landen.
+- Veröffentlicht wird über `.github/workflows/pages.yml`. Die Datei liegt nur auf `v2`, darum lösen nur Pushes auf `v2` (oder ein manueller Start unter Actions) ein Deployment aus. Eine Änderung an der alten Seite auf `main` geht erst damit online.
 - Etappen:
   1. Fundament (Astro, Designsystem, Bausteine, Seitengerüst, Deployment)
   2. Zeichen-Motor (Handys als SVG aus JS, nach `design/generator/lib.py`)
