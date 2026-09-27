@@ -5,16 +5,20 @@
 // Aufbau: Drei gleich grosse Ebenen liegen übereinander, alle zeigen dieselbe Szene (einmal
 // gezeichnet, per <use> wiederholt): Hauptkamera und Tele des Pro, darüber der Kiesel 1,
 // den clip-path nur bis zur Trennlinie zeigt. Zoom, Linsenwechsel und die versteckten
-// Details macht kamera-zoom.js, hier steht nur die Trennlinie.
+// Details macht kamera-zoom.js, hier steht nur die Trennlinie. Skala, Linsen-Leiste,
+// Zähler, Fokusring und Vorschaubilder wie im Artboard „Funktionen“ („Such das Gipfelkreuz“).
 // Die Trennlinie steuert ein echtes <input type="range">: Damit funktionieren Pfeiltasten,
 // Pos1/Ende und Screenreader von selbst. Maus und Finger bedienen dazu die ganze Bildfläche.
 import Schalter from '../Schalter.astro';
 import Icon from '../Icon.astro';
 import GlasChip from '../GlasChip.astro';
 import ZoomSkala from './ZoomSkala.astro';
-import ZoomMarken from './ZoomMarken.astro';
-import ZoomDetails from './ZoomDetails.astro';
+import LinsenLeiste from './LinsenLeiste.astro';
+import FokusRing from './FokusRing.astro';
+import FundZaehler from './FundZaehler.astro';
+import KameraFunde from './KameraFunde.astro';
 import { panoramaQuelle, panoramaAnsicht } from '../../lib/kiesel-draw/index.js';
+import { STUFEN, LINSEN } from '../../data/kamera.js';
 
 // Anfangs 5x wie im Artboard: crop(756, 246, 5)
 const START = { zoom: 5, cx: 756, cy: 246 };
@@ -28,12 +32,13 @@ const ebene = () => panoramaAnsicht(quelle.id, START);
     <div class="ebene" data-ebene="tele" set:html={ebene()} />
     <div class="ebene k1" data-ebene="k1" set:html={ebene()} />
     <span class="vh" role="img" aria-label="Alpenpanorama bei 5x: links Kiesel 1 digital und unscharf, rechts Kiesel 1 Pro mit Tele scharf" data-bildtext></span>
-    <ZoomMarken />
+    <FokusRing />
     <span class="chip-links"><GlasChip><span class="lang" data-text="k1">Kiesel 1 · 5x digital</span><span class="kurz" data-kurz="k1">Kiesel 1 · 5x</span></GlasChip></span>
     <span class="chip-rechts"><GlasChip>
       <span class="linsen" aria-hidden="true" title="Aktive Linse"><span class="punkt haupt"></span><span class="punkt tele"></span></span>
       <span class="lang" data-text="pro">Kiesel 1 Pro · 5x mit Tele</span><span class="kurz" data-kurz="pro">Pro · 5x Tele</span>
     </GlasChip></span>
+    <span class="chip-zaehler"><FundZaehler /></span>
     <div class="linie" aria-hidden="true"><span class="griff"><Icon name="swap" size={22} /></span></div>
     <input
       class="regler"
@@ -47,19 +52,12 @@ const ebene = () => panoramaAnsicht(quelle.id, START);
       data-regler
     />
   </div>
-  <div class="steuerung">
-    <ZoomSkala
-      max={10}
-      stufen={['0.5', '1', '3', '5', '10']}
-      aktiv="5"
-      gruppe="zoom-vergleich"
-      label="Zoom"
-      abschnitte={[[0.5, 3, 'Hauptkamera', false], [3, 10, 'Tele-Linse', true]]}
-    >
-      <Schalter an={true} data-vergleich-schalter>Mit Kiesel 1 vergleichen</Schalter>
-    </ZoomSkala>
+  <ZoomSkala max={10} stufen={STUFEN.pro} tele={3} label="Zoom" />
+  <LinsenLeiste abschnitte={LINSEN.pro} />
+  <div class="vergleich-zeile">
+    <Schalter an={true} data-vergleich-schalter>Mit Kiesel 1 vergleichen</Schalter>
   </div>
-  <ZoomDetails quelle={quelle.id} zoom={8} hinweis="Zoom rein, bis sie auftauchen, oder tipp auf ein Bild, und die Kamera fliegt hin. Bei 8x sieht der Pro sie scharf, der Kiesel 1 nur verschwommen." />
+  <KameraFunde quelle={quelle.id} />
   <p class="vh" aria-live="polite" data-ansage></p>
 </div>
 
@@ -86,7 +84,8 @@ const ebene = () => panoramaAnsicht(quelle.id, START);
   /* Kiesel 1 nur bis zur Trennlinie. --anteil = Lage der Linie als Zahl 0…1 (--pos in %),
      umgerechnet auf die grössere Ebene */
   .k1 { clip-path: inset(0 calc(100% - var(--rand) - (100% - 2 * var(--rand)) * var(--anteil)) 0 0); }
-  .chip-links, .chip-rechts { position: absolute; top: var(--space-3); z-index: 2; pointer-events: none; }
+  .chip-links, .chip-rechts, .chip-zaehler { position: absolute; top: var(--space-3); z-index: 2; pointer-events: none; }
+  .chip-zaehler { top: auto; right: var(--space-3); bottom: var(--space-3); }
   .chip-links { left: var(--space-3); }
   .chip-rechts { right: var(--space-3); }
   /* Auf dem Handy wären beide Chips zusammen breiter als das Bild: Kurzfassung */
@@ -168,7 +167,7 @@ const ebene = () => panoramaAnsicht(quelle.id, START);
   .fenster[data-allein] { cursor: default; }
   .fenster[data-allein] .k1, .fenster[data-allein] .linie, .fenster[data-allein] .chip-links { display: none; }
 
-  .steuerung { margin-top: var(--space-4); }
+  .vergleich-zeile { display: flex; justify-content: flex-end; margin-top: var(--space-4); }
 
   @media (min-width: 900px) {
     .fenster { height: 560px; border-radius: calc(var(--radius-l) + 4px); }
@@ -176,7 +175,7 @@ const ebene = () => panoramaAnsicht(quelle.id, START);
     .kurz { display: none; }
     .chip-links { left: var(--space-5); top: var(--space-5); }
     .chip-rechts { right: var(--space-5); top: var(--space-5); }
-    .steuerung { margin-top: var(--space-5); }
+    .chip-zaehler { right: var(--space-5); bottom: var(--space-5); }
   }
 </style>
 

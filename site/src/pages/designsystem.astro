@@ -9,6 +9,8 @@ import Chip from '../components/Chip.astro';
 import GlasChip from '../components/GlasChip.astro';
 import ZoomLeiste from '../components/ZoomLeiste.astro';
 import ZoomSkala from '../components/modell/ZoomSkala.astro';
+import LinsenLeiste from '../components/modell/LinsenLeiste.astro';
+import { STUFEN, LINSEN } from '../data/kamera.js';
 import Farbwaehler from '../components/Farbwaehler.astro';
 import Schalter from '../components/Schalter.astro';
 import Zaehler from '../components/Zaehler.astro';
@@ -22,7 +24,7 @@ const TOKENS = [
   ['bg', 'Seitenhintergrund'], ['surface', 'Karten, Leisten'], ['raised', 'Aktive Menüpunkte'],
   ['ink', 'Text, Kaufen-Knopf'], ['muted', 'Nebentext'], ['line', 'Linien, Rahmen'],
   ['accent', 'Akzent, Hauptknöpfe'], ['accent-ink', 'Text auf Akzent'], ['heat', 'Warnung, «fällt weg»'],
-  ['stage', 'Bühne oben'], ['stage-lo', 'Bühne unten'], ['marke', 'Markierung auf Bildern'],
+  ['stage', 'Bühne oben'], ['stage-lo', 'Bühne unten'],
 ];
 const THEMEN = [['dark', 'Dunkel'], ['light', 'Hell']];
 
@@ -148,8 +150,9 @@ const RADIEN = [['s', '8 · klein'], ['m', '16 · Felder'], ['l', '24 · Karten'
           <Zaehler wert={2} />
         </div>
         <div class="feld-breite">
-          <p class="t-small t-muted">Zoom-Skala (Kamera-Demos, stufenlos, logarithmisch; hier ohne Kamera dahinter)</p>
-          <ZoomSkala max={10} stufen={['0.5', '1', '3', '5', '10']} aktiv="3" gruppe="ds-zoom" abschnitte={[[0.5, 3, 'Hauptkamera', false], [3, 10, 'Tele-Linse', true]]} />
+          <p class="t-small t-muted">Zoom-Skala und Linsen-Leiste (Kamera-Demos, stufenlos, logarithmisch; hier ohne Kamera dahinter)</p>
+          <ZoomSkala max={10} stufen={STUFEN.pro} tele={3} />
+          <LinsenLeiste abschnitte={LINSEN.pro} />
         </div>
         <div class="feld-breite">
           <Feld id="ds-gravur" label="Gravur" placeholder="z.B. Linos Kiesel" maxlength="18" hinweis="Bis 18 Zeichen, erscheint auf der Rückseite unter dem Kiesel." />

@@ -9,9 +9,11 @@
 //    Unschärfe ändern sich stetig, und kein Bild unterscheidet sich vom vorherigen stärker
 //    als ein gewöhnlicher Zoomschritt (Pixelvergleich). Rückwärts gleich, Umkehr mitten im
 //    Wechsel ohne Sprung. Bei „weniger Bewegung“ wechselt die Linse sofort.
-// 3. Versteckte Details: tauchen erst ab 3.5x auf, zählen erst nach eigener Bedienung, Klick
-//    auf Marke oder Kachel fliegt hin (Detail danach genau in der Bildmitte), Zähler.
-// 4. Kiesel 1: max. 5x, keine Tele-Ebene. Keine Skriptfehler, kein three.js.
+// 3. Versteckte Details (Pro, Kiesel 1, /funktionen/): beim Laden alles „?“, gefunden erst ab
+//    5x nach eigener Bedienung, Fokusring um das gefundene Detail, Zähler mit Punkten,
+//    Linsen-Leiste, Klick aufs Vorschaubild fliegt hin (Detail danach genau in der Bildmitte).
+// 4. Zielen auf /funktionen/: Klick schwenkt, Maus und Finger (waagrecht) verschieben, Finger
+//    senkrecht scrollt. Kiesel 1: max. 5x, keine Tele-Ebene. Keine Fehler, kein three.js.
 // Jeder Fall druckt ✓ oder ✗, bei einem ✗ endet das Skript mit Fehlercode 1.
 import { chromium } from 'playwright';
 import { starteServer } from './dist-server.mjs';
@@ -270,50 +272,108 @@ try {
     await ctx.close();
   }
 
-  console.log('\n── Versteckte Details ──');
-  for (const [modell, adresse, zielZoom] of [['pro', 'kiesel-1-pro/', 8], ['k1', 'kiesel-1/', 5]]) {
+  console.log('\n── Versteckte Details, Fokusring, Linsen-Leiste ──');
+  for (const [modell, adresse, zielZoom] of [['pro', 'kiesel-1-pro/', 8], ['k1', 'kiesel-1/', 5], ['suche', 'funktionen/', 8]]) {
     const { seite, ctx, status, fenster, uhr, k } = await oeffne(adresse);
-    const sichtbar = () => seite.evaluate(() => [...document.querySelector('[data-fenster]').querySelectorAll('[data-marke]')].filter((m) => m.style.visibility !== 'hidden').map((m) => Number(m.dataset.marke)));
-    const zaehler = () => seite.locator('[data-entdeckt]').first().textContent();
-    pruefe(`${modell}: beim Laden keine Marken (wie im Artboard) und der Zähler steht auf 0`, (await sichtbar()).length === 0 && (await zaehler()) === '0 von 8 entdeckt', await zaehler());
-    await k('setzeZoom', 3); await uhr(100);
-    pruefe(`${modell}: bei 3x noch keine Marke sichtbar`, (await sichtbar()).length === 0);
-    await k('setzeZoom', 5); await uhr(100);
-    const bei5 = await sichtbar();
-    pruefe(`${modell}: bei 5x tauchen Gipfelkreuz und Seilschaft auf`, bei5.includes(0) && bei5.includes(1), bei5.join(', '));
-    pruefe(`${modell}: selbst hingezoomt = entdeckt`, (await zaehler()) === '2 von 8 entdeckt', await zaehler());
-    // Unsichtbare Marken dürfen nicht per Tab erreichbar sein
-    const tabbar = await seite.evaluate(() => [...document.querySelectorAll('[data-marke]')].filter((m) => m.style.visibility === 'hidden').every((m) => getComputedStyle(m).visibility === 'hidden'));
-    pruefe(`${modell}: versteckte Marken sind unsichtbar und darum nicht per Tab erreichbar`, tabbar);
+    const wurzel = modell === 'pro' ? '[data-zoom-vergleich]' : modell === 'k1' ? '[data-zoom-demo]' : '[data-kamera-suche]';
+    const w = (sel) => `${wurzel} ${sel}`;
+    const gefunden = () => seite.evaluate((sel) => [...document.querySelectorAll(sel)].filter((b) => b.hasAttribute('data-gefunden')).map((b) => Number(b.dataset.detail)), w('[data-detail]'));
+    const ring = () => seite.evaluate((sel) => { const r = document.querySelector(sel); return { an: r.style.visibility !== 'hidden', text: r.textContent.trim(), detail: r.dataset.detail }; }, w('[data-fokusring]'));
+    const zaehler = () => seite.locator(w('[data-entdeckt]')).textContent();
+    const aktiv = () => seite.evaluate((sel) => [...document.querySelectorAll(sel)].findIndex((a) => a.hasAttribute('data-aktiv')), w('[data-linsenabschnitt]'));
 
-    // Klick auf eine Marke im Bild: Seilschaft
-    await seite.locator('[data-marke="1"]').click();
-    await uhr(3000);
-    let z = await k('zustand');
-    pruefe(`${modell}: Klick auf die Marke fliegt hin (${zielZoom}x)`, Math.abs(z.z - zielZoom) < 0.01 && z.blick[0] === ZOOM_TARGETS[1][1] && z.blick[1] === ZOOM_TARGETS[1][2], JSON.stringify(z.blick));
-    if (modell === 'pro') {
-      const linie = await seite.evaluate(() => document.querySelector('[data-regler]').value);
-      pruefe('pro: Klick auf die Marke verschiebt die Trennlinie nicht', linie === '50', linie);
+    const namen = await seite.locator(w('[data-fundname]')).allTextContents();
+    pruefe(`${modell}: beim Laden alles versteckt („?“), kein Fokusring, Zähler 0 (wie im Artboard)`,
+      (await gefunden()).length === 0 && namen.every((n) => n === 'Noch versteckt') && !(await ring()).an && (await zaehler()) === '0 von 8 entdeckt', await zaehler());
+    for (const [z, erwartet] of [[1, 0], [2.8, 1], [modell === 'k1' ? 4 : 3, modell === 'k1' ? 1 : 2]]) {
+      await k('setzeZoom', z); await uhr(100);
+      pruefe(`${modell}: Linsen-Leiste bei ${z}x markiert Abschnitt ${erwartet + 1}`, (await aktiv()) === erwartet, String(await aktiv()));
     }
-    // Klick auf die Kachel Dorf: Detail danach genau in der Mitte des Fensters
-    await seite.locator('[data-detail="7"]').click();
+    await k('setzeZoom', 3); await uhr(100);
+    // Zurück zum Gipfel (die Suche startet woanders)
+    if (modell === 'suche') { await k('schwenkeZu', [756, 246]); await uhr(600); }
+    await k('setzeZoom', 3); await uhr(100);
+    pruefe(`${modell}: bei 3x noch nichts gefunden`, (await gefunden()).length === 0);
+    await k('setzeZoom', 5); await uhr(100);
+    const bei5 = await gefunden();
+    pruefe(`${modell}: bei 5x selbst gefunden: Gipfelkreuz und Seilschaft`, bei5.includes(0) && bei5.includes(1) && (await zaehler()) === '2 von 8 entdeckt', `${bei5.join(', ')}; ${await zaehler()}`);
+    const r = await ring();
+    const namen5 = await seite.locator(w('[data-fundname]')).allTextContents();
+    pruefe(`${modell}: Fokusring um das gefundene Detail, Vorschaubild mit Namen`, r.an && r.text.endsWith('entdeckt') && namen5[0] === 'Gipfelkreuz' && namen5[2] === 'Noch versteckt', JSON.stringify(r));
+    const punkte = await seite.locator(w('[data-fundpunkt][data-an]')).count();
+    pruefe(`${modell}: Zähler-Punkte: 2 von 8 weiss`, punkte === 2, String(punkte));
+
+    // Klick auf ein verstecktes Vorschaubild (Tipp): Dorf. Danach genau in der Bildmitte.
+    await seite.locator(w('[data-detail="7"]')).click();
     const zwischen = [];
     for (let t = 0; t < 2600; t += 100) { await uhr(100); zwischen.push((await k('zustand')).z); }
-    z = await k('zustand');
     const box = await fenster.boundingBox();
     const [, tx, ty] = ZOOM_TARGETS[7];
     const [vx, vy, vw, vh] = crop(...begrenze(tx, ty, zielZoom), zielZoom).split(' ').map(Number);
     const s = Math.max(box.width / vw, box.height / vh);
     const px = (box.width - vw * s) / 2 + (tx - vx) * s, py = (box.height - vh * s) / 2 + (ty - vy) * s;
-    pruefe(`${modell}: Kachel „Dorf mit Kirche“ bringt das Dorf in die Bildmitte`, Math.abs(px - box.width / 2) < 2 && Math.abs(py - box.height / 2) < 2, `${px.toFixed(1)}, ${py.toFixed(1)} von ${box.width / 2}, ${box.height / 2}`);
+    pruefe(`${modell}: verstecktes Vorschaubild fliegt hin (${zielZoom}x), Dorf in der Bildmitte`, Math.abs((await k('zustand')).z - zielZoom) < 0.01 && Math.abs(px - box.width / 2) < 2 && Math.abs(py - box.height / 2) < 2, `${px.toFixed(1)}, ${py.toFixed(1)}`);
     pruefe(`${modell}: Flug zoomt unterwegs raus (Gipfel → Dorf ist weit)`, Math.min(...zwischen) < 2.5, `kleinster Zoom ${Math.min(...zwischen).toFixed(2)}`);
-    pruefe(`${modell}: Zähler 3 von 8, Kachel mit Häkchen`, (await zaehler()) === '3 von 8 entdeckt' && (await seite.locator('[data-detail="7"]').getAttribute('data-gefunden')) === '');
-    for (let i = 0; i < ZOOM_TARGETS.length; i++) { await seite.locator(`[data-detail="${i}"]`).click(); await uhr(3000); }
-    pruefe(`${modell}: alle acht entdeckt`, (await zaehler()).startsWith('Alle 8 entdeckt'), await zaehler());
+    const rd = await ring();
+    pruefe(`${modell}: 3 von 8, Fokusring jetzt um das Dorf`, (await zaehler()) === '3 von 8 entdeckt' && rd.an && rd.detail === '7' && rd.text === 'Dorf mit Kirche entdeckt', `${await zaehler()} ${JSON.stringify(rd)}`);
+    if (modell === 'pro') {
+      const linie = await seite.evaluate(() => document.querySelector('[data-regler]').value);
+      pruefe('pro: Vorschaubild und Zoomstufen verschieben die Trennlinie nicht', linie === '50', linie);
+    }
+    for (let i = 0; i < ZOOM_TARGETS.length; i++) { await seite.locator(w(`[data-detail="${i}"]`)).click(); await uhr(3000); }
+    pruefe(`${modell}: alle acht entdeckt`, (await zaehler()) === 'Alle 8 entdeckt', await zaehler());
     if (modell === 'k1') {
       pruefe('k1: keine Tele-Ebene, max. 5x', (await seite.locator('[data-ebene="tele"]').count()) === 0 && (await k('zustand')).z <= 5);
     }
     pruefe(`${modell}: keine Skriptfehler, kein three.js`, status.fehler.length === 0 && !status.dreiD, status.fehler.join(' | '));
+    await ctx.close();
+  }
+
+  console.log('\n── Zielen auf /funktionen/ ──');
+  {
+    const { seite, ctx, fenster, uhr, k } = await oeffne('funktionen/');
+    await fenster.scrollIntoViewIfNeeded();
+    await k('setzeZoom', 5); await uhr(100);
+    let box = await fenster.boundingBox();
+    const vorher = (await k('zustand')).blick;
+    // Klick rechts unten ins Bild: der Blick schwenkt dorthin
+    await seite.mouse.click(box.x + box.width * 0.8, box.y + box.height * 0.7);
+    await uhr(700);
+    const nachKlick = (await k('zustand')).blick;
+    const s = box.width / (1600 / 5); // px pro Bild-Einheit bei 5x (Fenster breiter als 1.6)
+    const erwartet = [vorher[0] + (0.3 * box.width) / s, vorher[1] + (0.2 * box.height) / s];
+    pruefe('Klick ins Bild schwenkt genau dorthin', Math.abs(nachKlick[0] - erwartet[0]) < 2 && Math.abs(nachKlick[1] - erwartet[1]) < 2, `${nachKlick.map((v) => v.toFixed(1))} statt ${erwartet.map((v) => v.toFixed(1))}`);
+    // Maus ziehen: Bild folgt der Maus (nach links ziehen = Blick nach rechts)
+    box = await fenster.boundingBox();
+    await seite.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await seite.mouse.down();
+    await seite.mouse.move(box.x + box.width / 2 - 200, box.y + box.height / 2 - 100, { steps: 8 });
+    await seite.mouse.up();
+    await uhr(50);
+    const nachZug = (await k('zustand')).blick;
+    pruefe('Maus ziehen verschiebt das Bild um genau die Strecke', Math.abs(nachZug[0] - nachKlick[0] - 200 / s) < 1.5 && Math.abs(nachZug[1] - nachKlick[1] - 100 / s) < 1.5, `${(nachZug[0] - nachKlick[0]).toFixed(1)}, ${(nachZug[1] - nachKlick[1]).toFixed(1)} statt ${(200 / s).toFixed(1)}, ${(100 / s).toFixed(1)}`);
+    await ctx.close();
+  }
+  {
+    const { seite, ctx, fenster, k } = await oeffne('funktionen/', { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    await seite.clock.resume();
+    await k('setzeZoom', 5); await seite.waitForTimeout(100);
+    await fenster.scrollIntoViewIfNeeded();
+    const f = await fenster.boundingBox();
+    const cdp = await ctx.newCDPSession(seite);
+    const wisch = async (von, bis) => {
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: von[0], y: von[1] }] });
+      for (let i = 1; i <= 8; i++) await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: von[0] + (bis[0] - von[0]) * i / 8, y: von[1] + (bis[1] - von[1]) * i / 8 }] });
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      await seite.waitForTimeout(150);
+    };
+    const b0 = (await k('zustand')).blick, y0 = await seite.evaluate(() => scrollY);
+    await wisch([f.x + f.width * 0.7, f.y + f.height / 2], [f.x + f.width * 0.3, f.y + f.height / 2]);
+    const b1 = (await k('zustand')).blick;
+    pruefe('Finger waagrecht: verschiebt das Bild', b1[0] > b0[0] + 10, `${b0[0].toFixed(1)} → ${b1[0].toFixed(1)}`);
+    await wisch([f.x + f.width * 0.5, f.y + f.height * 0.7], [f.x + f.width * 0.52, f.y + f.height * 0.7 - 200]);
+    const y1 = await seite.evaluate(() => scrollY), b2 = (await k('zustand')).blick;
+    pruefe('Finger senkrecht: Seite scrollt, Bild bleibt', y1 > y0 && Math.abs(b2[0] - b1[0]) < 0.5, `gescrollt ${y1 - y0} px`);
     await ctx.close();
   }
 } finally {

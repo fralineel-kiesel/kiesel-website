@@ -1,11 +1,57 @@
 ---
+// /funktionen/ nach dem Artboard „Funktionen“ (design/generator/gen3.py): Kopf mit Sprungmarken,
+// dann RGB-Licht, Zen-Modus, Privacy-Modus und „Such das Gipfelkreuz“. Alles echt bedienbar.
+// Texte in src/data/funktionen.js.
 import BaseLayout from '../layouts/BaseLayout.astro';
-import Platzhalter from '../components/Platzhalter.astro';
+import RgbLicht from '../components/funktionen/RgbLicht.astro';
+import ZenModus from '../components/funktionen/ZenModus.astro';
+import PrivacyModus from '../components/funktionen/PrivacyModus.astro';
+import KameraSuche from '../components/funktionen/KameraSuche.astro';
+import { KOPF, KAMERA } from '../data/funktionen.js';
 ---
-<BaseLayout titel="Funktionen">
-  <Platzhalter
-    etappe={6}
-    titel="Kleine Ideen, grosse Wirkung."
-    einleitung="RGB-Licht, Zen-Modus, Privacy-Modus und mehr zum Ausprobieren."
-  />
+<BaseLayout titel="Funktionen" beschreibung="RGB-Licht, Zen-Modus, Privacy-Modus und acht versteckte Details im Kamera-Zoom: alles zum Ausprobieren.">
+  <section class="kopf container" aria-labelledby="funktionen-titel">
+    <h1 class="t-display" id="funktionen-titel">{KOPF.titel}</h1>
+    <p class="t-lead t-muted">{KOPF.einleitung}</p>
+    <nav class="anker" aria-label="Auf dieser Seite">
+      {KOPF.anker.map(([text, id]) => <a href={`#${id}`}>{text}</a>)}
+    </nav>
+  </section>
+
+  <section class="abschnitt container" id="rgb" aria-label="RGB-Licht"><RgbLicht /></section>
+  <section class="abschnitt container" id="zen" aria-label="Zen-Modus"><ZenModus /></section>
+  <section class="abschnitt container" id="privacy" aria-label="Privacy-Modus"><PrivacyModus /></section>
+  <section class="abschnitt container" id="kamera" aria-labelledby="kamera-titel">
+    <h2 class="t-1" id="kamera-titel">{KAMERA.titel}</h2>
+    <p class="t-lead t-muted unter">{KAMERA.text}</p>
+    <KameraSuche />
+  </section>
 </BaseLayout>
+
+<style>
+  .kopf { padding-top: var(--space-8); }
+  .kopf .t-lead { max-width: 640px; margin-top: var(--space-5); }
+  .anker { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-6); }
+  .anker a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 18px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-full);
+    background: var(--surface);
+    color: var(--ink);
+    font-size: var(--fs-small);
+    font-weight: 500;
+    text-decoration: none;
+  }
+  .anker a:hover { background: var(--raised); }
+  /* Abstand zwischen den Abschnitten wie auf den anderen Seiten */
+  .abschnitt { padding-top: clamp(var(--space-8), 10vw, var(--space-10)); scroll-margin-top: var(--space-8); }
+  .unter { max-width: 720px; margin-top: var(--space-4); }
+  @media (min-width: 900px) {
+    .kopf { padding-top: calc(var(--space-8) + var(--space-2)); }
+    /* Im Artboard sind die Titel dieser Seite 56 statt 64 px gross */
+    .abschnitt :global(h2.t-1) { font-size: calc(var(--fs-1) * 0.875); }
+  }
+</style>
