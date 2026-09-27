@@ -367,14 +367,16 @@ export function blumeBild({ fokus = 'Blume (3x Tele)', staerke = 24, breite = 60
 // ------------------------------------------------------------------
 // INNENLEBEN: SE (2016), Kiesel 1, Kiesel 1 Pro im selben Massstab
 // ------------------------------------------------------------------
+// Die drei Helfer comp/speaker/chip sind exportiert, weil innenteile.js (Akku-Story)
+// dieselben Bauteile einzeln zeichnet.
 // Nummer-Punkt eines Bauteils (orange = fällt beim Kiesel weg)
-function comp(labelNo, shape, cx, cy, heat = false) {
+export function comp(labelNo, shape, cx, cy, heat = false) {
   const col = heat ? '#FF8A5E' : '#5CC3DB';
   return shape + E('circle', { cx: f(cx), cy: f(cy), r: '11', style: `fill: ${col}` }) +
     E('text', { x: f(cx), y: f(cy + 4.5), style: "font-family: 'Instrument Sans', sans-serif; font-size: 13px; font-weight: 600; fill: #06222A; text-anchor: middle" }, String(labelNo));
 }
 
-function speaker(x, y, w, h, s) {
+export function speaker(x, y, w, h, s) {
   let g = E('rect', { x: f(x), y: f(y), width: f(w), height: f(h), rx: f(1.2 * s), style: 'fill: #2A3036; stroke: #45505A; stroke-width: 1' });
   for (let i = 0; i < Math.trunc(w / (2.2 * s)); i++) {
     for (let j = 0; j < Math.trunc(h / (2.2 * s)); j++) {
@@ -384,7 +386,7 @@ function speaker(x, y, w, h, s) {
   return g;
 }
 
-function chip(x, y, w, h, fill, label = null) {
+export function chip(x, y, w, h, fill, label = null) {
   let g = E('rect', { x: f(x), y: f(y), width: f(w), height: f(h), rx: '3', style: `fill: ${fill}; stroke: #0E1318; stroke-width: 1` });
   if (label) {
     g += E('text', { x: f(x + w / 2), y: f(y + h / 2 + 4), style: "font-family: 'Instrument Sans', sans-serif; font-size: 11px; font-weight: 600; fill: #E7ECF0; text-anchor: middle" }, label);

@@ -1,11 +1,5 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import Platzhalter from '../../components/Platzhalter.astro';
+// Technische Daten. Der Inhalt steckt in components/modell/TechnikSeite.astro.
+import TechnikSeite from '../../components/modell/TechnikSeite.astro';
 ---
-<BaseLayout titel="Kiesel 1 · Technische Daten" unterleiste="k1">
-  <Platzhalter
-    etappe={4}
-    titel="Kiesel 1: Technische Daten"
-    einleitung="Alle Masse und Werte des Kiesel 1 auf einen Blick."
-  />
-</BaseLayout>
+<TechnikSeite modell="k1" />

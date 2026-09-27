@@ -1,0 +1,299 @@
+---
+// Akku-Story der Modellseiten: Beim Scrollen öffnet sich ein iPhone SE (2016), Klinke,
+// SIM-Schlitten und Home-Button fliegen raus, der Akku wächst in den frei gewordenen Platz,
+// und am Schluss stehen SE und Kiesel nebeneinander.
+//
+//   modell: 'k1' | 'pro'
+//
+// So funktioniert es (Einzelheiten in src/scripts/akku-story.js):
+// - Alle Bauteile sind einzelne kleine SVGs aus innenteile() (Zeichen-Motor), jedes in
+//   einem eigenen <div class="ebene">. Die Seite verschiebt, dreht und blendet nur diese
+//   Ebenen (transform, opacity). Gezeichnet wird dabei nichts neu, das erledigt die
+//   Grafikkarte, darum bleibt es flüssig.
+// - Das HTML zeigt von Anfang an den ENDZUSTAND (SE und Kiesel nebeneinander). Ohne
+//   JavaScript und bei „weniger Bewegung“ bleibt es dabei, die Schritte stehen dann als
+//   normale Liste da. Erst das Skript schaltet data-scroll="an": Der Abschnitt wird viele
+//   Bildschirme hoch, die Bühne klebt, und die Scroll-Position steuert den Ablauf.
+import { innenteile, akkuText, INNEN_MASSE, INNEN_WAND, phoneOpen, f, E } from '../../lib/kiesel-draw/index.js';
+import { AKKU, SE_MAH } from '../../data/akku.js';
+import { MODELLE } from '../../data/modelle.js';
+
+const { modell = 'k1' } = Astro.props;
+const daten = AKKU[modell];
+const name = MODELLE[modell].name;
+const S = 3.4; // px pro mm, wie im Artboard „Innenleben“
+
+// ── Die Welt: gut 500 × 560 px, wird per CSS/JS in die Bühne eingepasst ──
+// So breit wie die beiden Handys am Schluss plus etwas Rand: Je schmaler die Welt, desto
+// grösser erscheint alles auf dem Handy (dort begrenzt die Breite).
+const OBEN = 92, ABSTAND = 56, RAND = 24, WELT_H = 560;
+const [Wz, Hz, Rz] = INNEN_MASSE[modell];
+const [Ws, Hs] = INNEN_MASSE.se;
+const dw = Wz * S, dh = Hz * S, sw = Ws * S, sh = Hs * S;
+const WELT_B = Math.ceil(sw + ABSTAND + dw + 2 * RAND);
+const links = (WELT_B - (sw + ABSTAND + dw)) / 2;
+const seX = links, geraetX = links + sw + ABSTAND;
+
+// Das SE liegt mittig im (evtl. grösseren) Kiesel-Gehäuse, damit der Pro gleichmässig wächst
+const seTeile = innenteile('se', (dw - sw) / 2, (dh - sh) / 2, S);
+const zielTeile = innenteile(modell, 0, 0, S);
+const seBox = Object.fromEntries(seTeile.map((t) => [t.id, t]));
+const WEG = ['sim', 'home', 'klinke'];
+const PAARE = ['platine', 'kamera', 'akku', 'motor', 'lautsprecher', 'anschluss'];
+const box = (t) => `${f(t.x)} ${f(t.y)} ${f(t.w)} ${f(t.h)}`;
+const lage = (t) => `left: ${f(t.x)}px; top: ${f(t.y)}px; width: ${f(t.w)}px; height: ${f(t.h)}px`;
+
+// Ebenen in Zeichenreihenfolge. rolle: se = nur im SE (blendet aus), ziel = im Kiesel,
+// weg = fliegt raus, luecke = orange Umriss, neu = kommt beim Kiesel dazu
+const ebenen = [];
+const gh = zielTeile.find((t) => t.id === 'gehaeuse');
+ebenen.push({ ...gh, rolle: 'ziel', von: seBox.gehaeuse });
+for (const t of seTeile) if (t.id.startsWith('luecke-')) ebenen.push({ ...t, rolle: 'luecke' });
+for (const t of seTeile) if (PAARE.includes(t.id)) ebenen.push({ ...t, rolle: 'se', nach: zielTeile.find((z) => z.id === t.id) });
+for (const t of zielTeile) {
+  if (t.id === 'gehaeuse') continue;
+  ebenen.push(PAARE.includes(t.id) ? { ...t, rolle: 'ziel', von: seBox[t.id] } : { ...t, rolle: 'neu' });
+}
+// Beschriftung auf dem Akku: steht an der Kiesel-Stelle, das Skript schiebt sie vom SE her
+const tz = akkuText(modell, 0, 0, S), ts = akkuText('se', (dw - sw) / 2, (dh - sh) / 2, S);
+const endText = `ca. ${daten.mah} mAh`;
+const textEbene = { id: 'akkutext', x: tz.x - 90, y: tz.y - 22, w: 180, h: 30 };
+const textSvg = E('svg', { width: '180', height: '30', viewBox: `${f(tz.x - 90)} ${f(tz.y - 22)} 180 30`, 'aria-hidden': 'true' },
+  E('text', { x: f(tz.x), y: f(tz.y), 'data-akkutext': '', style: "font-family: 'Unbounded', sans-serif; font-size: 18px; font-weight: 600; fill: #E7ECF0; text-anchor: middle" }, endText));
+for (const id of WEG) ebenen.push({ ...seBox[id], rolle: 'weg' });
+
+// Nummern wie im Artboard: nur die Nummern-Punkte aus phoneOpen() (Kreis r=11 + Zahl).
+// Die ganze Zeichnung doppelt darüberzulegen ginge nicht: Halbdurchsichtiges wie die
+// Vapor-Chamber würde doppelt so kräftig.
+const [zielVoll] = phoneOpen(modell, 0, 0, S);
+const nummern = zielVoll.match(/<circle [^>]*r="11" style="fill: #[0-9A-F]{6}"><\/circle><text [^>]*>\d+<\/text>/g).join('');
+const [seVoll] = phoneOpen('se', 0, 0, S);
+const svgVoll = (inhalt, w, h, label) => E('svg', { width: f(w), height: f(h), viewBox: `0 0 ${f(w)} ${f(h)}`, style: 'overflow: visible', 'aria-hidden': 'true' }, inhalt);
+
+const WAENDE = 10;
+const schritte = daten.schritte;
+const label = `Innenleben im selben Massstab: links das iPhone SE (2016) mit ${SE_MAH} mAh, rechts der ${name} mit ca. ${daten.mah} mAh. Klinke, SIM-Schlitten und Home-Button fallen weg, der Akku wird grösser.`;
+---
+<section
+  class="akku-story"
+  aria-labelledby={`akku-titel-${modell}`}
+  data-akku-story
+  data-modell={modell}
+  data-mah-se={SE_MAH}
+  data-mah={daten.mah}
+  data-welt={`${WELT_B} ${WELT_H}`}
+  data-mitte={`${f(WELT_B / 2 - (geraetX + dw / 2))} ${f(WELT_H / 2 - (OBEN + dh / 2))}`}
+>
+  <div class="container kopf">
+    <h2 class="t-1" id={`akku-titel-${modell}`}>Weniger drin.<br />Mehr Akku.</h2>
+    <p class="t-lead t-muted">Das SE von 2016 hatte {SE_MAH} mAh. Der {name} hat {modell === 'k1' ? 'dieselbe Grundfläche, aber fast doppelt so viel' : 'etwas mehr Fläche und mehr als doppelt so viel'}. <span class="nur-scroll">Scroll weiter und schau, woher der Platz kommt.</span></p>
+  </div>
+
+  <div class="spur" data-spur>
+  <div class="klebt container">
+    <div class="texte">
+      <ol class="schritte" role="list">
+        {schritte.map((s, i) => (
+          <li data-schritt={i} data-von={s.von} data-bis={s.bis}>
+            <span class="nr t-small" aria-hidden="true">{i + 1}/{schritte.length}</span>
+            <h3 class="t-3">{s.titel}</h3>
+            <p class="t-muted">{s.text}</p>
+            {s.plus && <span class="plus t-small">{s.plus}</span>}
+          </li>
+        ))}
+      </ol>
+      <div class="balken" aria-hidden="true"><span data-fortschritt-balken></span></div>
+    </div>
+
+    <div class="buehne" data-buehne role="img" aria-label={label}>
+      <div class="anzeige" aria-hidden="true">
+        <p><span class="t-zahl" data-mah-zahl>{daten.mah}</span> <span class="einheit">mAh</span></p>
+        <p class="t-small t-muted">Dicke <span data-dicke>9</span> mm · grobe Schätzung</p>
+      </div>
+      <div class="welt" style={`width: ${WELT_B}px; height: ${WELT_H}px`} aria-hidden="true" data-welt>
+        <div class="vergleich" data-se-vergleich style={`left: ${f(seX)}px; top: ${OBEN}px; width: ${f(sw)}px; height: ${f(sh)}px`}>
+          <p class="name" style={`bottom: calc(100% + 14px)`}><b>iPhone SE (2016)</b><span>{SE_MAH} mAh</span></p>
+          <Fragment set:html={svgVoll(seVoll, sw, sh)} />
+        </div>
+        <p class="name ziel-name" data-ziel-name style={`left: ${f(geraetX)}px; width: ${f(dw)}px; bottom: calc(${WELT_H - OBEN}px + 14px)`}><b>{name}</b><span>{endText}</span></p>
+        <div class="geraet" data-geraet style={`left: ${f(geraetX)}px; top: ${OBEN}px; width: ${f(dw)}px; height: ${f(dh)}px`}>
+          {Array.from({ length: WAENDE }, (_, i) => (
+            <div class="wand" data-wand={i} data-box={box(seBox.gehaeuse)} style={`width: ${f(dw)}px; height: ${f(dh)}px; border-radius: ${f(Rz * S)}px; background: ${INNEN_WAND.fuellung}; border: 2px solid ${INNEN_WAND.rand}`} />
+          ))}
+          {ebenen.map((e) => (
+            <div
+              class="ebene"
+              data-teil={e.id}
+              data-rolle={e.rolle}
+              data-box={box(e)}
+              data-von={e.von ? box(e.von) : undefined}
+              data-nach={e.nach ? box(e.nach) : undefined}
+              style={lage(e)}
+              set:html={e.svg}
+            />
+          ))}
+          <div class="ebene" data-teil="akkutext" data-rolle="text" data-box={box(textEbene)} data-von={`${f(ts.x - 90)} ${f(ts.y - 22)} 180 30`} style={lage(textEbene)} set:html={textSvg} />
+          <div class="ebene" data-teil="nummern" data-rolle="nummern" style={`left: 0; top: 0; width: ${f(dw)}px; height: ${f(dh)}px`} set:html={svgVoll(nummern, dw, dh)} />
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+</section>
+
+<style>
+  .akku-story { position: relative; }
+  .kopf { display: flex; flex-direction: column; gap: var(--space-4); }
+  .kopf p { max-width: 640px; }
+  .nur-scroll { display: none; }
+
+  .klebt {
+    display: grid;
+    gap: var(--space-5);
+    margin-top: var(--space-6);
+  }
+
+  /* ── Schritte: ohne Scroll-Kopplung eine normale Liste ── */
+  .schritte { display: grid; gap: var(--space-5); margin: 0; }
+  .schritte li { display: flex; flex-direction: column; gap: var(--space-2); }
+  .nr { color: var(--accent); font-weight: 600; }
+  .plus { color: var(--accent); font-weight: 600; }
+  .balken { display: none; }
+
+  /* ── Bühne ── */
+  .buehne {
+    position: relative;
+    height: 380px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-xl);
+    background: linear-gradient(180deg, var(--stage), var(--stage-lo));
+    --fit: 0.6;
+  }
+  .anzeige {
+    display: none;
+    position: absolute;
+    top: var(--space-4);
+    left: var(--space-4);
+    z-index: 2;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .anzeige .t-zahl { font-size: calc(var(--fs-zahl) * 0.7); font-variant-numeric: tabular-nums; }
+  .einheit { font-family: var(--display); font-weight: 600; font-size: var(--fs-4); }
+  .welt {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%) scale(var(--fit));
+    perspective: 1600px;
+    perspective-origin: 50% 40%;
+  }
+  .vergleich, .geraet, .ebene, .wand, .name { position: absolute; }
+  .vergleich :global(svg), .ebene :global(svg) { display: block; max-width: none; overflow: visible; }
+  .geraet { transform-style: preserve-3d; transform-origin: 50% 50%; }
+  .ebene, .wand { transform-origin: 0 0; }
+  .ebene[data-rolle="weg"] { transform-origin: 50% 50%; }
+  /* Farbe der Wand kommt aus dem Zeichen-Motor (INNEN_WAND), wie die Bauteile selbst */
+  .wand { left: 0; top: 0; }
+  .name {
+    left: 0;
+    right: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    color: var(--ink);
+    font-size: calc(var(--fs-small) / var(--fit));
+    line-height: 1.3;
+    white-space: nowrap;
+  }
+  .name b { font-family: var(--display); font-weight: 600; font-size: 1.15em; }
+  .name span { color: var(--muted); }
+
+  /* Endzustand ohne Skript: nur das, was am Schluss sichtbar ist */
+  .ebene[data-rolle="se"], .ebene[data-rolle="weg"], .ebene[data-rolle="luecke"] { opacity: 0; }
+  .wand { opacity: 0; }
+
+  @media (min-width: 900px) {
+    .klebt {
+      grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+      gap: var(--space-8);
+      align-items: center;
+      margin-top: var(--space-7);
+    }
+    .buehne { height: 600px; --fit: 1; }
+    .anzeige { top: var(--space-5); left: var(--space-5); }
+  }
+
+  /* ── Mit Scroll-Kopplung (setzt das Skript) ── */
+  .akku-story[data-scroll="an"] {
+    /* Scroll-Strecke: so weit scrollt man, während die Bühne klebt */
+    --strecke: 420svh;
+    --klebhoehe: calc(100svh - var(--subnav-h));
+  }
+  [data-scroll="an"] .spur { height: calc(var(--strecke) + var(--klebhoehe)); margin-top: var(--space-5); }
+  [data-scroll="an"] .nur-scroll { display: inline; }
+  [data-scroll="an"] .anzeige { display: flex; }
+  [data-scroll="an"] .klebt {
+    position: sticky;
+    top: var(--subnav-h);
+    height: var(--klebhoehe);
+    margin-top: 0;
+    grid-template-rows: minmax(0, 1fr) auto;
+    padding-block: var(--space-4);
+    gap: var(--space-3);
+  }
+  [data-scroll="an"] .texte { order: 2; }
+  [data-scroll="an"] .buehne { height: auto; min-height: 0; }
+  [data-scroll="an"] .schritte { display: grid; }
+  /* Alle Schritte liegen übereinander in derselben Zelle, das Skript blendet über */
+  [data-scroll="an"] .schritte li {
+    grid-area: 1 / 1;
+    padding: var(--space-4) var(--space-5);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-l);
+    background: var(--surface);
+    opacity: 0;
+  }
+  [data-scroll="an"] .schritte li p { font-size: var(--fs-small); line-height: 1.5; }
+  [data-scroll="an"] .balken {
+    display: block;
+    height: 3px;
+    margin-top: var(--space-3);
+    border-radius: var(--radius-full);
+    background: var(--line);
+    overflow: hidden;
+  }
+  [data-scroll="an"] .balken span {
+    display: block;
+    height: 100%;
+    background: var(--accent);
+    transform-origin: 0 50%;
+    transform: scaleX(0);
+  }
+  [data-scroll="an"] .ebene, [data-scroll="an"] .wand { will-change: transform, opacity; }
+  /* Achtung: am Gerät selbst nur transform. will-change: opacity (wie auch opacity < 1,
+     overflow oder filter) würde die 3D-Ebenen flachdrücken, die Tiefe wäre weg. */
+  [data-scroll="an"] .geraet { will-change: transform; }
+
+  @media (min-width: 900px) {
+    .akku-story[data-scroll="an"] { --strecke: 460svh; }
+    [data-scroll="an"] .klebt {
+      grid-template-rows: none;
+      padding-block: var(--space-6);
+      gap: var(--space-8);
+    }
+    [data-scroll="an"] .texte { order: 0; }
+    [data-scroll="an"] .buehne { height: 100%; }
+    [data-scroll="an"] .schritte li { padding: 0; border: 0; background: none; }
+    [data-scroll="an"] .schritte li p { font-size: var(--fs-lead); line-height: var(--lh-text); }
+    [data-scroll="an"] .schritte li .t-3 { font-size: var(--fs-2); }
+  }
+</style>
+
+<script>
+  import { starteAkkuStory } from '../../scripts/akku-story.js';
+  document.querySelectorAll('[data-akku-story]').forEach(starteAkkuStory);
+</script>

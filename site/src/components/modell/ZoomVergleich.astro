@@ -1,0 +1,259 @@
+---
+// Zoom-Vergleich auf /kiesel-1-pro/ („3x Tele. Echt optisch.“, Artboard „Modellseite Kiesel 1 Pro“).
+// Links der Kiesel 1 (nur digital, wird unscharf), rechts der Pro (Tele-Linse ab 3x).
+//
+// Aufbau: Zwei gleich grosse Bilder liegen übereinander. Das obere (Kiesel 1) wird per
+// clip-path nur bis zur Trennlinie gezeigt. Die Trennlinie steuert ein echtes
+// <input type="range">: Damit funktionieren Pfeiltasten, Pos1/Ende und Screenreader von
+// selbst. Maus und Finger bedienen dazu die ganze Bildfläche (Pointer Events).
+import Chip from '../Chip.astro';
+import Schalter from '../Schalter.astro';
+import Icon from '../Icon.astro';
+import GlasChip from '../GlasChip.astro';
+import { panorama } from '../../lib/kiesel-draw/index.js';
+
+// Anfangs 5x wie im Artboard: crop(756, 246, 5)
+const START = { zoom: 5, cx: 756, cy: 246 };
+// Das ganze Bild in eine Gruppe mit Unschärfe-Filter packen (wie im Artboard: g filter=url(#dig))
+const bild = (label, filterId) => panorama({ ...START, breite: null, hoehe: null, label })
+  .replace(/^(<svg[^>]*>)([\s\S]*)(<\/svg>)$/, `$1<g filter="url(#${filterId})">$2</g>$3`);
+// Filter für die digitale Unschärfe. stdDeviation ist in Bild-Einheiten (1600 breit).
+const filter = (id, sd) => `<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="${id}" x="0" y="0" width="100%" height="100%"><feGaussianBlur stdDeviation="${sd}" /></filter></svg>`;
+const STUFEN = ['0.5', '1', '3', '5', '10'];
+---
+<div class="zoom-vergleich" data-zoom-vergleich>
+  <div class="fenster" data-fenster style="--pos: 50%">
+    <Fragment set:html={filter('zv-k1', 1.6) + filter('zv-pro', 0.01)} />
+    <div class="bild pro" data-bild="pro" set:html={bild('Kiesel 1 Pro bei 5x: scharf dank Tele', 'zv-pro')} />
+    <div class="bild k1" data-bild="k1" set:html={bild('Kiesel 1 bei 5x: digital und unscharf', 'zv-k1')} />
+    <span class="chip-links"><GlasChip><span class="lang" data-text="k1">Kiesel 1 · 5x digital</span><span class="kurz" data-kurz="k1">Kiesel 1 · 5x</span></GlasChip></span>
+    <span class="chip-rechts"><GlasChip><span class="lang" data-text="pro">Kiesel 1 Pro · 5x mit Tele</span><span class="kurz" data-kurz="pro">Pro · 5x Tele</span></GlasChip></span>
+    <div class="linie" aria-hidden="true"><span class="griff"><Icon name="swap" size={22} /></span></div>
+    <input
+      class="regler"
+      type="range"
+      min="0"
+      max="100"
+      step="1"
+      value="50"
+      aria-label="Trennlinie: links Kiesel 1, rechts Kiesel 1 Pro"
+      aria-valuetext="Mitte"
+      data-regler
+    />
+  </div>
+  <div class="steuerung">
+    <div class="stufen" role="group" aria-label="Zoomstufe">
+      {STUFEN.map((s) => <Chip gruppe="zoom-vergleich" gedrueckt={s === '5'} data-stufe={s}>{s}x</Chip>)}
+    </div>
+    <Schalter an={true} data-vergleich-schalter>Mit Kiesel 1 vergleichen</Schalter>
+  </div>
+  <p class="vh" aria-live="polite" data-ansage></p>
+</div>
+
+<style>
+  .fenster {
+    position: relative;
+    height: 360px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-l);
+    background: var(--stage);
+    /* Senkrecht wischen scrollt weiter die Seite, waagrecht bedient den Regler */
+    touch-action: pan-y;
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: ew-resize;
+  }
+  .bild { position: absolute; inset: 0; }
+  .bild :global(svg) { width: 100%; height: 100%; }
+  .k1 { clip-path: inset(0 calc(100% - var(--pos)) 0 0); }
+  .chip-links, .chip-rechts { position: absolute; top: var(--space-3); z-index: 1; pointer-events: none; }
+  .chip-links { left: var(--space-3); }
+  /* Auf dem Handy wären beide Chips zusammen breiter als das Bild: Kurzfassung */
+  .lang { display: none; }
+  .chip-rechts { right: var(--space-3); }
+  .linie {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: var(--pos);
+    width: 2px;
+    margin-left: -1px;
+    background: var(--glass-on);
+    pointer-events: none;
+  }
+  .griff {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 48px;
+    height: 48px;
+    margin: -24px 0 0 -24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-full);
+    background: var(--glass-on);
+    color: var(--glass-on-ink);
+    box-shadow: 0 2px 10px rgb(0 0 0 / 0.25);
+  }
+  /* Der Regler selbst ist unsichtbar (liegt über der Fläche); sein Fokus erscheint am Griff */
+  .regler {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .regler:focus-visible ~ .linie .griff,
+  .fenster:has(.regler:focus-visible) .griff {
+    outline: 3px solid var(--accent);
+    outline-offset: 3px;
+  }
+  .fenster[data-allein] { cursor: default; }
+  .fenster[data-allein] .k1, .fenster[data-allein] .linie, .fenster[data-allein] .chip-links { display: none; }
+
+  .steuerung {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-3);
+    margin-top: var(--space-4);
+  }
+  .stufen { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+  .stufen :global(.chip) { min-height: 44px; min-width: 52px; justify-content: center; }
+
+  @media (min-width: 900px) {
+    .fenster { height: 560px; border-radius: calc(var(--radius-l) + 4px); }
+    .lang { display: inline; }
+    .kurz { display: none; }
+    .chip-links { left: var(--space-5); top: var(--space-5); }
+    .chip-rechts { right: var(--space-5); top: var(--space-5); }
+    .steuerung { flex-direction: row; justify-content: space-between; align-items: center; margin-top: var(--space-5); }
+  }
+</style>
+
+<script>
+  import { crop, begrenze } from '../../lib/kiesel-draw/ausschnitt.js';
+
+  // Ausschnitte wie beim Zoom-Teaser der Startseite, 5x wie im Artboard
+  const STUFEN = {
+    0.5: { zoom: 1, cx: 800, cy: 500 },
+    1: { zoom: 1.5, cx: 760, cy: 360 },
+    3: { zoom: 3, cx: 740, cy: 300 },
+    5: { zoom: 5, cx: 756, cy: 246 },
+    10: { zoom: 10, cx: 738, cy: 228 },
+  };
+  // Unschärfe auf dem Bildschirm in px (bei 600 px Bildbreite), je nach Zoom:
+  // Kiesel 1: ab 1x nur noch digital, darüber wird es stetig weicher. Mehr als 5x kann er nicht.
+  // Pro: bis 3x optisch (0.5x, 1x, 3x-Tele), darüber digital aus dem Tele-Bild.
+  const unschaerfe = {
+    k1: (z) => (z <= 1 ? 0 : 0.75 * (Math.min(z, 5) - 1) + (z > 5 ? 2.2 : 0)),
+    pro: (z) => (z <= 3 ? 0 : 0.3 * (z - 3)),
+  };
+  const KURZ = {
+    k1: (z) => (z > 5 ? 'Kiesel 1 · max. 5x' : `Kiesel 1 · ${z}x`),
+    pro: (z) => (z < 3 ? `Pro · ${z}x` : z === 3 ? 'Pro · 3x Tele' : `Pro · ${z}x Tele`),
+  };
+  const TEXT = {
+    k1: (z) => (z <= 1 ? `Kiesel 1 · ${z}x optisch` : z > 5 ? 'Kiesel 1 · max. 5x digital' : `Kiesel 1 · ${z}x digital`),
+    pro: (z) => (z < 3 ? `Kiesel 1 Pro · ${z}x optisch` : z === 3 ? 'Kiesel 1 Pro · 3x Tele' : `Kiesel 1 Pro · ${z}x mit Tele`),
+  };
+  const ruhig = matchMedia('(prefers-reduced-motion: reduce)');
+
+  document.querySelectorAll('[data-zoom-vergleich]').forEach((wurzel) => {
+    const fenster = wurzel.querySelector('[data-fenster]');
+    const regler = wurzel.querySelector('[data-regler]');
+    const svgs = [...wurzel.querySelectorAll('[data-bild] svg')];
+    const blur = { k1: wurzel.querySelector('#zv-k1 feGaussianBlur'), pro: wurzel.querySelector('#zv-pro feGaussianBlur') };
+    const text = { k1: wurzel.querySelector('[data-text="k1"]'), pro: wurzel.querySelector('[data-text="pro"]') };
+    const kurz = { k1: wurzel.querySelector('[data-kurz="k1"]'), pro: wurzel.querySelector('[data-kurz="pro"]') };
+    const ansage = wurzel.querySelector('[data-ansage]');
+
+    // ── Trennlinie ──
+    function setze(wert) {
+      const v = Math.min(100, Math.max(0, Math.round(wert)));
+      regler.value = String(v);
+      fenster.style.setProperty('--pos', `${v}%`);
+      regler.setAttribute('aria-valuetext', v === 50 ? 'Mitte' : `${v} % Kiesel 1, ${100 - v} % Kiesel 1 Pro`);
+    }
+    regler.addEventListener('input', () => setze(+regler.value));
+    const ausX = (x) => {
+      const r = fenster.getBoundingClientRect();
+      return ((x - r.left) / r.width) * 100;
+    };
+
+    // Maus: sofort ziehen. Finger/Stift: erst ziehen, wenn die Bewegung waagrecht ist,
+    // sonst gehört die Geste dem Scrollen (touch-action: pan-y). Antippen setzt die Linie.
+    let zug = null;
+    fenster.addEventListener('pointerdown', (e) => {
+      if (fenster.hasAttribute('data-allein') || e.button !== 0) return;
+      zug = { id: e.pointerId, x: e.clientX, y: e.clientY, aktiv: e.pointerType === 'mouse' };
+      if (zug.aktiv) {
+        fenster.setPointerCapture(e.pointerId);
+        setze(ausX(e.clientX));
+        e.preventDefault(); // kein Text markieren
+      }
+    });
+    fenster.addEventListener('pointermove', (e) => {
+      if (!zug || e.pointerId !== zug.id) return;
+      if (!zug.aktiv) {
+        const dx = Math.abs(e.clientX - zug.x), dy = Math.abs(e.clientY - zug.y);
+        if (dx > 6 && dx > dy) {
+          zug.aktiv = true;
+          fenster.setPointerCapture(e.pointerId);
+        } else if (dy > 6) {
+          zug = null; // senkrecht: der Browser scrollt
+          return;
+        } else return;
+      }
+      setze(ausX(e.clientX));
+    });
+    const ende = (e) => {
+      if (!zug || e.pointerId !== zug.id) return;
+      // Antippen ohne Bewegung: Linie dorthin
+      if (!zug.aktiv && e.type === 'pointerup') setze(ausX(e.clientX));
+      zug = null;
+    };
+    fenster.addEventListener('pointerup', ende);
+    fenster.addEventListener('pointercancel', ende);
+
+    // ── Zoomstufen ──
+    let lauf = 0;
+    function zoome(z) {
+      const s = STUFEN[z];
+      const [cx, cy] = begrenze(s.cx, s.cy, s.zoom);
+      const ziel = crop(cx, cy, s.zoom).split(' ').map(Number);
+      const start = svgs[0].getAttribute('viewBox').split(' ').map(Number);
+      // px auf dem Bildschirm → Bild-Einheiten: 1 Einheit = 600 / (1600 / zoom) px
+      const sd = (px) => Math.max(0.01, (px * 1600) / (600 * s.zoom)).toFixed(2);
+      blur.k1.setAttribute('stdDeviation', sd(unschaerfe.k1(z)));
+      blur.pro.setAttribute('stdDeviation', sd(unschaerfe.pro(z)));
+      text.k1.textContent = TEXT.k1(z);
+      text.pro.textContent = TEXT.pro(z);
+      kurz.k1.textContent = KURZ.k1(z);
+      kurz.pro.textContent = KURZ.pro(z);
+      ansage.textContent = `${z}-fach: ${TEXT.k1(z)}, ${TEXT.pro(z)}`;
+      svgs.forEach((svg) => svg.setAttribute('aria-label', svg.closest('[data-bild]').dataset.bild === 'k1' ? `${TEXT.k1(z)}: ${z > 1 ? 'unscharf' : 'scharf'}` : `${TEXT.pro(z)}: scharf`));
+      const t0 = performance.now(), nr = ++lauf;
+      const schritt = (jetzt) => {
+        if (nr !== lauf) return;
+        const t = ruhig.matches ? 1 : Math.min(1, (jetzt - t0) / 450);
+        const k = 1 - (1 - t) ** 3;
+        const vb = start.map((a, i) => (a + (ziel[i] - a) * k).toFixed(2)).join(' ');
+        svgs.forEach((svg) => svg.setAttribute('viewBox', vb));
+        if (t < 1) requestAnimationFrame(schritt);
+      };
+      requestAnimationFrame(schritt);
+    }
+    wurzel.querySelectorAll('[data-stufe]').forEach((b) => b.addEventListener('click', () => zoome(Number(b.dataset.stufe))));
+
+    // ── Vergleich an/aus ──
+    wurzel.querySelector('[data-vergleich-schalter]').addEventListener('kiesel:schalter', (e) => {
+      fenster.toggleAttribute('data-allein', !e.detail.an);
+      regler.disabled = !e.detail.an;
+    });
+  });
+</script>

@@ -1,0 +1,40 @@
+---
+// Kauf-Box am Ende der Modellseite (letzter Abschnitt im Artboard „Modellseite Kiesel 1 Pro“)
+import Knopf from '../Knopf.astro';
+import { MODELLE, abPreis } from '../../data/modelle.js';
+import { pfad } from '../../lib/pfad.js';
+
+const { modell } = Astro.props;
+const m = MODELLE[modell];
+---
+<div class="kaufbox">
+  <div class="text">
+    <h2 class="t-1">{m.name}</h2>
+    <p class="t-lead t-muted">{abPreis(modell)} in fünf Farben, {m.seite.speicherText}</p>
+  </div>
+  <div class="knoepfe">
+    <Knopf art="sekundaer" groesse="l" href={pfad('vergleichen/')}>Vergleichen</Knopf>
+    <Knopf art="primaer" groesse="l" href={pfad(`kaufen/?modell=${modell}`)}>Kaufen</Knopf>
+  </div>
+</div>
+
+<style>
+  .kaufbox {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+    padding: var(--space-6) var(--space-5);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-xl);
+    background: var(--surface);
+  }
+  .text { display: flex; flex-direction: column; gap: var(--space-3); }
+  .text h2 { font-size: calc(var(--fs-1) * 0.75); }
+  .knoepfe { display: flex; flex-direction: column; gap: var(--space-3); }
+  .knoepfe :global(.knopf) { width: 100%; }
+  @media (min-width: 900px) {
+    .kaufbox { flex-direction: row; justify-content: space-between; align-items: center; gap: var(--space-6); padding: calc(var(--space-7) + var(--space-2)); }
+    .knoepfe { flex-direction: row; }
+    .knoepfe :global(.knopf) { width: auto; }
+  }
+</style>
