@@ -20,7 +20,8 @@
     "pruefe:kaufen": "astro build && node scripts/pruefe-kaufen.mjs",
     "fotos:kaufen": "astro build && node scripts/fotografiere-kaufen.mjs",
     "pruefe:vergleichen": "astro build && node scripts/pruefe-vergleichen.mjs",
-    "pruefe:akku-rechner": "astro build && node scripts/pruefe-akku-rechner.mjs"
+    "pruefe:akku-rechner": "astro build && node scripts/pruefe-akku-rechner.mjs",
+    "pruefe:faq": "astro build && node scripts/pruefe-faq.mjs"
   },
   "dependencies": {
     "astro": "^7.3.5",

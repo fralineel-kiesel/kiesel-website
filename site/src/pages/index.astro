@@ -60,7 +60,7 @@ import { pfad } from '../lib/pfad.js';
   <section class="abschnitt container" aria-labelledby="fragen">
     <h2 class="t-1" id="fragen">Häufige Fragen</h2>
     <div class="faq">
-      <Akkordeon eintraege={FAQ.slice(0, 4)} offen="kaufen" idVorsilbe="faq" />
+      <Akkordeon eintraege={FAQ.filter((f) => f.startseite)} offen="kaufen" idVorsilbe="faq" />
     </div>
   </section>
 </BaseLayout>

@@ -1,7 +1,12 @@
 ---
-// Akkordeon (Artboard „Startseite Desktop“ › Häufige Fragen): Frage anklicken, Antwort klappt auf.
-//   eintraege: [{ id, frage, antwort }]   offen: id des anfangs offenen Eintrags (oder null)
+// Akkordeon (Artboard „Startseite Desktop“ › Häufige Fragen, Artboard „FAQ“): Frage anklicken,
+// Antwort klappt auf.
+//   eintraege: [{ id, frage, antwort, thema?, link? }]   offen: id des anfangs offenen Eintrags (oder null)
 //   ebene:     Überschriften-Ebene der Fragen (3 = <h3>, passend unter einer <h2>)
+//   anker:     true = jeder Eintrag bekommt id={e.id} als Sprungziel (nur auf der FAQ-Seite)
+//   thema:     true = Thema klein über der Frage zeigen (FAQ-Seite)
+//   link:      { text, pfad }: steht link.text in der Antwort, wird genau diese Stelle ein Link,
+//              sonst folgt der Link nach der Antwort
 //
 // Warum ein <button> in einer Überschrift und nicht <details>/<summary>?
 //   Der Button bringt Enter und Leertaste von selbst mit, und aria-expanded sagt dem
@@ -9,24 +14,36 @@
 //   sorgt dafür, dass man mit der Überschriften-Navigation von Frage zu Frage springen kann.
 //   aria-controls verbindet den Button mit seiner Antwort.
 import Icon from './Icon.astro';
+import Knopf from './Knopf.astro';
+import { pfad } from '../lib/pfad.js';
 
-const { eintraege, offen = null, ebene = 3, idVorsilbe = 'akk' } = Astro.props;
+const { eintraege, offen = null, ebene = 3, idVorsilbe = 'akk', anker = false, thema = false } = Astro.props;
 const H = `h${ebene}`;
+// Antwort in [vor, Linktext, nach] teilen, wenn der Linktext darin vorkommt
+const teile = (e) => {
+  const i = e.link ? e.antwort.indexOf(e.link.text) : -1;
+  return i < 0 ? null : [e.antwort.slice(0, i), e.link.text, e.antwort.slice(i + e.link.text.length)];
+};
 ---
 <div class="akkordeon" data-akkordeon>
   {eintraege.map((e) => {
     const auf = e.id === offen;
+    const t = teile(e);
     return (
-      <div class="eintrag">
+      <div class="eintrag" id={anker ? e.id : undefined} data-eintrag={e.id} data-thema={e.thema}>
         <H class="frage">
           <button type="button" class="t-4" id={`${idVorsilbe}-${e.id}-knopf`} aria-expanded={auf ? 'true' : 'false'} aria-controls={`${idVorsilbe}-${e.id}`}>
-            <span>{e.frage}</span>
+            <span class="text">
+              {thema && e.thema && <span class="thema">{e.thema}</span>}
+              <span class="f">{e.frage}</span>
+            </span>
             <Icon name="plus" size={22} class="plus" />
             <Icon name="minus" size={22} class="minus" />
           </button>
         </H>
         <div class="antwort" id={`${idVorsilbe}-${e.id}`} role="region" aria-labelledby={`${idVorsilbe}-${e.id}-knopf`} hidden={!auf}>
-          <p>{e.antwort}</p>
+          <p>{t ? <>{t[0]}<a href={pfad(e.link.pfad)}>{t[1]}</a>{t[2]}</> : e.antwort}</p>
+          {e.link && !t && <Knopf art="text" icon="arrow" href={pfad(e.link.pfad)}>{e.link.text}</Knopf>}
         </div>
       </div>
     );
@@ -34,9 +51,9 @@ const H = `h${ebene}`;
 </div>
 
 <style>
-  .akkordeon { display: flex; flex-direction: column; }
+  /* Linie unten an der ganzen Liste statt am letzten Eintrag: der kann gefiltert (hidden) sein */
+  .akkordeon { display: flex; flex-direction: column; border-bottom: 1px solid var(--line); }
   .eintrag { border-top: 1px solid var(--line); }
-  .eintrag:last-child { border-bottom: 1px solid var(--line); }
   .frage { font: inherit; }
   button {
     display: flex;
@@ -51,12 +68,17 @@ const H = `h${ebene}`;
     color: var(--ink);
     text-align: left;
   }
-  button:hover span { text-decoration: underline; text-underline-offset: 5px; text-decoration-thickness: 1px; }
+  .text { display: flex; flex-direction: column; gap: 4px; }
+  .thema { font-family: var(--body); font-size: 13px; font-weight: 600; letter-spacing: 0; color: var(--muted); }
+  button:hover .f { text-decoration: underline; text-underline-offset: 5px; text-decoration-thickness: 1px; }
   /* Zu: Plus, offen: Minus (wie im Artboard) */
   button[aria-expanded="true"] :global(.plus),
   button[aria-expanded="false"] :global(.minus) { display: none; }
   .antwort { padding-bottom: 22px; margin-top: -12px; }
-  .antwort p { max-width: 720px; color: var(--muted); }
+  .antwort { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-3); }
+  .antwort p { max-width: 760px; color: var(--muted); }
+  .antwort p a { color: var(--ink); text-underline-offset: 3px; }
+  .eintrag[hidden] { display: none; }
 </style>
 
 <script>
