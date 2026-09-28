@@ -1,15 +1,21 @@
-// Masse der Handys, 1:1 aus design/generator/lib.py (MODELS, geo, camrow).
+// Masse der Handys wie in design/generator/lib.py (MODELS, geo, camrow).
 //
 // Einheit: 1/10 mm. W = 586 heisst 58.6 mm breit, genau wie in der Tabelle in CLAUDE.md.
 // Darum passen alle Zeichnungen im selben Massstab zueinander (Kiesel 1 neben Pro).
 //   W, H = Breite, Höhe   R = Eckradius   cams = Anzahl Kameras hinten
-export const MODELS = {
-  k1: { W: 586, H: 1238, R: 96, cams: 1 },
-  pro: { W: 642, H: 1315, R: 106, cams: 2 },
-};
+// Die Zahlen selbst stehen nur in data/geraete.js (in mm), hier werden sie bloss umgerechnet.
+// Früher standen sie hier ein zweites Mal: zwei Quellen, die zufällig übereinstimmten.
+// pruefe:zeichenmotor zeigt, dass die Zeichnungen Zeichen für Zeichen wie in Python bleiben.
+import { GERAETE, KIESEL_IDS } from '../../data/geraete.js';
+
+const zehntel = (mm) => Math.round(mm * 10);
+export const MODELS = Object.fromEntries(KIESEL_IDS.map((id) => {
+  const g = GERAETE[id];
+  return [id, { W: zehntel(g.breite), H: zehntel(g.hoehe), R: zehntel(g.radius), cams: g.kameras }];
+}));
 
 // Dicke beider Modelle: 9 mm = 90 Einheiten (für die Seitenansicht)
-export const DICKE = 90;
+export const DICKE = zehntel(GERAETE.k1.dicke);
 
 // Oberkante der Knöpfe. Gemessen am Kiesel 1 (H = 1238) und fürs Pro mit s hochgerechnet.
 //   act = Action-Button, v1/v2 = lauter/leiser, pw = Power, cc = Kamera-Knopf
