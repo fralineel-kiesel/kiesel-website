@@ -1,78 +1,16 @@
 ---
 // Zoom-Demo auf /kiesel-1/: eine Kamera, 0.5x bis 1x optisch (variable Linse), darüber
 // digital bis 5x. Je weiter digital gezoomt wird, desto weicher wird das Bild.
-// Gleiche Mechanik wie der Vergleich auf der Pro-Seite (kamera-zoom.js), nur mit einer
-// Ebene und ohne Linsenwechsel. Die versteckten Details sind auch hier, bei 5x aber
-// nur zu erahnen.
-import GlasChip from '../GlasChip.astro';
+// Das Bild ist dasselbe Baustück wie überall (ZoomBild), nur mit modell="k1": eine Ebene,
+// kein Linsenwechsel.
+import ZoomBild from './ZoomBild.astro';
 import ZoomSkala from './ZoomSkala.astro';
 import LinsenLeiste from './LinsenLeiste.astro';
-import FokusRing from './FokusRing.astro';
-import FundZaehler from './FundZaehler.astro';
-import KameraFunde from './KameraFunde.astro';
-import { panoramaQuelle, panoramaAnsicht } from '../../lib/kiesel-draw/index.js';
-import { STUFEN, LINSEN } from '../../data/kamera.js';
-
-const START = { zoom: 1.5, cx: 756, cy: 246 }; // 1x
-const quelle = panoramaQuelle();
+import { STUFEN, LINSEN, MAX_ZOOM } from '../../data/kamera.js';
 ---
-<div class="zoom-demo" data-zoom-demo data-linse="haupt">
-  <Fragment set:html={quelle.svg} />
-  <div class="fenster" data-fenster>
-    <div class="ebene" data-ebene="haupt" set:html={panoramaAnsicht(quelle.id, START)} />
-    <span class="vh" role="img" aria-label="Alpenpanorama bei 1x, scharf" data-bildtext></span>
-    <FokusRing />
-    <div class="chip"><GlasChip><span data-zoom-text>1x · Hauptkamera, optisch</span></GlasChip></div>
-    <div class="chip-zaehler"><FundZaehler /></div>
-  </div>
-  <ZoomSkala max={5} stufen={STUFEN.k1} label="Zoom" />
+<div class="zoom-demo" data-kamera data-zoom-demo>
+  <ZoomBild modell="k1" start={1} blick={[756, 246]} />
+  <ZoomSkala max={MAX_ZOOM.k1} stufen={STUFEN.k1} label="Zoom" />
   <LinsenLeiste abschnitte={LINSEN.k1} />
-  <KameraFunde quelle={quelle.id} />
   <p class="vh" aria-live="polite" data-ansage></p>
 </div>
-
-<style>
-  .fenster {
-    position: relative;
-    height: 360px;
-    overflow: hidden;
-    border: 1px solid var(--line);
-    border-radius: var(--radius-l);
-    background: var(--stage);
-  }
-  /* Ebene grösser als das Fenster, SVG zeichnet über den Rand: siehe ZoomVergleich */
-  .fenster { --rand: 40px; }
-  .ebene { position: absolute; inset: calc(-1 * var(--rand)); padding: var(--rand); }
-  .ebene :global(svg) { width: 100%; height: 100%; overflow: visible; }
-  .chip { position: absolute; top: var(--space-3); left: var(--space-3); z-index: 2; pointer-events: none; }
-  /* Zähler: auf dem Handy unten rechts (oben fehlt der Platz neben dem Zoom-Chip) */
-  .chip-zaehler { position: absolute; bottom: var(--space-3); right: var(--space-3); z-index: 2; pointer-events: none; }
-  @media (min-width: 900px) {
-    .fenster { height: 560px; border-radius: calc(var(--radius-l) + 4px); }
-    .chip { top: var(--space-5); left: var(--space-5); }
-    .chip-zaehler { top: var(--space-5); right: var(--space-5); bottom: auto; }
-  }
-</style>
-
-<script>
-  import { starteKamera, zahl } from '../../scripts/kamera-zoom.js';
-
-  const TEXT = (z) => (z < 1 ? `${zahl(z)}x · variable Linse, optisch` : z === 1 ? '1x · Hauptkamera, optisch'
-    : z >= 5 ? '5x · digital, Maximum' : `${zahl(z)}x · digital`);
-
-  document.querySelectorAll('[data-zoom-demo]').forEach((wurzel) => {
-    const text = wurzel.querySelector('[data-zoom-text]');
-    const bildtext = wurzel.querySelector('[data-bildtext]');
-    starteKamera(wurzel, {
-      max: 5,
-      start: 1,
-      blick: [756, 246],
-      zielZoom: 5,
-      beschrifte: ({ z }) => {
-        text.textContent = TEXT(z);
-        bildtext.setAttribute('aria-label', `Alpenpanorama bei ${zahl(z)}x, ${z <= 1 ? 'scharf' : z <= 2 ? 'leicht weich' : 'digital vergrössert und unscharf'}`);
-        return `${zahl(z)}-fach, ${z <= 1 ? 'optisch' : 'digital'}`;
-      },
-    });
-  });
-</script>

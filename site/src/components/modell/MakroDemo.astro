@@ -1,45 +1,54 @@
 ---
-// Makro-Demo mit der Blume aus dem Zeichen-Motor („Ganz nah dran.“).
-//   modell: 'pro' = Makro, 3x-Tele-Nahfokus und Biene (Artboard)
-//           'k1'  = nur die Hauptkamera: Makro, Biene, Wiese
+// Makro-Demo mit der Blume aus dem Zeichen-Motor („Ganz nah dran.“), auf beiden Modellseiten.
+//   modell: 'pro' = Ultraweit (Makro) oder 3x-Tele-Nahfokus
+//           'k1'  = 1x oder Ultraweit (Makro), der Kiesel 1 hat keine Tele
 //
-// Tiefenschärfe: Die Blume besteht aus vier Ebenen (Vordergrund-Gras, Biene, Blume,
-// Hintergrund), jede mit eigenem Unschärfe-Filter. Klickt man aufs Bild, wird die
-// getroffene Ebene zur Schärfeebene, die anderen verschwimmen je nach Abstand
-// (blumeUnschaerfe). Die Knöpfe darunter machen dasselbe per Tastatur.
-// „staerke“ = wie schnell die Unschärfe mit dem Abstand wächst: Tele stark, Makro der
-// Hauptkamera schwächer (kleinerer Bildwinkel = weniger Tiefenschärfe).
+// Ebenen: Die Blume besteht aus vier Ebenen (Gras vorne, Biene, Blume, Wiese hinten), jede
+// ein eigenes <g> mit eigenem Unschärfe-Filter. Je Linse hat jede Ebene eine eigene Grösse
+// (transform) und Unschärfe (data/kamera.js, MAKRO). So entsteht der Perspektiv-Effekt der
+// alten Seite: Beim Wechsel von Ultraweit auf Tele bleibt die Blume gleich gross, die Wiese
+// dahinter wird grösser (rückt scheinbar näher) und viel weicher. Der Grund steht in
+// data/kamera.js und als Satz unter dem Bild.
+//
+// Tiefenschärfe: Klickt man aufs Bild, wird die getroffene Ebene zur Schärfeebene, die anderen
+// verschwimmen je nach Abstand (blumeUnschaerfe). Das gilt in beiden Linsen. Die Knöpfe unter
+// dem Bild machen dasselbe per Tastatur. Linsenwechsel: 450 ms, bei „weniger Bewegung“ sofort.
 import GlasChip from '../GlasChip.astro';
 import { blumeBild } from '../../lib/kiesel-draw/index.js';
+import { MAKRO, MAKRO_MITTE, MAKRO_FOKUS } from '../../data/kamera.js';
+import { makroTrafo } from '../../lib/kamera.js';
 
 const { modell = 'pro' } = Astro.props;
-const MODI = modell === 'pro'
-  ? [
-      { name: 'Makro', fokus: 0.5, staerke: 9, chip: 'Makro · Hauptkamera' },
-      { name: '3x Nahfokus', fokus: 0.5, staerke: 24, chip: '3x Tele · ca. 25 cm', start: true },
-      { name: 'Fokus auf Biene', fokus: 0.3, staerke: 24, chip: '3x Tele · Fokus auf Biene' },
-    ]
-  : [
-      { name: 'Makro', fokus: 0.5, staerke: 9, chip: 'Makro · Hauptkamera', start: true },
-      { name: 'Fokus auf Biene', fokus: 0.3, staerke: 9, chip: 'Makro · Fokus auf Biene' },
-      { name: 'Fokus auf Wiese', fokus: 1, staerke: 9, chip: 'Makro · Fokus auf Wiese' },
-    ];
-const start = MODI.find((m) => m.start);
-const bild = blumeBild({ fokus: start.fokus, staerke: start.staerke, breite: null, hoehe: null, label: 'Blume mit Biene und Wiese. Tippe aufs Bild, um den Fokus zu setzen.' });
+const m = MAKRO[modell];
+const linse = m.linsen[m.start];
+const FOKUS = 0.5; // anfangs auf der Blume
+// Startzustand direkt im HTML: jede Ebene bekommt ihre Grösse als transform (blumeBild()
+// selbst bleibt Zeichen für Zeichen wie in Python, darum hier nachträglich)
+const bild = blumeBild({ fokus: FOKUS, staerke: linse.staerke, breite: null, hoehe: null, label: 'Blume mit Biene und Wiese. Tippe aufs Bild, um den Fokus zu setzen.' })
+  .replace(/<g filter="url\(#(\w+?)c-(bg|fl|fg|bee)\)"/g, (g, _, e) => `${g} transform="${makroTrafo(linse.skala[e], MAKRO_MITTE[e])}"`);
 ---
-<div class="makro" data-makro data-staerke={start.staerke} data-fokus={start.fokus}>
-  <div class="bild" data-bild set:html={bild} />
-  <span class="ring" data-ring aria-hidden="true"></span>
-  <div class="chip"><GlasChip><span data-makro-text aria-live="polite">{start.chip}</span></GlasChip></div>
-  <div class="modi" role="group" aria-label="Fokus">
-    {MODI.map((m) => (
-      <button type="button" aria-pressed={m.start ? 'true' : 'false'} data-fokus={m.fokus} data-staerke={m.staerke} data-chip={m.chip}>{m.name}</button>
+<div class="makro" data-makro data-modell={modell} data-linse={m.start} data-fokus={FOKUS}>
+  <div class="rahmen">
+    <div class="bild" data-bild set:html={bild} />
+    <span class="ring" data-ring aria-hidden="true"></span>
+    <div class="chip"><GlasChip><span data-makro-text aria-live="polite">{linse.chip}</span></GlasChip></div>
+    <div class="modi" role="group" aria-label="Linse">
+      {Object.entries(m.linsen).map(([id, l]) => (
+        <button type="button" aria-pressed={id === m.start ? 'true' : 'false'} data-linse-knopf={id}>{l.knopf}</button>
+      ))}
+    </div>
+  </div>
+  <div class="fokus" role="group" aria-label="Scharf stellen auf">
+    <span class="fokus-titel t-small t-muted" aria-hidden="true">Scharf:</span>
+    {MAKRO_FOKUS.map(([ebene, name]) => (
+      <button type="button" aria-pressed={ebene === 'fl' ? 'true' : 'false'} data-fokus-ebene={ebene}>{name}</button>
     ))}
   </div>
+  <p class="erklaerung t-small t-muted">{m.erklaerung}</p>
 </div>
 
 <style>
-  .makro {
+  .rahmen {
     position: relative;
     height: 340px;
     overflow: hidden;
@@ -70,11 +79,8 @@ const bild = blumeBild({ fokus: start.fokus, staerke: start.staerke, breite: nul
   .modi {
     position: absolute;
     left: var(--space-3);
-    right: var(--space-3);
     bottom: var(--space-3);
     display: flex;
-    width: max-content;
-    max-width: calc(100% - 2 * var(--space-3));
     gap: var(--space-1);
     padding: var(--space-1);
     border-radius: var(--radius-full);
@@ -84,7 +90,7 @@ const bild = blumeBild({ fokus: start.fokus, staerke: start.staerke, breite: nul
   }
   .modi button {
     min-height: 44px;
-    padding: 0 14px;
+    padding: 0 var(--space-4);
     border: 0;
     border-radius: var(--radius-full);
     background: transparent;
@@ -95,73 +101,121 @@ const bild = blumeBild({ fokus: start.fokus, staerke: start.staerke, breite: nul
   }
   .modi button[aria-pressed="true"] { background: var(--glass-on); color: var(--glass-on-ink); }
 
+  /* Schärfe per Knopf (Tastatur): eine Reihe kleiner Pillen unter dem Bild */
+  .fokus { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-top: var(--space-3); }
+  /* Handy: „Scharf:“ auf eigener Zeile, sonst passen die vier Knöpfe nicht nebeneinander */
+  .fokus-titel { flex-basis: 100%; }
+  .fokus button {
+    min-height: 44px;
+    padding: 0 var(--space-3);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-full);
+    background: var(--surface);
+    color: var(--ink);
+    font-size: var(--fs-small);
+    font-weight: 500;
+  }
+  .fokus button:hover { background: var(--raised); }
+  .fokus button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+  .erklaerung { max-width: 560px; margin-top: var(--space-3); }
+
   @media (min-width: 900px) {
-    .makro { height: 480px; border-radius: calc(var(--radius-l) + 4px); }
+    .rahmen { height: 480px; border-radius: calc(var(--radius-l) + 4px); }
     .chip { top: var(--space-5); left: var(--space-5); }
-    .modi { left: var(--space-5); bottom: var(--space-5); padding: var(--space-1); }
-    .modi button { padding: 0 var(--space-4); }
+    .modi { left: var(--space-5); bottom: var(--space-5); }
+    .fokus-titel { flex-basis: auto; margin-right: var(--space-1); }
+    .fokus button { padding: 0 var(--space-4); }
   }
 </style>
 
 <script>
   import { blumeUnschaerfe, BLUME_TIEFE } from '../../lib/kiesel-draw/scene.js';
+  import { MAKRO, MAKRO_MITTE } from '../../data/kamera.js';
+  import { makroTrafo } from '../../lib/kamera.js';
 
   const ruhig = matchMedia('(prefers-reduced-motion: reduce)');
+  const EBENEN = ['bg', 'fl', 'bee', 'fg'];
+  const WECHSEL_MS = 450; // Linsenwechsel
+  const FOKUS_MS = 350;   // nur die Schärfe verschieben
 
   document.querySelectorAll('[data-makro]').forEach((wurzel) => {
+    const m = MAKRO[wurzel.dataset.modell];
     const bild = wurzel.querySelector('[data-bild]');
     const ring = wurzel.querySelector('[data-ring]');
     const text = wurzel.querySelector('[data-makro-text]');
-    const knoepfe = [...wurzel.querySelectorAll('.modi button')];
-    // Die vier Filter (…c-bg, …c-fl, …c-fg, …c-bee), die blumeBild() angelegt hat
-    const filter = {};
-    for (const f of bild.querySelectorAll('filter[id]')) {
-      const ebene = f.id.split('c-')[1];
-      if (ebene) filter[ebene] = f.querySelector('feGaussianBlur');
+    const linsenKnoepfe = [...wurzel.querySelectorAll('[data-linse-knopf]')];
+    const fokusKnoepfe = [...wurzel.querySelectorAll('[data-fokus-ebene]')];
+    // Je Ebene die Gruppe (für die Grösse) und ihr Filter (für die Unschärfe), die blumeBild() angelegt hat
+    const ebene = {};
+    for (const g of bild.querySelectorAll('g[filter]')) {
+      const e = g.getAttribute('filter').match(/c-(\w+)\)/)?.[1];
+      if (e) ebene[e] = { g, blur: bild.querySelector(`filter[id$="c-${e}"] feGaussianBlur`) };
     }
-    let fokus = Number(wurzel.dataset.fokus), staerke = Number(wurzel.dataset.staerke), lauf = 0;
-    let modus = staerke; // Stärke des gewählten Modus (Makro oder Tele), gilt auch für Klicks aufs Bild
 
-    // Sanft von der alten zur neuen Schärfeebene (0.35 s)
-    function stelle(zielFokus, zielStaerke) {
-      const [f0, s0] = [fokus, staerke];
-      const t0 = performance.now(), nr = ++lauf;
-      const schritt = (jetzt) => {
-        if (nr !== lauf) return;
-        const t = ruhig.matches ? 1 : Math.min(1, (jetzt - t0) / 350);
-        const k = 1 - (1 - t) ** 3;
-        fokus = f0 + (zielFokus - f0) * k;
-        staerke = s0 + (zielStaerke - s0) * k;
-        const u = blumeUnschaerfe(fokus, staerke);
-        for (const [ebene, sd] of Object.entries(u)) filter[ebene]?.setAttribute('stdDeviation', sd.toFixed(2));
+    // Zustand: Schärfeebene (0…1), Stärke der Unschärfe, Grösse je Ebene. Alles wird
+    // gemeinsam in einem Bildtakt nachgeführt, damit Grösse und Unschärfe zusammen gleiten.
+    const start = m.linsen[wurzel.dataset.linse];
+    let jetzt = { fokus: Number(wurzel.dataset.fokus), staerke: start.staerke, skala: { ...start.skala } };
+    let lauf = 0;
+
+    function zeige(z) {
+      const u = blumeUnschaerfe(z.fokus, z.staerke);
+      for (const e of EBENEN) {
+        ebene[e].blur.setAttribute('stdDeviation', u[e].toFixed(2));
+        ebene[e].g.setAttribute('transform', makroTrafo(z.skala[e], MAKRO_MITTE[e]));
+      }
+      jetzt = z;
+    }
+
+    function stelle(ziel, dauer) {
+      const von = jetzt, t0 = performance.now(), nr = ++lauf;
+      const mische = (a, b, k) => a + (b - a) * k;
+      const schritt = (zeit) => {
+        if (nr !== lauf) return; // ein neuerer Klick hat übernommen
+        const t = ruhig.matches ? 1 : Math.min(1, Math.max(0, (zeit - t0) / dauer));
+        const k = 1 - (1 - t) ** 3; // bremst zum Schluss ab
+        zeige({
+          fokus: mische(von.fokus, ziel.fokus, k),
+          staerke: mische(von.staerke, ziel.staerke, k),
+          skala: Object.fromEntries(EBENEN.map((e) => [e, mische(von.skala[e], ziel.skala[e], k)])),
+        });
+        wurzel.toggleAttribute('data-gleitet', t < 1);
         if (t < 1) requestAnimationFrame(schritt);
       };
       requestAnimationFrame(schritt);
     }
-    const druecke = (knopf) => knoepfe.forEach((b) => b.setAttribute('aria-pressed', b === knopf ? 'true' : 'false'));
 
-    knoepfe.forEach((b) => b.addEventListener('click', () => {
-      druecke(b);
-      text.textContent = b.dataset.chip;
-      modus = Number(b.dataset.staerke);
-      stelle(Number(b.dataset.fokus), Number(b.dataset.staerke));
+    const druecke = (knoepfe, knopf) => knoepfe.forEach((b) => b.setAttribute('aria-pressed', b === knopf ? 'true' : 'false'));
+    // Ziel = Zustand der gewählten Linse, mit der zuletzt gewählten Schärfeebene
+    const zielFuer = (id, fokus) => ({ fokus, staerke: m.linsen[id].staerke, skala: { ...m.linsen[id].skala } });
+    let fokusZiel = jetzt.fokus;
+
+    linsenKnoepfe.forEach((b) => b.addEventListener('click', () => {
+      const id = b.dataset.linseKnopf;
+      if (id === wurzel.dataset.linse) return;
+      wurzel.dataset.linse = id;
+      druecke(linsenKnoepfe, b);
+      text.textContent = m.linsen[id].chip;
+      stelle(zielFuer(id, fokusZiel), WECHSEL_MS);
     }));
 
+    function fokussiere(e) {
+      fokusZiel = BLUME_TIEFE[e];
+      druecke(fokusKnoepfe, fokusKnoepfe.find((b) => b.dataset.fokusEbene === e));
+      stelle(zielFuer(wurzel.dataset.linse, fokusZiel), FOKUS_MS);
+    }
+    fokusKnoepfe.forEach((b) => b.addEventListener('click', () => fokussiere(b.dataset.fokusEbene)));
+
     // Klick/Tipp aufs Bild: Welche Ebene liegt dort? Die bestimmt die Schärfeebene.
-    const NAMEN = { fg: 'Gras', bee: 'Biene', fl: 'Blume', bg: 'Hintergrund' };
     bild.addEventListener('click', (e) => {
       const gruppe = e.target.closest('g[filter]');
-      const ebene = gruppe?.getAttribute('filter').match(/c-(\w+)\)/)?.[1] ?? 'bg';
-      const r = wurzel.getBoundingClientRect();
+      const treffer = gruppe?.getAttribute('filter').match(/c-(\w+)\)/)?.[1] ?? 'bg';
+      const r = wurzel.querySelector('.rahmen').getBoundingClientRect();
       ring.style.setProperty('--x', `${e.clientX - r.left}px`);
       ring.style.setProperty('--y', `${e.clientY - r.top}px`);
       ring.setAttribute('data-an', '');
       setTimeout(() => ring.removeAttribute('data-an'), 50);
-      // Passender Knopf gedrückt, falls es einen gibt, sonst keiner
-      const passend = knoepfe.find((b) => Number(b.dataset.fokus) === BLUME_TIEFE[ebene] && Number(b.dataset.staerke) === modus);
-      druecke(passend ?? null);
-      text.textContent = `${text.textContent.split(' · ')[0]} · Fokus auf ${NAMEN[ebene]}`;
-      stelle(BLUME_TIEFE[ebene], modus);
+      fokussiere(treffer);
     });
   });
 </script>

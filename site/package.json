@@ -15,6 +15,7 @@
     "pruefe:modellseiten": "astro build && node scripts/pruefe-modellseiten.mjs",
     "fotos:kamera": "astro build && node scripts/fotografiere-kamera.mjs",
     "pruefe:kamera": "astro build && node scripts/pruefe-kamera.mjs",
+    "pruefe:kamera-stellen": "astro build && node scripts/pruefe-kamera-stellen.mjs",
     "pruefe:funktionen": "astro build && node scripts/pruefe-funktionen.mjs",
     "fotos:funktionen": "astro build && node scripts/fotografiere-funktionen.mjs",
     "pruefe:kaufen": "astro build && node scripts/pruefe-kaufen.mjs",

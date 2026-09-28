@@ -3,93 +3,26 @@
 // Alpenpanorama mit der Kamera des Pro, ohne Vergleich. Oben links die Linse und der Zoom,
 // oben rechts der Zähler, um das gefundene Detail der Fokusring. Darunter Zoom-Skala mit
 // Tele-Strich, Linsen-Leiste und die acht Vorschaubilder.
-// Anders als auf den Modellseiten kann man hier zielen: tippen oder klicken schwenkt dorthin,
-// ziehen verschiebt (kamera-zoom.js, Option zielen). Start bei 1x, damit es etwas zu suchen gibt.
-import GlasChip from '../GlasChip.astro';
-import Icon from '../Icon.astro';
+// Nur hier gibt es die versteckten Details (ZoomBild mit details): tippen oder klicken schwenkt
+// dorthin, ziehen verschiebt. Start bei 1x, damit es etwas zu suchen gibt.
+import ZoomBild from '../modell/ZoomBild.astro';
 import ZoomSkala from '../modell/ZoomSkala.astro';
 import LinsenLeiste from '../modell/LinsenLeiste.astro';
-import FokusRing from '../modell/FokusRing.astro';
-import FundZaehler from '../modell/FundZaehler.astro';
-import KameraFunde from '../modell/KameraFunde.astro';
-import { panoramaQuelle, panoramaAnsicht } from '../../lib/kiesel-draw/index.js';
-import { STUFEN, LINSEN } from '../../data/kamera.js';
+import KameraFunde from './KameraFunde.astro';
+import { panoramaQuelle } from '../../lib/kiesel-draw/index.js';
+import { STUFEN, LINSEN, TELE_AB, MAX_ZOOM } from '../../data/kamera.js';
 
-const START = { zoom: 1.5, cx: 760, cy: 300 }; // 1x
-const quelle = panoramaQuelle();
+const quelle = panoramaQuelle(); // auch für die Vorschaubilder
 ---
-<div class="kamera-suche" data-kamera-suche data-linse="haupt">
+<div class="kamera-suche" data-kamera data-kamera-suche>
   <Fragment set:html={quelle.svg} />
-  <div class="fenster" data-fenster>
-    <div class="ebene" data-ebene="haupt" set:html={panoramaAnsicht(quelle.id, START)} />
-    <div class="ebene" data-ebene="tele" style="visibility: hidden" set:html={panoramaAnsicht(quelle.id, START)} />
-    <span class="vh" role="img" aria-label="Alpenpanorama bei 1x, Hauptkamera" data-bildtext></span>
-    <FokusRing />
-    <div class="chip-links"><GlasChip><span class="linse"><Icon name="dot" size={16} /></span><span data-zoom-text>Hauptkamera · 1x</span></GlasChip></div>
-    <div class="chip-rechts"><FundZaehler /></div>
-  </div>
-  <ZoomSkala max={10} stufen={STUFEN.pro} tele={3} label="Zoom" />
+  <div class="bild"><ZoomBild modell="pro" start={1} blick={[760, 300]} details quelle={quelle} /></div>
+  <ZoomSkala max={MAX_ZOOM.pro} stufen={STUFEN.pro} tele={TELE_AB} label="Zoom" />
   <LinsenLeiste abschnitte={LINSEN.pro} />
   <KameraFunde quelle={quelle.id} />
   <p class="vh" aria-live="polite" data-ansage></p>
 </div>
 
 <style>
-  .fenster {
-    position: relative;
-    height: 360px;
-    margin-top: var(--space-7);
-    overflow: hidden;
-    border: 1px solid var(--line);
-    border-radius: var(--radius-l);
-    background: var(--stage);
-    touch-action: pan-y;
-    user-select: none;
-    -webkit-user-select: none;
-    cursor: grab;
-  }
-  .fenster[data-zieht] { cursor: grabbing; }
-  /* Ebene grösser als das Fenster, SVG zeichnet über den Rand: siehe ZoomVergleich */
-  .fenster { --rand: 40px; }
-  .ebene { position: absolute; inset: calc(-1 * var(--rand)); padding: var(--rand); transform-origin: 50% 50%; }
-  .ebene :global(svg) { width: 100%; height: 100%; overflow: visible; }
-  .chip-links, .chip-rechts { position: absolute; top: var(--space-3); z-index: 2; pointer-events: none; }
-  .chip-links { left: var(--space-3); }
-  .chip-rechts { right: var(--space-3); }
-  .linse { display: inline-flex; }
-  /* Beim Linsenwechsel pulsiert der Punkt einmal (Regel greift neu, wenn data-linse wechselt) */
-  [data-linse="tele"] .linse { animation: puls-tele 0.6s ease-out; }
-  [data-linse="haupt"] .linse { animation: puls-haupt 0.6s ease-out; }
-  @keyframes puls-tele { 30% { transform: scale(1.5); } }
-  @keyframes puls-haupt { 30% { transform: scale(1.5); } }
-  @media (prefers-reduced-motion: reduce) { .linse { animation: none !important; } }
-  /* Auf dem Handy passen die zwei Chips nicht nebeneinander: Zähler unten rechts */
-  @media (max-width: 899px) { .chip-rechts { top: auto; bottom: var(--space-3); } }
-  @media (min-width: 900px) {
-    .fenster { height: 560px; border-radius: calc(var(--radius-l) + 4px); }
-    .chip-links { top: var(--space-5); left: var(--space-5); }
-    .chip-rechts { top: var(--space-5); right: var(--space-5); }
-  }
+  .bild { margin-top: var(--space-7); }
 </style>
-
-<script>
-  import { starteKamera, zahl } from '../../scripts/kamera-zoom.js';
-
-  document.querySelectorAll('[data-kamera-suche]').forEach((wurzel) => {
-    const text = wurzel.querySelector('[data-zoom-text]');
-    const bildtext = wurzel.querySelector('[data-bildtext]');
-    starteKamera(wurzel, {
-      max: 10,
-      start: 1,
-      blick: [760, 300],
-      zielZoom: 8,
-      zielen: true,
-      beschrifte: ({ z, linse }) => {
-        const name = linse === 'tele' ? 'Tele' : 'Hauptkamera';
-        text.textContent = `${name} · ${zahl(z)}x`;
-        bildtext.setAttribute('aria-label', `Alpenpanorama bei ${zahl(z)}x, ${name}`);
-        return `${zahl(z)}-fach, ${linse === 'tele' ? 'Tele-Linse' : 'Hauptkamera'}`;
-      },
-    });
-  });
-</script>

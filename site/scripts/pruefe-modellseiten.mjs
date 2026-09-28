@@ -243,7 +243,7 @@ try {
     l = await lage();
     pruefe('Maus ziehen: Linie folgt bis 75 %', Math.abs(Number(l.wert) - 75) <= 1, l.pos);
 
-    // Zoom, Linsenwechsel und Details prüft pruefe:kamera ausführlich, hier nur das Zusammenspiel
+    // Zoom und Linsenwechsel prüft pruefe:kamera ausführlich, hier nur das Zusammenspiel
     await seite.locator('[data-zoom-vergleich] [data-stufe="10"]').click();
     await seite.waitForTimeout(900);
     const z = await seite.evaluate(() => ({
@@ -306,14 +306,21 @@ try {
     await seite.waitForTimeout(600);
     const z = await seite.evaluate(() => {
       const sd = (e) => Number(document.querySelector(`[data-makro] filter[id$="c-${e}"] feGaussianBlur`).getAttribute('stdDeviation'));
-      return { bee: sd('bee'), fl: sd('fl'), text: document.querySelector('[data-makro-text]').textContent };
+      return { bee: sd('bee'), fl: sd('fl'), knopf: document.querySelector('[data-makro] [data-fokus-ebene][aria-pressed="true"]').textContent };
     });
-    pruefe(`${modell}: Klick auf die Biene stellt sie scharf, die Blume wird weicher`, z.bee < 0.1 && z.fl > 1 && z.text.includes('Biene'), JSON.stringify(z));
+    pruefe(`${modell}: Klick auf die Biene stellt sie scharf, die Blume wird weicher`, z.bee < 0.1 && z.fl > 1 && z.knopf === 'Biene', JSON.stringify(z));
+    // Linse per Tastatur (Perspektive und Übergang prüft pruefe:kamera-stellen)
     const knopf = seite.locator('[data-makro] .modi button').first();
     await knopf.focus();
     await seite.keyboard.press('Enter');
     await seite.waitForTimeout(600);
-    pruefe(`${modell}: Knopf „Makro“ per Tastatur`, await knopf.getAttribute('aria-pressed') === 'true');
+    pruefe(`${modell}: erster Linsen-Knopf („${await knopf.textContent()}“) per Tastatur`, await knopf.getAttribute('aria-pressed') === 'true');
+    const wiese = seite.locator('[data-makro] [data-fokus-ebene="bg"]');
+    await wiese.focus();
+    await seite.keyboard.press('Enter');
+    await seite.waitForTimeout(600);
+    const bg = await seite.evaluate(() => Number(document.querySelector('[data-makro] filter[id$="c-bg"] feGaussianBlur').getAttribute('stdDeviation')));
+    pruefe(`${modell}: Knopf „Wiese“ per Tastatur stellt den Hintergrund scharf`, bg < 0.1 && await wiese.getAttribute('aria-pressed') === 'true', String(bg));
     await ctx.close();
   }
 

@@ -9,9 +9,10 @@
 //    Unschärfe ändern sich stetig, und kein Bild unterscheidet sich vom vorherigen stärker
 //    als ein gewöhnlicher Zoomschritt (Pixelvergleich). Rückwärts gleich, Umkehr mitten im
 //    Wechsel ohne Sprung. Bei „weniger Bewegung“ wechselt die Linse sofort.
-// 3. Versteckte Details (Pro, Kiesel 1, /funktionen/): beim Laden alles „?“, gefunden erst ab
-//    5x nach eigener Bedienung, Fokusring um das gefundene Detail, Zähler mit Punkten,
-//    Linsen-Leiste, Klick aufs Vorschaubild fliegt hin (Detail danach genau in der Bildmitte).
+// 3. Linsen-Leiste (Pro, Kiesel 1, /funktionen/). Versteckte Details (nur /funktionen/): beim
+//    Laden alles „?“, gefunden erst ab 5x nach eigener Bedienung, Fokusring um das gefundene
+//    Detail, Zähler mit Punkten, Klick aufs Vorschaubild fliegt hin (Detail danach genau in der
+//    Bildmitte). Dass es die Details anderswo nicht gibt, prüft pruefe:kamera-stellen.
 // 4. Zielen auf /funktionen/: Klick schwenkt, Maus und Finger (waagrecht) verschieben, Finger
 //    senkrecht scrollt. Kiesel 1: max. 5x, keine Tele-Ebene. Keine Fehler, kein three.js.
 // Jeder Fall druckt ✓ oder ✗, bei einem ✗ endet das Skript mit Fehlercode 1.
@@ -48,7 +49,7 @@ async function oeffne(adresse, kontext = {}) {
   await fenster.scrollIntoViewIfNeeded();
   const uhr = (ms) => seite.clock.runFor(ms);
   const k = (fn, arg) => seite.evaluate(([fn, arg]) => {
-    const kamera = document.querySelector('[data-fenster]').parentElement.kamera;
+    const kamera = document.querySelector('[data-fenster]').kamera;
     return fn === 'zustand' ? kamera.zustand() : kamera[fn](arg);
   }, [fn, arg]);
   return { seite, ctx, status, fenster, uhr, k };
@@ -265,6 +266,10 @@ try {
     pruefe('Sprung von 8x auf 2.8x: Hauptkamera wird erst vorgezeichnet, dann gewechselt',
       !kalt.haupt.sichtbar && erst.z.linse === 'tele' && erst.e.haupt.sichtbar && dann.linse === 'haupt' && dann.mix === 0,
       `8x: Hauptkamera ${kalt.haupt.sichtbar ? 'an' : 'aus'}; 1. Bild: ${erst.z.linse}, Hauptkamera ${erst.e.haupt.sichtbar ? 'an' : 'aus'}; danach: ${dann.linse}`);
+    await ctx.close();
+  }
+  {
+    const { seite, ctx, uhr, k } = await oeffne('funktionen/', { reducedMotion: 'reduce' });
     await seite.locator('[data-detail="2"]').click();
     await uhr(16);
     const f = await k('zustand');
@@ -272,26 +277,36 @@ try {
     await ctx.close();
   }
 
-  console.log('\n── Versteckte Details, Fokusring, Linsen-Leiste ──');
-  for (const [modell, adresse, zielZoom] of [['pro', 'kiesel-1-pro/', 8], ['k1', 'kiesel-1/', 5], ['suche', 'funktionen/', 8]]) {
-    const { seite, ctx, status, fenster, uhr, k } = await oeffne(adresse);
-    const wurzel = modell === 'pro' ? '[data-zoom-vergleich]' : modell === 'k1' ? '[data-zoom-demo]' : '[data-kamera-suche]';
-    const w = (sel) => `${wurzel} ${sel}`;
-    const gefunden = () => seite.evaluate((sel) => [...document.querySelectorAll(sel)].filter((b) => b.hasAttribute('data-gefunden')).map((b) => Number(b.dataset.detail)), w('[data-detail]'));
-    const ring = () => seite.evaluate((sel) => { const r = document.querySelector(sel); return { an: r.style.visibility !== 'hidden', text: r.textContent.trim(), detail: r.dataset.detail }; }, w('[data-fokusring]'));
-    const zaehler = () => seite.locator(w('[data-entdeckt]')).textContent();
-    const aktiv = () => seite.evaluate((sel) => [...document.querySelectorAll(sel)].findIndex((a) => a.hasAttribute('data-aktiv')), w('[data-linsenabschnitt]'));
-
-    const namen = await seite.locator(w('[data-fundname]')).allTextContents();
-    pruefe(`${modell}: beim Laden alles versteckt („?“), kein Fokusring, Zähler 0 (wie im Artboard)`,
-      (await gefunden()).length === 0 && namen.every((n) => n === 'Noch versteckt') && !(await ring()).an && (await zaehler()) === '0 von 8 entdeckt', await zaehler());
+  console.log('\n── Linsen-Leiste ──');
+  for (const [modell, adresse] of [['pro', 'kiesel-1-pro/'], ['k1', 'kiesel-1/'], ['suche', 'funktionen/']]) {
+    const { seite, ctx, uhr, k } = await oeffne(adresse);
+    const aktiv = () => seite.evaluate(() => [...document.querySelectorAll('[data-linsenabschnitt]')].findIndex((a) => a.hasAttribute('data-aktiv')));
     for (const [z, erwartet] of [[1, 0], [2.8, 1], [modell === 'k1' ? 4 : 3, modell === 'k1' ? 1 : 2]]) {
       await k('setzeZoom', z); await uhr(100);
       pruefe(`${modell}: Linsen-Leiste bei ${z}x markiert Abschnitt ${erwartet + 1}`, (await aktiv()) === erwartet, String(await aktiv()));
     }
+    if (modell === 'k1') {
+      await k('setzeZoom', 10); await uhr(100);
+      pruefe('k1: keine Tele-Ebene, max. 5x', (await seite.locator('[data-ebene="tele"]').count()) === 0 && (await k('zustand')).z <= 5);
+    }
+    await ctx.close();
+  }
+
+  console.log('\n── Versteckte Details und Fokusring (/funktionen/) ──');
+  {
+    const modell = 'suche', zielZoom = 8;
+    const { seite, ctx, status, fenster, uhr, k } = await oeffne('funktionen/');
+    const w = (sel) => `[data-kamera-suche] ${sel}`;
+    const gefunden = () => seite.evaluate((sel) => [...document.querySelectorAll(sel)].filter((b) => b.hasAttribute('data-gefunden')).map((b) => Number(b.dataset.detail)), w('[data-detail]'));
+    const ring = () => seite.evaluate((sel) => { const r = document.querySelector(sel); return { an: r.style.visibility !== 'hidden', text: r.textContent.trim(), detail: r.dataset.detail }; }, w('[data-fokusring]'));
+    const zaehler = () => seite.locator(w('[data-entdeckt]')).textContent();
+
+    const namen = await seite.locator(w('[data-fundname]')).allTextContents();
+    pruefe(`${modell}: beim Laden alles versteckt („?“), kein Fokusring, Zähler 0 (wie im Artboard)`,
+      (await gefunden()).length === 0 && namen.every((n) => n === 'Noch versteckt') && !(await ring()).an && (await zaehler()) === '0 von 8 entdeckt', await zaehler());
     await k('setzeZoom', 3); await uhr(100);
     // Zurück zum Gipfel (die Suche startet woanders)
-    if (modell === 'suche') { await k('schwenkeZu', [756, 246]); await uhr(600); }
+    await k('schwenkeZu', [756, 246]); await uhr(600);
     await k('setzeZoom', 3); await uhr(100);
     pruefe(`${modell}: bei 3x noch nichts gefunden`, (await gefunden()).length === 0);
     await k('setzeZoom', 5); await uhr(100);
@@ -316,15 +331,8 @@ try {
     pruefe(`${modell}: Flug zoomt unterwegs raus (Gipfel → Dorf ist weit)`, Math.min(...zwischen) < 2.5, `kleinster Zoom ${Math.min(...zwischen).toFixed(2)}`);
     const rd = await ring();
     pruefe(`${modell}: 3 von 8, Fokusring jetzt um das Dorf`, (await zaehler()) === '3 von 8 entdeckt' && rd.an && rd.detail === '7' && rd.text === 'Dorf mit Kirche entdeckt', `${await zaehler()} ${JSON.stringify(rd)}`);
-    if (modell === 'pro') {
-      const linie = await seite.evaluate(() => document.querySelector('[data-regler]').value);
-      pruefe('pro: Vorschaubild und Zoomstufen verschieben die Trennlinie nicht', linie === '50', linie);
-    }
     for (let i = 0; i < ZOOM_TARGETS.length; i++) { await seite.locator(w(`[data-detail="${i}"]`)).click(); await uhr(3000); }
     pruefe(`${modell}: alle acht entdeckt`, (await zaehler()) === 'Alle 8 entdeckt', await zaehler());
-    if (modell === 'k1') {
-      pruefe('k1: keine Tele-Ebene, max. 5x', (await seite.locator('[data-ebene="tele"]').count()) === 0 && (await k('zustand')).z <= 5);
-    }
     pruefe(`${modell}: keine Skriptfehler, kein three.js`, status.fehler.length === 0 && !status.dreiD, status.fehler.join(' | '));
     await ctx.close();
   }

@@ -8,8 +8,12 @@
 //    Einmal das ganze Bild, einmal ein 100-%-Ausschnitt rechts der Trennlinie (Pro), wo man
 //    Überblendung, Versatz und das Einrasten der Schärfe wirklich sieht.
 //    1440 und 390 px, dunkel und hell → wechsel-<breite>-<thema>.png, wechsel-nah-….png
-// 2. Flug zu einem Detail (Kachel „Segelboot“), alle 150 ms ein Bild, Pro und Kiesel 1
-//    → flug-<modell>-<breite>.png
+// 2. Flug zu einem Detail (Kachel „Segelboot“) auf /funktionen/, alle 150 ms ein Bild
+//    → flug-funktionen-<breite>.png
+// 3. Zoom-Stellen nebeneinander: Teaser der Startseite und /funktionen/ bei 0.5x, 1x, 3x und
+//    10x (gleicher Blick aufs Gipfelkreuz), dazu der Zoom-Vergleich der Pro-Seite und die
+//    Demo auf /kiesel-1/ → stellen-<breite>-<thema>.png, vergleich-<breite>-<thema>.png
+// 4. Makro-Demo: Pro in Ultraweit und Tele, Kiesel 1 in 1x und Makro → makro-<breite>-<thema>.png
 // (Die Bausteine nach dem Artboard „Funktionen“ vergleicht npm run fotos:funktionen.)
 //
 // Ausgabe in scripts/ausgabe/kamera/. Braucht einen fertigen Build (das npm-Skript baut
@@ -55,7 +59,7 @@ async function oeffne(adresse, b, h, thema) {
   await fenster.scrollIntoViewIfNeeded();
   return { ctx, seite, fenster };
 }
-const zoome = (seite, z) => seite.evaluate((z) => document.querySelector('[data-fenster]').parentElement.kamera.setzeZoom(z), z);
+const zoome = (seite, z) => seite.evaluate((z) => document.querySelector('[data-fenster]').kamera.setzeZoom(z), z);
 
 try {
   // ------------------------------------------------------------- 1. Linsenwechsel
@@ -98,8 +102,8 @@ try {
     }
   }
 
-  // ------------------------------------------------------------- 2. Flug zu einem Detail
-  for (const [modell, adresse] of [['pro', 'kiesel-1-pro/'], ['k1', 'kiesel-1/']]) {
+  // ------------------------------------------------------------- 2. Flug zu einem Detail (nur /funktionen/)
+  for (const [modell, adresse] of [['funktionen', 'funktionen/']]) {
     for (const [b, h, thema] of [[1440, 900, 'dark'], [390, 844, 'light']]) {
       const { ctx, seite, fenster } = await oeffne(adresse, b, h, thema);
       await seite.locator('[data-detail="6"]').click(); // Segelboot
@@ -112,8 +116,79 @@ try {
         bilder.push([`+${t} ms`, datei]);
       }
       await bogen(path.join(aus, `flug-${modell}-${b}.png`), bilder,
-        { spalten: 5, breite: b > 900 ? 420 : 240, titel: `Flug zum Segelboot, ${modell === 'pro' ? 'Kiesel 1 Pro' : 'Kiesel 1'}, ${b} px` });
+        { spalten: 5, breite: b > 900 ? 420 : 240, titel: `Flug zum Segelboot, /funktionen/, ${b} px` });
       await ctx.close();
+    }
+  }
+
+  // ------------------------------------------------------------- 3. Zoom-Stellen nebeneinander
+  const kamera = (seite, fn, arg) => seite.evaluate(([fn, arg]) => document.querySelector('[data-zoom-bild]').kamera[fn](arg), [fn, arg]);
+  for (const thema of Object.keys(THEMEN)) {
+    for (const [b, h] of [[1440, 900], [390, 844]]) {
+      const start = await oeffne('', b, h, thema);
+      const funk = await oeffne('funktionen/', b, h, thema);
+      // Gleicher Blick wie der Teaser (aufs Gipfelkreuz), sonst vergleicht man zwei Ausschnitte
+      const blick = await start.seite.evaluate(() => document.querySelector('[data-zoom-bild]').dataset.blick.split(',').map(Number));
+      // Bei 10x schwenken: schwenkeZu() speichert den Blick an den Bildrand geklemmt, bei 1x
+      // wäre das ein anderer Punkt als der des Teasers
+      await kamera(funk.seite, 'setzeZoom', 10);
+      await funk.seite.clock.runFor(100);
+      await kamera(funk.seite, 'schwenkeZu', blick);
+      await funk.seite.clock.runFor(600);
+      const bilder = [];
+      for (const z of [0.5, 1, 3, 10]) {
+        for (const [name, s] of [['Startseite', start], ['/funktionen/', funk]]) {
+          await kamera(s.seite, 'fahreZu', z);
+          await s.seite.clock.runFor(1200);
+          const datei = path.join(roh, `stellen-${b}-${thema}-${name.replace(/\W/g, '')}-${z}.png`);
+          await s.fenster.screenshot({ path: datei }); // Wegwerf-Foto: erst ein Foto zeichnet wirklich
+          await s.seite.clock.runFor(50);
+          await s.fenster.screenshot({ path: datei });
+          bilder.push([`${name} · ${z}x`, datei]);
+        }
+      }
+      await bogen(path.join(aus, `stellen-${b}-${THEMEN[thema]}.png`), bilder, { spalten: 2, breite: b > 900 ? 560 : 300, titel: `Teaser und /funktionen/, ${b} px, ${THEMEN[thema]}` });
+      await start.ctx.close();
+      await funk.ctx.close();
+
+      const ver = [];
+      for (const [adresse, stufen] of [['kiesel-1-pro/', [1, 3, 5, 10]], ['kiesel-1/', [1, 2, 5]]]) {
+        const s = await oeffne(adresse, b, h, thema);
+        for (const z of stufen) {
+          await kamera(s.seite, 'fahreZu', z);
+          await s.seite.clock.runFor(1200);
+          const datei = path.join(roh, `vergleich-${b}-${thema}-${adresse.replace(/\W/g, '')}-${z}.png`);
+          await s.fenster.screenshot({ path: datei });
+          await s.seite.clock.runFor(50);
+          await s.fenster.screenshot({ path: datei });
+          ver.push([`${adresse} · ${z}x`, datei]);
+        }
+        await s.ctx.close();
+      }
+      await bogen(path.join(aus, `vergleich-${b}-${THEMEN[thema]}.png`), ver, { spalten: b > 900 ? 2 : 4, breite: b > 900 ? 560 : 300, titel: `Zoom-Vergleich (Pro) und Zoom-Demo (Kiesel 1), ${b} px, ${THEMEN[thema]}` });
+    }
+  }
+
+  // ------------------------------------------------------------- 4. Makro-Demo
+  for (const thema of Object.keys(THEMEN)) {
+    for (const [b, h] of [[1440, 900], [390, 844]]) {
+      const bilder = [];
+      for (const [adresse, linsen] of [['kiesel-1-pro/', ['weit', 'tele']], ['kiesel-1/', ['normal', 'weit']]]) {
+        const s = await oeffne(adresse, b, h, thema);
+        const makro = s.seite.locator('[data-makro]');
+        await makro.scrollIntoViewIfNeeded();
+        for (const linse of linsen) {
+          await s.seite.locator(`[data-linse-knopf="${linse}"]`).click();
+          await s.seite.clock.runFor(700);
+          const datei = path.join(roh, `makro-${b}-${thema}-${adresse.replace(/\W/g, '')}-${linse}.png`);
+          await makro.screenshot({ path: datei });
+          await s.seite.clock.runFor(50);
+          await makro.screenshot({ path: datei });
+          bilder.push([`${adresse} · ${await s.seite.locator('[data-makro-text]').textContent()}`, datei]);
+        }
+        await s.ctx.close();
+      }
+      await bogen(path.join(aus, `makro-${b}-${THEMEN[thema]}.png`), bilder, { spalten: b > 900 ? 2 : 4, breite: b > 900 ? 620 : 330, titel: `Makro-Demo, ${b} px, ${THEMEN[thema]}` });
     }
   }
 

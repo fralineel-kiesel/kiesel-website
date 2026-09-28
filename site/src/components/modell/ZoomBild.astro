@@ -1,0 +1,114 @@
+---
+// Das Zoom-Bild: EIN Baustück für alle vier Zoom-Stellen (Zoom-Teaser der Startseite,
+// Zoom-Demo /kiesel-1/, Zoom-Vergleich /kiesel-1-pro/, „Such das Gipfelkreuz“ /funktionen/).
+// Es enthält Bildausschnitt, Ebenen, Unschärfe, Linsen-Label und startet den Kamera-Motor
+// (scripts/kamera-zoom.js). Bis Etappe 7 hatte jede Stelle ihre eigene Kopie; die vom Teaser
+// war bei 10x noch gestochen scharf. Jetzt gibt es Unterschiede nur noch über Parameter:
+//   modell     'pro' (Hauptkamera + Tele ab 3x, bis 10x) | 'k1' (nur Hauptkamera, bis 5x)
+//   start      Zoom beim Laden   blick: [x, y] im 1600 × 1000-Bild
+//   details    versteckte Details: Fokusring, Zähler, Bild verschieben (nur /funktionen/;
+//              die Vorschaubilder darunter bringt KameraSuche mit, darum auch quelle)
+//   vergleich  dritte Ebene „Kiesel 1“ bis zur Trennlinie (Zoom-Vergleich; modell = 'pro')
+//   chip       Linsen-Label oben links (der Vergleich hat eigene Chips)
+//   klein      niedriger wie im Artboard der Startseite (240 / 440 statt 360 / 560 px)
+//   quelle     Szene aus panoramaQuelle(), falls der Baustein sie auch sonst braucht
+//   bildtext   Beschreibung für Screenreader beim Laden (sonst aus der Linse)
+// Im Slot liegt, was der Baustein zusätzlich aufs Bild legt (Zoom-Leiste, Trennlinie …).
+//
+// Ebenen: je ein <svg> mit <use> auf dieselbe, einmal gezeichnete Szene. Jede Ebene ist
+// rundherum --rand grösser als das Fenster, und das SVG zeichnet über seinen Rand hinaus
+// (overflow: visible): So franst die Unschärfe (CSS blur) nur ausserhalb des sichtbaren
+// Bereichs aus, statt am Bildrand hell oder dunkel zu werden.
+import GlasChip from '../GlasChip.astro';
+import Icon from '../Icon.astro';
+import FokusRing from '../funktionen/FokusRing.astro';
+import FundZaehler from '../funktionen/FundZaehler.astro';
+import { panoramaQuelle, panoramaAnsicht } from '../../lib/kiesel-draw/index.js';
+import { bildZoom, linseBei, linsenText, schaerfeText, UNSCHAERFE, zahl } from '../../lib/kamera.js';
+
+const { modell = 'pro', start, blick, details = false, vergleich = false, chip = true, klein = false, quelle: q, bildtext } = Astro.props;
+const eigeneQuelle = !q;
+const quelle = q ?? panoramaQuelle();
+const ansicht = () => panoramaAnsicht(quelle.id, { zoom: bildZoom(start), cx: blick[0], cy: blick[1] });
+const linse = linseBei(modell, start);
+const ebenen = ['haupt', ...(modell === 'pro' ? ['tele'] : []), ...(vergleich ? ['k1'] : [])];
+const text = bildtext ?? `Alpenpanorama bei ${zahl(start)}x, ${linse === 'tele' ? 'Tele-Linse' : 'Hauptkamera'}, ${schaerfeText(UNSCHAERFE[linse](start))}`;
+---
+{eigeneQuelle && <Fragment set:html={quelle.svg} />}
+<div
+  class:list={['zoom-bild', { klein, vergleich, details }]}
+  data-zoom-bild
+  data-fenster
+  data-modell={modell}
+  data-start={start}
+  data-blick={blick.join(',')}
+  data-details={details ? '' : undefined}
+  data-linse={linse}
+  style={vergleich ? '--pos: 50%; --anteil: 0.5' : undefined}
+>
+  {ebenen.map((art) => (
+    <div class="ebene" data-ebene={art} style={art === 'tele' && linse !== 'tele' ? 'opacity: 0' : undefined} set:html={ansicht()} />
+  ))}
+  <span class="vh" role="img" aria-label={text} data-bildtext></span>
+  {details && <FokusRing />}
+  {chip && (
+    <div class="chip-linse">
+      <GlasChip><span class="punkt"><Icon name="dot" size={16} /></span><span data-linsen-text>{linsenText(modell, start)}</span></GlasChip>
+    </div>
+  )}
+  {details && <div class="chip-zaehler"><FundZaehler /></div>}
+  <slot />
+</div>
+
+<style>
+  .zoom-bild {
+    --rand: 40px;
+    position: relative;
+    height: 360px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-l);
+    background: var(--stage);
+  }
+  .zoom-bild.klein { height: 240px; }
+  .ebene { position: absolute; inset: calc(-1 * var(--rand)); padding: var(--rand); transform-origin: 50% 50%; }
+  .ebene :global(svg) { width: 100%; height: 100%; overflow: visible; }
+
+  /* Linsen-Label. Beim Linsenwechsel pulsiert der Punkt einmal: Die Regel greift neu, wenn
+     data-linse wechselt. Zwei gleiche Animationen mit zwei Namen, sonst startet sie beim
+     Hin- und Herwechseln nicht neu. */
+  .chip-linse, .chip-zaehler { position: absolute; top: var(--space-3); z-index: 2; pointer-events: none; }
+  .chip-linse { left: var(--space-3); }
+  .punkt { display: inline-flex; }
+  [data-linse="tele"] .punkt { animation: puls-tele 0.6s ease-out; }
+  [data-linse="haupt"] .punkt { animation: puls-haupt 0.6s ease-out; }
+  @keyframes puls-tele { 30% { transform: scale(1.5); } }
+  @keyframes puls-haupt { 30% { transform: scale(1.5); } }
+  @media (prefers-reduced-motion: reduce) { .punkt { animation: none !important; } }
+  /* Zähler der Details: auf dem Handy passen die zwei Chips nicht nebeneinander, dort unten rechts */
+  .chip-zaehler { top: auto; right: var(--space-3); bottom: var(--space-3); }
+
+  /* Details: tippen/klicken schwenkt, ziehen verschiebt. Senkrecht wischen scrollt die Seite. */
+  .details { touch-action: pan-y; user-select: none; -webkit-user-select: none; cursor: grab; }
+  .details[data-zieht] { cursor: grabbing; }
+
+  /* Vergleich: Kiesel 1 nur bis zur Trennlinie. --anteil = Lage der Linie als Zahl 0…1
+     (--pos in %), umgerechnet auf die grössere Ebene. Waagrecht ziehen bewegt die Linie. */
+  .vergleich { touch-action: pan-y; user-select: none; -webkit-user-select: none; cursor: ew-resize; }
+  .vergleich [data-ebene="k1"] { clip-path: inset(0 calc(100% - var(--rand) - (100% - 2 * var(--rand)) * var(--anteil)) 0 0); }
+  .vergleich[data-allein] { cursor: default; }
+  .vergleich[data-allein] [data-ebene="k1"] { display: none; }
+
+  @media (min-width: 900px) {
+    .zoom-bild { height: 560px; border-radius: calc(var(--radius-l) + 4px); }
+    .zoom-bild.klein { height: 440px; }
+    .chip-linse { top: var(--space-5); left: var(--space-5); }
+    .chip-zaehler { top: var(--space-5); right: var(--space-5); bottom: auto; }
+  }
+</style>
+
+<script>
+  import { starteKamera } from '../../scripts/kamera-zoom.js';
+
+  document.querySelectorAll('[data-zoom-bild]').forEach((bild) => starteKamera(bild));
+</script>
