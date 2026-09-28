@@ -1,7 +1,23 @@
 // Eckdaten der beiden Modelle: Menü, Unterleiste, Modellkarte und Modellseite.
-// Quelle: Tabelle in CLAUDE.md. Die vollständige Datentabelle steht in technik.js,
-// Preise und Speicherstufen stehen nur in preise.js.
+// Hier stehen nur Texte. Die Werte kommen aus geraete.js (Masse, Akku, Display) und
+// technik.js (WERTE: RAM, Kamera, Laden …), Preise und Speicherstufen nur aus preise.js.
 import { speicherBereich } from './preise.js';
+import { GERAETE, masse, gewicht, akku, zoll, zahl, akkuPlus, dickePlus } from './geraete.js';
+import { WERTE, technik } from './technik.js';
+
+const W = WERTE;
+const g = GERAETE;
+const laden = `${W.wattKabel} W mit Kabel, ${W.wattKabellos} W kabellos`;
+const extras = `${W.schutz}, RGB-Blitz, Zen- und Privacy-Modus`;
+const chip = `A20 Pro abgespeckt, 1+3 Kerne, ${W.ramGb} GB RAM`;
+
+// Kennzahlen der Startseite (stats() in gen2.py)
+export const STARTSEITE_KENNZAHLEN = [
+  { zahl: String(g.k1.akku), titel: ['mAh im Kiesel 1'], text: ['fast doppelt so viel wie das SE'] },
+  { zahl: `${W.tele}x`, titel: ['Tele, echt optisch'], text: ['beim Kiesel 1 Pro'] },
+  { zahl: `${zahl(g.k1.dicke)} mm`, titel: ['flach genug'], text: [`${dickePlus('k1')} mm mehr als das SE, für mehr Akku`, 'für mehr Akku'] },
+  { zahl: W.hertz.replace(' bis ', '–').replace(' Hz', ''), titel: ['Hertz, die mitdenken', 'Hertz'], text: ['das Display läuft nur so schnell wie nötig', 'nur so schnell wie nötig'] },
+];
 
 export const MODELLE = {
   k1: {
@@ -13,7 +29,7 @@ export const MODELLE = {
     karte: {
       farbe: 'Kieselbeige',
       unter: 'So gross wie das iPhone SE von 2016.',
-      eckdaten: ['ca. 4.7″ OLED, 1 bis 90 Hz', 'Eine Kamera, 0.5x bis 1x, digital bis 5x', 'ca. 3000 mAh', speicherBereich('k1')],
+      eckdaten: [`${zoll('k1')} OLED, ${W.hertz}`, `Eine Kamera, 0.5x bis 1x, digital bis ${W.zoomDigital.k1}x`, akku('k1'), speicherBereich('k1')],
     },
     // Modellseite /kiesel-1/ (sinngemäss nach Artboard „Modellseite Kiesel 1 Pro“)
     seite: {
@@ -22,21 +38,21 @@ export const MODELLE = {
       speicherText: speicherBereich('k1'),
       // Kennzahlen: Text als [lang, kurz fürs Handy] oder nur ein Text
       kennzahlen: [
-        { zahl: '4.7″', titel: ['OLED-Display'], text: ['LTPO von 1 bis 90 Hz', '1 bis 90 Hz'] },
-        { zahl: '3000', titel: ['mAh'], text: ['fast doppelt so viel wie das SE'] },
-        { zahl: '50 MP', titel: ['eine Kamera', 'Kamera'], text: ['0.5x bis 1x, mit Makro', '0.5x bis 1x, Makro'] },
-        { zahl: '9 mm', titel: ['flach genug'], text: ['1.4 mm mehr als das SE, für mehr Akku', 'für mehr Akku'] },
+        { zahl: `${zahl(g.k1.display)}″`, titel: ['OLED-Display'], text: [`LTPO von ${W.hertz}`, W.hertz] },
+        { zahl: String(g.k1.akku), titel: ['mAh'], text: [`${akkuPlus('k1')} % mehr als das SE`] },
+        { zahl: `${W.megapixel} MP`, titel: ['eine Kamera', 'Kamera'], text: ['0.5x bis 1x, mit Makro', '0.5x bis 1x, Makro'] },
+        { zahl: `${W.ramGb} GB`, titel: ['Arbeitsspeicher'], text: [`${W.wattKabel} W Laden mit Kabel`, `${W.wattKabel} W Laden`] },
       ],
       // „Das Wichtigste auf einen Blick“ (spec_rows in gen2.py)
       eckdaten: [
-        ['Display', 'ca. 4.7″ OLED, LTPO 1 bis 90 Hz'],
-        ['Chip', 'A20 Pro abgespeckt, 1+3 Kerne, max. 4 GHz'],
-        ['Kamera', '0.5x bis 1x (50 MP), Makro, digital bis 5x'],
-        ['Akku', 'ca. 3000 mAh, Silizium-Kohlenstoff'],
-        ['Masse', '123.8 × 58.6 × 9 mm, ca. 140 g'],
-        ['Kühlung', 'passiv über die Rückseite'],
+        ['Display', `${zoll('k1')} OLED, LTPO ${W.hertz}`],
+        ['Chip', chip],
+        ['Kamera', `0.5x bis 1x (${W.megapixel} MP), Makro, digital bis ${W.zoomDigital.k1}x`],
+        ['Akku', `${akku('k1')}, ${laden}`],
+        ['Masse', `${masse('k1')}, ${gewicht('k1')}`],
+        ['Kühlung', technik('Kühlung', 'k1')],
         ['Speicher', speicherBereich('k1')],
-        ['Extras', 'RGB-Blitz, Zen- und Privacy-Modus'],
+        ['Extras', extras],
       ],
     },
   },
@@ -48,7 +64,7 @@ export const MODELLE = {
     karte: {
       farbe: 'Himmelblau',
       unter: 'So gross wie das iPhone 13 mini.',
-      eckdaten: ['ca. 5.4″ OLED, 1 bis 90 Hz', '0.5x bis 1x plus 3x-Tele mit OIS', 'ca. 3600 mAh, Mini-Vapor-Chamber', speicherBereich('pro')],
+      eckdaten: [`${zoll('pro')} OLED, ${W.hertz}`, `0.5x bis 1x plus ${W.tele}x-Tele mit OIS`, `${akku('pro')}, Mini-Vapor-Chamber`, speicherBereich('pro')],
     },
     // Modellseite /kiesel-1-pro/ (Artboard „Modellseite Kiesel 1 Pro“, gen2.py Abschnitt 4)
     seite: {
@@ -56,20 +72,20 @@ export const MODELLE = {
       farbe: 'Himmelblau',
       speicherText: speicherBereich('pro'),
       kennzahlen: [
-        { zahl: '5.4″', titel: ['OLED-Display'], text: ['LTPO von 1 bis 90 Hz', '1 bis 90 Hz'] },
-        { zahl: '3x', titel: ['Tele, echt optisch'], text: ['mit Bildstabilisator'] },
-        { zahl: '3600', titel: ['mAh'], text: ['rund 50 % mehr als das 13 mini', '50 % mehr als das 13 mini'] },
-        { zahl: '9 mm', titel: ['flach genug'], text: ['für Tele, Akku und MagSafe'] },
+        { zahl: `${zahl(g.pro.display)}″`, titel: ['OLED-Display'], text: [`LTPO von ${W.hertz}`, W.hertz] },
+        { zahl: `${W.tele}x`, titel: ['Tele, echt optisch'], text: [`${W.megapixel} MP, mit Bildstabilisator`] },
+        { zahl: String(g.pro.akku), titel: ['mAh'], text: [`${akkuPlus('pro')} % mehr als das 13 mini`] },
+        { zahl: `${W.ramGb} GB`, titel: ['Arbeitsspeicher'], text: [`${W.wattKabel} W Laden mit Kabel`, `${W.wattKabel} W Laden`] },
       ],
       eckdaten: [
-        ['Display', 'ca. 5.4″ OLED, LTPO 1 bis 90 Hz'],
-        ['Chip', 'A20 Pro abgespeckt, 1+3 Kerne, max. 4 GHz'],
-        ['Kameras', '0.5x bis 1x (50 MP) und 3x-Tele mit OIS'],
-        ['Akku', 'ca. 3600 mAh, Silizium-Kohlenstoff'],
-        ['Masse', '131.5 × 64.2 × 9 mm, ca. 170 g'],
-        ['Kühlung', 'Mini-Vapor-Chamber'],
+        ['Display', `${zoll('pro')} OLED, LTPO ${W.hertz}`],
+        ['Chip', chip],
+        ['Kameras', `0.5x bis 1x und ${W.tele}x-Tele mit OIS, beide ${W.megapixel} MP`],
+        ['Akku', `${akku('pro')}, ${laden}`],
+        ['Masse', `${masse('pro')}, ${gewicht('pro')}`],
+        ['Kühlung', technik('Kühlung', 'pro')],
         ['Speicher', speicherBereich('pro')],
-        ['Extras', 'RGB-Blitz, Zen- und Privacy-Modus'],
+        ['Extras', extras],
       ],
     },
   },

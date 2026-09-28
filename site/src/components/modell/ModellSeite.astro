@@ -15,13 +15,15 @@ import FarbReihe from './FarbReihe.astro';
 import Eckdaten from './Eckdaten.astro';
 import KaufBox from './KaufBox.astro';
 import { MODELLE } from '../../data/modelle.js';
+import { akku } from '../../data/geraete.js';
+import { WERTE } from '../../data/technik.js';
 
 const { modell } = Astro.props;
 const m = MODELLE[modell];
 const pro = modell === 'pro';
 const beschreibung = pro
-  ? 'Kiesel 1 Pro: so gross wie das iPhone 13 mini, mit echtem 3x-Tele und rund 3600 mAh. Ein Fan-Konzept.'
-  : 'Kiesel 1: so gross wie das iPhone SE von 2016, mit rund 3000 mAh für den ganzen Tag. Ein Fan-Konzept.';
+  ? `Kiesel 1 Pro: so gross wie das iPhone 13 mini, mit echtem ${WERTE.tele}x-Tele und ${akku('pro')}. Ein Fan-Konzept.`
+  : `Kiesel 1: so gross wie das iPhone SE von 2016, mit ${akku('k1')} für den ganzen Tag. Ein Fan-Konzept.`;
 ---
 <BaseLayout titel={m.name} beschreibung={beschreibung} unterleiste={modell}>
   <ModellKopf modell={modell} />

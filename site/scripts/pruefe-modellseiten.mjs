@@ -322,7 +322,8 @@ try {
     const { seite, ctx, status } = await oeffne(adresse);
     const zeilen = await seite.locator('table.tabelle tbody tr').count();
     const kopf = await seite.locator('table.tabelle th[scope="row"]').count();
-    pruefe(`${adresse}: Tabelle mit ${TECHNIK.length + 1} Zeilen und Zeilenköpfen`, zeilen === TECHNIK.length + 1 && kopf === zeilen, `${zeilen} Zeilen`);
+    const soll = TECHNIK.reduce((n, g) => n + g.zeilen.length, 0);
+    pruefe(`${adresse}: Tabelle mit ${soll} Zeilen und Zeilenköpfen`, zeilen === soll && kopf === zeilen, `${zeilen} Zeilen`);
     pruefe(`${adresse}: kein Platzhalter mehr, kein three.js, keine Fehler`, !(await seite.content()).includes('Inhalt folgt') && !status.dreiD && status.fehler.length === 0);
     await ctx.close();
   }

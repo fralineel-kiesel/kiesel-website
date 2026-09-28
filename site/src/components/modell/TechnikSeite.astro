@@ -8,7 +8,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Knopf from '../Knopf.astro';
 import { MODELLE } from '../../data/modelle.js';
-import { TECHNIK, WEGGELASSEN } from '../../data/technik.js';
+import { TECHNIK } from '../../data/technik.js';
 import { PREISE } from '../../data/preise.js';
 import { chf } from '../../lib/format.js';
 import { pfad } from '../../lib/pfad.js';
@@ -17,8 +17,7 @@ const { modell } = Astro.props;
 const m = MODELLE[modell];
 const spalte = modell === 'pro' ? 2 : 1;
 const zeilen = [
-  ...TECHNIK.map((z) => [z[0], z[spalte]]),
-  ['Speicher und Preis', PREISE[modell].speicher.map((s) => `${s.name}: ${chf(s.preis)}`).join(' · ')],
+  ...TECHNIK.flatMap((g) => g.zeilen).map((z) => [z[0], z[spalte]]),
 ];
 ---
 <BaseLayout titel={`${m.name} · Technische Daten`} beschreibung={`Alle technischen Daten des ${m.name} auf einen Blick. Ein Fan-Konzept, alle Werte sind Schätzungen.`} unterleiste={modell}>
@@ -37,13 +36,6 @@ const zeilen = [
         ))}
       </tbody>
     </table>
-
-    <h2 class="t-2 weg-titel">Bewusst weggelassen</h2>
-    <ul role="list" class="weg">
-      {WEGGELASSEN.map(([was, warum]) => (
-        <li><s>{was}</s><span class="t-muted">{warum}</span></li>
-      ))}
-    </ul>
 
     <div class="knoepfe">
       <Knopf art="sekundaer" href={pfad(m.pfad)}>Zurück zur Übersicht</Knopf>

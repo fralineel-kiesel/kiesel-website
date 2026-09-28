@@ -3,13 +3,8 @@
 // Desktop: vier Spalten. Handy: zwei Spalten mit kürzeren Texten wie im Artboard
 // „Startseite Handy“. Beide Fassungen stehen im HTML, CSS zeigt nur eine
 // (display: none versteckt die andere auch vor Screenreadern, also nichts doppelt).
-//   zahlen: eigene Kennzahlen (Modellseiten, Daten in data/modelle.js), sonst die der Startseite
-const STARTSEITE = [
-  { zahl: '3000', titel: ['mAh im Kiesel 1'], text: ['fast doppelt so viel wie das SE'] },
-  { zahl: '3x', titel: ['Tele, echt optisch'], text: ['beim Kiesel 1 Pro'] },
-  { zahl: '9 mm', titel: ['flach genug'], text: ['1.4 mm mehr als das SE, für mehr Akku', 'für mehr Akku'] },
-  { zahl: '1–90', titel: ['Hertz, die mitdenken', 'Hertz'], text: ['das Display läuft nur so schnell wie nötig', 'nur so schnell wie nötig'] },
-];
+//   zahlen: eigene Kennzahlen (Modellseiten), sonst die der Startseite. Beide stehen in data/modelle.js
+import { STARTSEITE_KENNZAHLEN as STARTSEITE } from '../../data/modelle.js';
 const { zahlen: ZAHLEN = STARTSEITE } = Astro.props;
 // [lang, kurz]: gibt es keine Kurzfassung, gilt die lange überall
 const zwei = ([lang, kurz]) => (kurz ? [lang, kurz] : [lang, null]);
