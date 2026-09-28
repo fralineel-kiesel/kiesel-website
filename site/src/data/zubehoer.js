@@ -1,5 +1,5 @@
 // Texte der Seiten /zubehoer/ und /zubehoer/huelle/, 1:1 aus den Artboards „Zubehör“ und
-// „Kiesel-Hülle“ (design/generator/gen3.py). Der Preis steht in modelle.js (HUELLE_PREIS).
+// „Kiesel-Hülle“ (design/generator/gen3.py). Der Preis steht in preise.js (HUELLE_PREIS).
 // Platzhalter in eckigen Klammern sind bewusst so: nichts erfinden, bis es feststeht.
 
 export const ZUBEHOER = {
@@ -50,7 +50,8 @@ export const HUELLE = {
   ],
 };
 
-// Eintrag für den Warenkorb: nur Modell und Hüllenfarbe, nie die Vorschau-Handyfarbe
-export function huellenArtikel(modell, farbe, preis) {
-  return { id: `huelle-${modell}-${farbe.toLowerCase()}`, art: 'huelle', name: 'Kiesel-Hülle', modell, farbe, preis };
+// Eintrag für den Warenkorb: nur Modell und Hüllenfarbe, nie die Vorschau-Handyfarbe.
+// Den Preis rechnet der Warenkorb selbst aus data/preise.js.
+export function huellenArtikel(modell, farbe) {
+  return { art: 'huelle', modell, farbe };
 }

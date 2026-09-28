@@ -13,7 +13,7 @@ import WarenkorbKnopf from './WarenkorbKnopf.astro';
 import { HAUPTMENUE } from '../data/navigation.js';
 import { pfad, istAktiv } from '../lib/pfad.js';
 
-const { klebt = true } = Astro.props;
+const { klebt = true, schublade = true } = Astro.props;
 const aktuell = Astro.url.pathname;
 ---
 <header class:list={['kopfzeile', { klebt }]}>
@@ -35,7 +35,7 @@ const aktuell = Astro.url.pathname;
     </nav>
 
     <div class="aktionen">
-      <WarenkorbKnopf />
+      <WarenkorbKnopf schublade={schublade} />
       <Knopf href={pfad('kaufen/')} art="ink" groesse="s" class="kaufen">Kaufen</Knopf>
       <span class="nur-handy"><MobilMenue /></span>
     </div>

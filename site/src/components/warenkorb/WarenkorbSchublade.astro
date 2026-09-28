@@ -1,0 +1,102 @@
+---
+// Warenkorb-Schublade nach dem Artboard „Warenkorb-Schublade“ (gen2.py, Abschnitt 6):
+// 460 px breit von rechts, auf dem Handy volle Breite. Liegt im BaseLayout, also auf jeder
+// Seite ausser /warenkorb/ selbst.
+//
+// Öffnen: der Warenkorb-Knopf in der Kopfzeile oder das Ereignis „kiesel:schublade“
+//   window.dispatchEvent(new CustomEvent('kiesel:schublade', { detail: { ausloeser: knopf } }))
+// (so macht es „In den Warenkorb“ auf /kaufen/). Die Fokus-Verwaltung steckt in scripts/modal.js.
+//
+// <dialog> hat die Rolle „dialog“ schon eingebaut; role und aria-modal stehen trotzdem da, damit
+// man im HTML sieht, was das Element ist (schadet nicht, showModal() setzt dasselbe).
+//
+// Abweichung vom Artboard: Dort beginnt die Schublade unter der Kopfzeile, und die Kopfzeile
+// ist nicht abgedunkelt. Hier geht sie über die ganze Höhe, weil die Kopfzeile während der
+// Schublade ohnehin gesperrt ist (inert): Knöpfe, die hell aussehen, aber nichts tun, verwirren.
+import Icon from '../Icon.astro';
+import WarenkorbInhalt from './WarenkorbInhalt.astro';
+---
+<dialog class="schublade" id="warenkorb-schublade" role="dialog" aria-modal="true" aria-labelledby="schublade-titel" data-schublade>
+  <div class="kopf">
+    <h2 id="schublade-titel" class="titel">Warenkorb</h2>
+    <button type="button" class="zu" aria-label="Warenkorb schliessen" data-schublade-zu>
+      <Icon name="close" size={18} />
+    </button>
+  </div>
+  <WarenkorbInhalt art="schublade" />
+</dialog>
+
+<style>
+  .schublade {
+    position: fixed;
+    inset: 0 0 0 auto;
+    width: min(460px, 100%);
+    max-width: none;
+    height: 100dvh;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-left: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    /* Hereinfahren: aus translateX(100%) nach 0. display und overlay müssen mit
+       „allow-discrete“ mitlaufen, sonst verschwindet der Dialog beim Schliessen sofort. */
+    transform: translateX(100%);
+    transition: transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1), overlay 0.32s allow-discrete, display 0.32s allow-discrete;
+  }
+  .schublade[open] { display: flex; flex-direction: column; transform: none; }
+  @starting-style { .schublade[open] { transform: translateX(100%); } }
+
+  .schublade::backdrop {
+    background: var(--overlay);
+    opacity: 0;
+    transition: opacity 0.32s, overlay 0.32s allow-discrete, display 0.32s allow-discrete;
+  }
+  .schublade[open]::backdrop { opacity: 1; }
+  @starting-style { .schublade[open]::backdrop { opacity: 0; } }
+
+  .kopf {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    padding: 22px calc(var(--space-5) + 4px);
+    border-bottom: 1px solid var(--line);
+  }
+  .titel { font-family: var(--display); font-size: 24px; font-weight: 600; line-height: 1.2; letter-spacing: -0.03em; }
+  .zu {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-full);
+    background: var(--bg);
+    color: var(--ink);
+  }
+  .zu:hover { background: var(--raised); }
+  @media (max-width: 899px) {
+    .schublade { border-left: 0; }
+    .kopf { height: var(--header-h); padding: 0 12px 0 20px; }
+    .titel { font-size: 20px; }
+  }
+</style>
+
+<script>
+  import { modal } from '../../scripts/modal.js';
+
+  document.querySelectorAll('[data-schublade]').forEach((dialog) => {
+    const knopfOben = () => document.querySelector('[data-warenkorb-knopf]');
+    const m = modal(dialog, { ersatz: knopfOben });
+
+    // Warenkorb-Knopf in der Kopfzeile (ein <button>, wenn es eine Schublade gibt)
+    document.querySelectorAll('button[data-warenkorb-knopf]').forEach((k) => k.addEventListener('click', () => m.oeffnen(k)));
+    window.addEventListener('kiesel:schublade', (e) => m.oeffnen(e.detail?.ausloeser));
+    dialog.querySelector('[data-schublade-zu]').addEventListener('click', () => m.schliessen());
+    // „Weiter einkaufen“ schliesst nur: man ist ja schon im Laden
+    dialog.querySelector('[data-wk-weiter]')?.addEventListener('click', () => m.schliessen());
+  });
+</script>

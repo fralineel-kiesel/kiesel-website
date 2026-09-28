@@ -8,7 +8,8 @@
 import Knopf from '../Knopf.astro';
 import { handy } from '../../lib/kiesel-draw/phone.js';
 import { MODELS } from '../../lib/kiesel-draw/models.js';
-import { MODELLE, abPreis } from '../../data/modelle.js';
+import { MODELLE } from '../../data/modelle.js';
+import { abPreis } from '../../data/preise.js';
 import { pfad } from '../../lib/pfad.js';
 
 const { modell } = Astro.props;
@@ -26,7 +27,7 @@ const svg = handy({ ansicht: 'vorne', modell, farbe: m.karte.farbe, hoehe: null,
   <p class="preis">{abPreis(modell)}</p>
   <div class="knoepfe">
     <Knopf art="primaer" href={pfad(m.pfad)}>Mehr erfahren<span class="vh"> über den {m.name}</span></Knopf>
-    <Knopf art="sekundaer" href={pfad('kaufen/')}>Kaufen<span class="vh">: {m.name}</span></Knopf>
+    <Knopf art="sekundaer" href={pfad(`kaufen/?modell=${modell}&farbe=${m.karte.farbe}`)}>Kaufen<span class="vh">: {m.name}</span></Knopf>
   </div>
 </article>
 

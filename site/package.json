@@ -16,7 +16,9 @@
     "fotos:kamera": "astro build && node scripts/fotografiere-kamera.mjs",
     "pruefe:kamera": "astro build && node scripts/pruefe-kamera.mjs",
     "pruefe:funktionen": "astro build && node scripts/pruefe-funktionen.mjs",
-    "fotos:funktionen": "astro build && node scripts/fotografiere-funktionen.mjs"
+    "fotos:funktionen": "astro build && node scripts/fotografiere-funktionen.mjs",
+    "pruefe:kaufen": "astro build && node scripts/pruefe-kaufen.mjs",
+    "fotos:kaufen": "astro build && node scripts/fotografiere-kaufen.mjs"
   },
   "dependencies": {
     "astro": "^7.3.5",

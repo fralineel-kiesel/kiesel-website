@@ -5,7 +5,7 @@
 import Buehne from '../Buehne.astro';
 import Knopf from '../Knopf.astro';
 import { handy } from '../../lib/kiesel-draw/phone.js';
-import { HUELLE_PREIS } from '../../data/modelle.js';
+import { HUELLE_PREIS } from '../../data/preise.js';
 import { chf } from '../../lib/format.js';
 import { pfad } from '../../lib/pfad.js';
 
@@ -22,8 +22,9 @@ const svg = handy({
     <p class="preis">{chf(HUELLE_PREIS)}</p>
     <div class="knoepfe">
       <Knopf art="sekundaer" href={pfad('zubehoer/')}>Zum Zubehör</Knopf>
-      {/* Etappe 6: legt die Hülle wirklich in den Warenkorb */}
-      <Knopf art="primaer" href={pfad('zubehoer/huelle/')}>In den Warenkorb</Knopf>
+      {/* Legt genau die abgebildete Hülle hinein: für den Pro, in Mattweiss */}
+      <Knopf art="primaer" data-teaser-huelle data-modell="pro" data-farbe="Mattweiss"><span data-knopftext>In den Warenkorb</span><span class="vh">: Kiesel-Hülle für Kiesel 1 Pro in Mattweiss</span></Knopf>
+      <p class="vh" aria-live="polite" data-ansage></p>
     </div>
   </div>
 </div>
@@ -42,3 +43,12 @@ const svg = handy({
     .huelle :global(.huelle-buehne) { height: 520px; }
   }
 </style>
+
+<script>
+  import { huelleKaufen } from '../../scripts/huelle-kaufen.js';
+
+  document.querySelectorAll('[data-teaser-huelle]').forEach((knopf) => {
+    const ansage = knopf.parentElement.querySelector('[data-ansage]');
+    knopf.addEventListener('click', () => huelleKaufen(knopf, knopf.dataset.modell, knopf.dataset.farbe, ansage));
+  });
+</script>

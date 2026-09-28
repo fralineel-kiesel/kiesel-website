@@ -1,6 +1,7 @@
-// Eckdaten der beiden Modelle: Menü, Unterleiste, Preise, Modellkarte und Modellseite.
-// Quelle: Tabelle in CLAUDE.md. Die vollständige Datentabelle steht in technik.js.
-import { chf } from '../lib/format.js';
+// Eckdaten der beiden Modelle: Menü, Unterleiste, Modellkarte und Modellseite.
+// Quelle: Tabelle in CLAUDE.md. Die vollständige Datentabelle steht in technik.js,
+// Preise und Speicherstufen stehen nur in preise.js.
+import { speicherBereich } from './preise.js';
 
 export const MODELLE = {
   k1: {
@@ -8,18 +9,17 @@ export const MODELLE = {
     pfad: 'kiesel-1/',
     kurz: 'SE-Grösse, Akku für den ganzen Tag',
     farbe: 'Himmelblau',          // Farbe im Menü
-    speicher: [['256 GB', 1200], ['512 GB', 1400], ['1 TB', 1600]],
     // Modellkarte auf der Startseite (Artboard „Startseite Desktop“, model_card() in gen2.py)
     karte: {
       farbe: 'Kieselbeige',
       unter: 'So gross wie das iPhone SE von 2016.',
-      eckdaten: ['ca. 4.7″ OLED, 1 bis 90 Hz', 'Eine Kamera, 0.5x bis 1x, digital bis 5x', 'ca. 3000 mAh', '256 GB bis 1 TB'],
+      eckdaten: ['ca. 4.7″ OLED, 1 bis 90 Hz', 'Eine Kamera, 0.5x bis 1x, digital bis 5x', 'ca. 3000 mAh', speicherBereich('k1')],
     },
     // Modellseite /kiesel-1/ (sinngemäss nach Artboard „Modellseite Kiesel 1 Pro“)
     seite: {
       unterzeile: 'Die Grösse von 2016. Der Akku von heute.',
       farbe: 'Kieselbeige',
-      speicherText: '256 GB bis 1 TB',
+      speicherText: speicherBereich('k1'),
       // Kennzahlen: Text als [lang, kurz fürs Handy] oder nur ein Text
       kennzahlen: [
         { zahl: '4.7″', titel: ['OLED-Display'], text: ['LTPO von 1 bis 90 Hz', '1 bis 90 Hz'] },
@@ -35,7 +35,7 @@ export const MODELLE = {
         ['Akku', 'ca. 3000 mAh, Silizium-Kohlenstoff'],
         ['Masse', '123.8 × 58.6 × 9 mm, ca. 140 g'],
         ['Kühlung', 'passiv über die Rückseite'],
-        ['Speicher', '256 GB bis 1 TB'],
+        ['Speicher', speicherBereich('k1')],
         ['Extras', 'RGB-Blitz, Zen- und Privacy-Modus'],
       ],
     },
@@ -45,17 +45,16 @@ export const MODELLE = {
     pfad: 'kiesel-1-pro/',
     kurz: '13-mini-Grösse mit 3x-Tele',
     farbe: 'Titangrau',
-    speicher: [['256 GB', 1500], ['512 GB', 1700], ['1 TB', 1900], ['2 TB', 2300]],
     karte: {
       farbe: 'Himmelblau',
       unter: 'So gross wie das iPhone 13 mini.',
-      eckdaten: ['ca. 5.4″ OLED, 1 bis 90 Hz', '0.5x bis 1x plus 3x-Tele mit OIS', 'ca. 3600 mAh, Mini-Vapor-Chamber', '256 GB bis 2 TB'],
+      eckdaten: ['ca. 5.4″ OLED, 1 bis 90 Hz', '0.5x bis 1x plus 3x-Tele mit OIS', 'ca. 3600 mAh, Mini-Vapor-Chamber', speicherBereich('pro')],
     },
     // Modellseite /kiesel-1-pro/ (Artboard „Modellseite Kiesel 1 Pro“, gen2.py Abschnitt 4)
     seite: {
       unterzeile: 'Zwei Kameras. Eine Hand.',
       farbe: 'Himmelblau',
-      speicherText: '256 GB bis 2 TB',
+      speicherText: speicherBereich('pro'),
       kennzahlen: [
         { zahl: '5.4″', titel: ['OLED-Display'], text: ['LTPO von 1 bis 90 Hz', '1 bis 90 Hz'] },
         { zahl: '3x', titel: ['Tele, echt optisch'], text: ['mit Bildstabilisator'] },
@@ -69,16 +68,9 @@ export const MODELLE = {
         ['Akku', 'ca. 3600 mAh, Silizium-Kohlenstoff'],
         ['Masse', '131.5 × 64.2 × 9 mm, ca. 170 g'],
         ['Kühlung', 'Mini-Vapor-Chamber'],
-        ['Speicher', '256 GB bis 2 TB'],
+        ['Speicher', speicherBereich('pro')],
         ['Extras', 'RGB-Blitz, Zen- und Privacy-Modus'],
       ],
     },
   },
 };
-
-export const HUELLE_PREIS = 59;
-
-// „ab CHF 1’200.–“: der kleinste Preis eines Modells
-export function abPreis(modell) {
-  return 'ab ' + chf(Math.min(...MODELLE[modell].speicher.map(([, preis]) => preis)));
-}

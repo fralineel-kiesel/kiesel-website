@@ -1,11 +1,25 @@
 ---
+// /warenkorb/: derselbe Inhalt wie die Schublade, aber in Breite. Kein Artboard dafür,
+// abgeleitet aus „Warenkorb-Schublade“ (Zeilen, Summen, Knöpfe) und „Kaufen“ (Titel,
+// Seitenrand, 5:6-Raster wird hier 7:4, weil die Liste mehr Platz braucht als die Summen).
+// Ohne Schublade: Der Warenkorb-Knopf oben ist hier ein Link auf diese Seite (aria-current).
 import BaseLayout from '../layouts/BaseLayout.astro';
-import Platzhalter from '../components/Platzhalter.astro';
+import WarenkorbInhalt from '../components/warenkorb/WarenkorbInhalt.astro';
 ---
-<BaseLayout titel="Warenkorb">
-  <Platzhalter
-    etappe={6}
-    titel="Warenkorb"
-    einleitung="Deine Auswahl, bereit für die Kasse, die leider nur ein Konzept ist."
-  />
+<BaseLayout titel="Warenkorb" beschreibung="Deine Auswahl, bereit für die Kasse, die leider nur ein Konzept ist." schublade={false}>
+  <div class="container warenkorb">
+    <h1 class="t-1 titel">Warenkorb</h1>
+    <p class="t-lead t-muted einleitung">Deine Auswahl, bereit für die Kasse. Die ist leider nur ein Konzept.</p>
+    <WarenkorbInhalt art="seite" />
+  </div>
 </BaseLayout>
+
+<style>
+  .warenkorb { padding-top: var(--space-6); padding-bottom: var(--space-9); }
+  .einleitung { margin: var(--space-3) 0 var(--space-6); }
+  @media (min-width: 900px) {
+    .warenkorb { padding-top: var(--space-8); }
+    .titel { font-size: 64px; line-height: 1; letter-spacing: -0.045em; }
+    .einleitung { margin: var(--space-4) 0 var(--space-7); }
+  }
+</style>

@@ -1,20 +1,19 @@
-// „In den Warenkorb“ für die Kiesel-Hülle (/zubehoer/ und /zubehoer/huelle/).
+// „In den Warenkorb“ für die Kiesel-Hülle (/zubehoer/, /zubehoer/huelle/ und Startseite).
 // Legt nur Modell und Hüllenfarbe hinein (huellenArtikel), zeigt am Knopf kurz „Im Warenkorb“
 // und sagt es dem Screenreader an. Der Zähler in der Kopfzeile hört auf das Warenkorb-Ereignis.
+// Ist localStorage gesperrt, merkt sich der Warenkorb die Hülle trotzdem (siehe warenkorb.js).
 import { hinzufuegen } from './warenkorb.js';
 import { huellenArtikel } from '../data/zubehoer.js';
-import { HUELLE_PREIS } from '../data/modelle.js';
-
-const MODELLNAME = { k1: 'Kiesel 1', pro: 'Kiesel 1 Pro' };
+import { PREISE, MAX_ANZAHL } from '../data/preise.js';
 
 export function huelleKaufen(knopf, modell, farbe, ansage) {
-  const ok = hinzufuegen(huellenArtikel(modell, farbe, HUELLE_PREIS));
+  const ergebnis = hinzufuegen(huellenArtikel(modell, farbe));
+  if (!ergebnis) return false;
   if (ansage) {
-    ansage.textContent = ok
-      ? `Kiesel-Hülle für ${MODELLNAME[modell]} in ${farbe} liegt im Warenkorb.`
-      : 'Der Warenkorb liess sich nicht speichern. Ist das ein privates Fenster?';
+    ansage.textContent = ergebnis.gekappt
+      ? `Von der Kiesel-Hülle für ${PREISE[modell].name} in ${farbe} liegen schon ${MAX_ANZAHL} im Warenkorb, mehr geht nicht.`
+      : `Kiesel-Hülle für ${PREISE[modell].name} in ${farbe} liegt im Warenkorb.`;
   }
-  if (!ok) return false;
   // Rückmeldung am Knopf: Text kurz tauschen, Breite bleibt (kein Springen)
   const text = knopf.querySelector('[data-knopftext]') ?? knopf;
   clearTimeout(knopf._zurueck);

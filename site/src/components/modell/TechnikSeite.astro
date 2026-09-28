@@ -3,12 +3,13 @@
 // Eine echte Tabelle: Merkmal in der ersten Spalte (th scope="row"), Wert daneben.
 // Auf dem Handy stehen Merkmal und Wert untereinander (display: block). Das kann die
 // Tabellen-Bedeutung für Screenreader kosten, darum die ausdrücklichen role-Attribute.
-// Speicher und Preise kommen aus data/modelle.js, alles andere aus data/technik.js.
+// Speicher und Preise kommen aus data/preise.js, alles andere aus data/technik.js.
 //   modell: 'k1' | 'pro'
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Knopf from '../Knopf.astro';
 import { MODELLE } from '../../data/modelle.js';
 import { TECHNIK, WEGGELASSEN } from '../../data/technik.js';
+import { PREISE } from '../../data/preise.js';
 import { chf } from '../../lib/format.js';
 import { pfad } from '../../lib/pfad.js';
 
@@ -17,7 +18,7 @@ const m = MODELLE[modell];
 const spalte = modell === 'pro' ? 2 : 1;
 const zeilen = [
   ...TECHNIK.map((z) => [z[0], z[spalte]]),
-  ['Speicher und Preis', m.speicher.map(([gb, preis]) => `${gb}: ${chf(preis)}`).join(' · ')],
+  ['Speicher und Preis', PREISE[modell].speicher.map((s) => `${s.name}: ${chf(s.preis)}`).join(' · ')],
 ];
 ---
 <BaseLayout titel={`${m.name} · Technische Daten`} beschreibung={`Alle technischen Daten des ${m.name} auf einen Blick. Ein Fan-Konzept, alle Werte sind Schätzungen.`} unterleiste={modell}>
@@ -46,7 +47,7 @@ const zeilen = [
 
     <div class="knoepfe">
       <Knopf art="sekundaer" href={pfad(m.pfad)}>Zurück zur Übersicht</Knopf>
-      <Knopf art="primaer" href={pfad(`kaufen/?modell=${modell}`)}>Kaufen</Knopf>
+      <Knopf art="primaer" href={pfad(`kaufen/?modell=${modell}&farbe=${m.seite.farbe}`)}>Kaufen</Knopf>
     </div>
   </section>
 </BaseLayout>

@@ -2,13 +2,25 @@
 // Warenkorb-Knopf in der Kopfzeile: Tasche mit Zähler.
 // Die Zahl kennt nur der Browser (localStorage), darum setzt sie ein kleines Skript.
 // Ohne Artikel bleibt der Zähler versteckt.
+//   schublade: true = ein <button>, der die Warenkorb-Schublade öffnet (fast überall)
+//              false = ein Link auf /warenkorb/ (auf /warenkorb/ selbst, dort ohne Schublade)
 import Icon from './Icon.astro';
 import { pfad } from '../lib/pfad.js';
+
+const { schublade = true } = Astro.props;
 ---
-<a class="warenkorb-knopf" href={pfad('warenkorb/')} aria-label="Warenkorb, leer" data-warenkorb-knopf>
-  <Icon name="bag" size={20} class="tasche" />
-  <span class="zahl" data-warenkorb-zahl hidden>0</span>
-</a>
+{schublade
+  ? (
+    <button type="button" class="warenkorb-knopf" aria-label="Warenkorb, leer" aria-haspopup="dialog" aria-expanded="false" aria-controls="warenkorb-schublade" data-warenkorb-knopf>
+      <Icon name="bag" size={20} class="tasche" />
+      <span class="zahl" data-warenkorb-zahl hidden>0</span>
+    </button>
+  ) : (
+    <a class="warenkorb-knopf" href={pfad('warenkorb/')} aria-label="Warenkorb, leer" aria-current="page" data-warenkorb-knopf>
+      <Icon name="bag" size={20} class="tasche" />
+      <span class="zahl" data-warenkorb-zahl hidden>0</span>
+    </a>
+  )}
 
 <style>
   .warenkorb-knopf {
@@ -19,7 +31,10 @@ import { pfad } from '../lib/pfad.js';
     width: 44px;
     height: 44px;
     flex-shrink: 0;
+    padding: 0;
+    border: 0;
     border-radius: var(--radius-full);
+    background: transparent;
     color: var(--ink);
     text-decoration: none;
   }

@@ -8,7 +8,7 @@
 // Wichtig: lens() und ledSvg() verweisen per url(#…) auf Verläufe, die backSvg() vorher in
 // <defs> anlegt. Sie funktionieren darum nur innerhalb einer Rückseite mit demselben pid.
 // Die Reihenfolge der Zeilen ist Absicht: In SVG liegt später Gezeichnetes oben.
-import { E, stop, f, rr, uid } from './svg.js';
+import { E, esc, stop, f, rr, uid } from './svg.js';
 import { MODELS, DICKE, geo, camrow } from './models.js';
 import { palette, led as ledZustand } from './colors.js';
 
@@ -108,7 +108,7 @@ export function caseDefs(pid, k, cutpath, milkypath) {
 
 // Rückseite. mk = 'k1' | 'pro', col = Palette (7 Töne), pid = ID-Präfix,
 // led = null oder LED-Objekt (siehe ledDefs), huelle = null oder Palette der Hülle
-export function backSvg(mk, col, pid, led = null, huelle = null) {
+export function backSvg(mk, col, pid, led = null, huelle = null, gravur = null) {
   const m = MODELS[mk];
   const [W, H, R, g] = geo(m);
   const [c, xs, mic, fl] = camrow(m);
@@ -146,11 +146,36 @@ export function backSvg(mk, col, pid, led = null, huelle = null) {
       E('path', { d: V2, style: `fill: none; stroke: ${col.backHi}; stroke-width: 2.2; stroke-linecap: round; opacity: 0.7` })));
   // Hülle über dem Rücken, aber unter den Linsen: die schauen durch den Ausschnitt
   if (huelle) s += caseBack(mk, huelle, pid, cut, inner);
+  // Gravur (neu, nicht aus lib.py) unter der MagSafe-Markierung. Ohne Gravur kommt nichts
+  // dazu, darum bleiben alle Vergleiche mit Python gleich.
+  if (gravur) s += gravurSvg(W, my + 320, col, gravur, !!huelle);
   s += lens(xs[0], c, 68, pid, false);
   if (m.cams === 2) s += lens(xs[1], c, 64, pid, true);
   s += E('circle', { cx: f(mic), cy: f(c), r: '6', style: `fill: ${col.lo}` });
   s += ledSvg(fl, c, pid, led);
   return s;
+}
+
+// Gravur auf der Rückseite (neu, nicht aus lib.py). Gelasert wie beim echten Vorbild: auf hellen
+// Farben dunkler als der Rücken, auf dunklen heller, dazu eine feine Kante wie beim Logo.
+// Schriftgrösse 48 (= 4.8 mm), lange Texte kleiner, damit auch 18 breite Zeichen mit Rand
+// passen. Mit Hülle wird sie NACH der Hülle gezeichnet, als blasser dunkler Schatten: Sie
+// schimmert durch die milchige Rückwand. (Ganz unter der Hülle gezeichnet sähe man sie nicht.)
+const hell = (hex) => {
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.6;
+};
+export function gravurSvg(W, y, col, text, unterHuelle = false) {
+  const breite = [...text].length * 0.6; // grobe Breite pro Zeichen in Schriftgrössen
+  const fs = Math.min(48, (W - 160) / Math.max(breite, 1));
+  const stil = `font-family: 'Instrument Sans', 'Segoe UI', sans-serif; font-size: ${f(fs)}px; font-weight: 500; letter-spacing: 1px; text-anchor: middle`;
+  const t = esc(text);
+  // Die milchige Hülle ist immer hell-grau: darunter wirkt jede Gravur als dunkler Schatten
+  const [farbe, kante, deck] = unterHuelle ? ['#0B1016', '#FFFFFF', 0.42]
+    : hell(col.back) ? [col.lo, col.hi, 0.9] : [col.hi, col.lo, 0.9];
+  return E('g', { 'data-gravur': '' },
+    E('text', { x: f(W / 2), y: f(y + 1.5), style: `${stil}; fill: ${kante}; opacity: ${f(deck * 0.6)}` }, t) +
+    E('text', { x: f(W / 2), y: f(y), style: `${stil}; fill: ${farbe}; opacity: ${f(deck)}` }, t));
 }
 
 // Hülle von hinten: Rand (22 Einheiten = 2.2 mm), milchige Rückwand mit Loch für die
@@ -303,11 +328,12 @@ export function floor(cx, cy, rx, ry, fid, op = '0.35') {
 //   led:     'off' | 'call' | 'msg' | … (siehe LED in colors.js), Hex oder LED-Objekt
 //   boden:   Bodenschatten ja/nein
 //   label:   eigener Text für Screenreader   pid: ID-Präfix (sonst automatisch)
+//   gravur:  Text auf der Rückseite (nur ansicht 'hinten'), wird escaped
 const ANSICHT = { vorne: 'front', hinten: 'back', seite: 'side', front: 'front', back: 'back', side: 'side' };
 const ANSICHT_TEXT = { front: ', Vorderseite', back: ', Rückseite', side: ', Seitenansicht, 9 mm dick' };
 
 export function handy({ ansicht = 'hinten', modell = 'pro', farbe = 'Himmelblau', hoehe = 400, drehung = 0,
-  huelle = null, led = null, boden = true, label = null, pid = null } = {}) {
+  huelle = null, led = null, boden = true, label = null, pid = null, gravur = null } = {}) {
   const kind = ANSICHT[ansicht];
   if (!kind) throw new Error(`Unbekannte Ansicht: ${ansicht}`);
   pid = pid ?? uid('q');
@@ -317,7 +343,7 @@ export function handy({ ansicht = 'hinten', modell = 'pro', farbe = 'Himmelblau'
   const W = kind === 'side' ? DICKE : m.W, H = m.H; // Seitenansicht: nur 9 mm breit
   const pad = 200;
   const vbw = W + 2 * pad, vbh = H + 2 * pad;
-  const inner = kind === 'back' ? backSvg(modell, col, pid, ledZustand(led), k)
+  const inner = kind === 'back' ? backSvg(modell, col, pid, ledZustand(led), k, gravur)
     : kind === 'side' ? sideSvg(modell, col, pid, k) : frontSvg(modell, col, pid, k);
   let fl = '';
   if (boden) {
@@ -327,5 +353,5 @@ export function handy({ ansicht = 'hinten', modell = 'pro', farbe = 'Himmelblau'
   const g = drehung ? E('g', { transform: `rotate(${f(drehung)} ${f(W / 2)} ${f(H / 2)})` }, inner) : inner;
   const lab = label || (modell === 'pro' ? 'Kiesel 1 Pro' : 'Kiesel 1') + ANSICHT_TEXT[kind];
   const groesse = hoehe === null ? {} : { width: f(hoehe * vbw / vbh), height: f(hoehe) };
-  return E('svg', { ...groesse, viewBox: `${-pad} ${-pad} ${vbw} ${vbh}`, role: 'img', 'aria-label': lab, style: 'display: block; overflow: visible' }, fl + g);
+  return E('svg', { ...groesse, viewBox: `${-pad} ${-pad} ${vbw} ${vbh}`, role: 'img', 'aria-label': esc(lab), style: 'display: block; overflow: visible' }, fl + g);
 }
