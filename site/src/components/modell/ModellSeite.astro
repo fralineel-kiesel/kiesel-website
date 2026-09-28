@@ -85,8 +85,13 @@ const beschreibung = pro
 </BaseLayout>
 
 <style>
-  /* Abstand zwischen den Abschnitten wie auf der Startseite: 64 px (Handy) bis 140 px (Desktop) */
-  .abschnitt { padding-top: clamp(var(--space-8), 10vw, var(--space-10)); }
+  /* Abstand zwischen den Abschnitten wie auf der Startseite: 64 px (Handy) bis 140 px (Desktop).
+     Als Sprungziel (#kamera, #akku, #farben) steht der Inhalt knapp unter der Unterleiste. */
+  .abschnitt {
+    --abstand: clamp(var(--space-8), 10vw, var(--space-10));
+    padding-top: var(--abstand);
+    scroll-margin-top: calc(var(--space-2) - var(--abstand));
+  }
   .unter { max-width: 680px; margin-top: var(--space-4); }
   .demo { margin-top: var(--space-5); }
   .makro { display: grid; gap: var(--space-5); }

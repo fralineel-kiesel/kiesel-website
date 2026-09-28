@@ -33,9 +33,11 @@
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
-  /* Sprungziele (#akku) nicht unter der klebenden Kopfzeile verstecken */
-  scroll-padding-top: calc(var(--header-h) + var(--subnav-h) + var(--space-4));
+  /* Sprungziele (#kamera, #farben …) nicht unter der klebenden Leiste verstecken. Es klebt
+     immer nur eine: die Kopfzeile, auf den Modellseiten stattdessen die Unterleiste. */
+  scroll-padding-top: calc(var(--header-h) + var(--space-4));
 }
+html:has(.unterleiste) { scroll-padding-top: calc(var(--subnav-h) + var(--space-4)); }
 
 body {
   margin: 0;

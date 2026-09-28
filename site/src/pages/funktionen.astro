@@ -46,8 +46,14 @@ import { KOPF, KAMERA } from '../data/funktionen.js';
     text-decoration: none;
   }
   .anker a:hover { background: var(--raised); }
-  /* Abstand zwischen den Abschnitten wie auf den anderen Seiten */
-  .abschnitt { padding-top: clamp(var(--space-8), 10vw, var(--space-10)); scroll-margin-top: var(--space-8); }
+  /* Abstand zwischen den Abschnitten wie auf den anderen Seiten. Als Sprungziel (#kamera von
+     der Startseite, #rgb aus der FAQ …) steht der Inhalt knapp unter der Kopfzeile: Das Polster
+     oben im Abschnitt verschwindet über dem Bildrand (scroll-padding-top in global.css). */
+  .abschnitt {
+    --abstand: clamp(var(--space-8), 10vw, var(--space-10));
+    padding-top: var(--abstand);
+    scroll-margin-top: calc(var(--space-2) - var(--abstand));
+  }
   .unter { max-width: 720px; margin-top: var(--space-4); }
   @media (min-width: 900px) {
     .kopf { padding-top: calc(var(--space-8) + var(--space-2)); }
