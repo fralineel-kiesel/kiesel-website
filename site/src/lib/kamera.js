@@ -76,3 +76,11 @@ export function vergleichTexte(z, linse = linseBei('pro', z), allein = false) {
   };
 }
 
+// Makro-Demo: Grösse einer Ebene als SVG-transform. Skaliert um den Punkt [mx, my] (siehe
+// MAKRO_MITTE), also translate(m) scale(s) translate(-m), als eine Matrix geschrieben.
+// Die Unschärfe (Filter der Ebene) wächst dabei mit: Ein vergrösserter Hintergrund ist auch
+// entsprechend weicher, wie im echten Bild.
+export function makroTrafo(s, [mx, my]) {
+  const r = (v) => String(Math.round(v * 1000) / 1000);
+  return `matrix(${r(s)} 0 0 ${r(s)} ${r(mx * (1 - s))} ${r(my * (1 - s))})`;
+}
