@@ -2,7 +2,8 @@
 // Handy und Desktop.
 //
 //   npm run lighthouse            (LAEUFE=1 npm run lighthouse für einen schnellen Durchgang,
-//                                  NUR=warenkorb/,faq/ für einzelne Seiten → bericht-teil.md)
+//                                  NUR=warenkorb/,faq/ für einzelne Seiten → bericht-teil.md,
+//                                  NUR=startseite für die Startseite)
 //
 // Handy = Lighthouse-Standard: simuliert ein Mittelklasse-Handy mit langsamem 4G und 4-fach
 // gebremster CPU. Desktop = Lighthouse-Desktop-Einstellung (schnelle Leitung, kaum gebremst).
@@ -25,7 +26,8 @@ const hier = path.dirname(fileURLToPath(import.meta.url));
 const ziel = path.join(hier, 'ausgabe', 'lighthouse');
 fs.mkdirSync(ziel, { recursive: true });
 const LAEUFE = Number(process.env.LAEUFE || 3);
-const NUR = process.env.NUR ? process.env.NUR.split(',') : null;
+// NUR=startseite steht für die Startseite (Adresse '')
+const NUR = process.env.NUR ? process.env.NUR.split(',').map((a) => (a === 'startseite' ? '' : a)) : null;
 const SEITEN = NUR ? OEFFENTLICH.filter(([a]) => NUR.includes(a)) : OEFFENTLICH;
 const KATEGORIEN = ['performance', 'accessibility', 'best-practices', 'seo'];
 const KURZ = { performance: 'leistung', accessibility: 'barrierefreiheit', 'best-practices': 'verfahren', seo: 'seo' };

@@ -68,12 +68,16 @@ const summe = (s) => s.reduce((a, x) => a + x.wert, 0);
 
 try {
   console.log('── Layoutsprünge (CLS) ──');
-  for (const [adresse, name] of OEFFENTLICH) {
+  // Startseite zusätzlich mit gespeichertem Kiesel 1 (Etappe 8a): Knöpfe und Grafik müssen
+  // von Anfang an stimmen, sonst springen sie beim Laden um
+  const KIESEL_1 = () => { try { localStorage.setItem('kiesel-startmodell', 'k1'); } catch { /* egal */ } };
+  const faelle = [...OEFFENTLICH.map(([adresse, name]) => [adresse, name]), ['', 'Startseite (Kiesel 1 gespeichert)', KIESEL_1]];
+  for (const [adresse, name, vorher] of faelle) {
     for (const breite of [1440, 390]) {
       const werte = [];
       let details = [];
       for (const langsam of [false, true]) {
-        const { seite, ctx } = await oeffne(adresse, { breite, langsam });
+        const { seite, ctx } = await oeffne(adresse, { breite, langsam, vorher });
         await seite.evaluate(() => document.fonts.ready);
         await seite.waitForTimeout(2000);
         const beimLaden = await seite.evaluate(() => window.__spruenge);
