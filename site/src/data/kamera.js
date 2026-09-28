@@ -1,5 +1,13 @@
-// Texte der Kamera-Demos (Artboard „Funktionen“, gen3.py: Zoom-Skala und Linsen-Leiste).
-// Gebraucht auf /funktionen/ („Such das Gipfelkreuz“) und auf beiden Modellseiten.
+// Texte und Eckwerte der Kamera-Demos (Artboard „Funktionen“, gen3.py: Zoom-Skala und
+// Linsen-Leiste). Gebraucht vom Zoom-Bild (ZoomBild.astro, alle vier Zoom-Stellen) und von
+// der Makro-Demo der Modellseiten. Die Rechnung dazu steht in src/lib/kamera.js.
+
+// Ab diesem Zoom arbeitet die Tele-Linse (nur Pro); grösster Zoom je Modell.
+// Gleich wie WERTE.tele und WERTE.zoomDigital in technik.js (prüft pruefe:kamera-stellen).
+// Hier als Zahl, damit das Browser-Skript der Kamera nicht alle Gerätedaten mitlädt.
+export const TELE_AB = 3;
+export const MAX_ZOOM = { pro: 10, k1: 5 };
+export const LINSEN_NAME = { haupt: 'Hauptkamera', tele: 'Tele' };
 
 // Zoomstufen unter der Skala: [Wert, Text, betont]
 export const STUFEN = {
@@ -21,3 +29,4 @@ export const LINSEN = {
     [1.1, '1x bis 5x', 'Ausschnitt aus 50 MP', 1.6],
   ],
 };
+

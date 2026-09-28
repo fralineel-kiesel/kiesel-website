@@ -2,43 +2,33 @@
 // Zoom-Vergleich auf /kiesel-1-pro/ („3x Tele. Echt optisch.“, Artboard „Modellseite Kiesel 1 Pro“).
 // Links der Kiesel 1 (nur digital, wird unscharf), rechts der Pro (Tele-Linse ab 3x).
 //
-// Aufbau: Drei gleich grosse Ebenen liegen übereinander, alle zeigen dieselbe Szene (einmal
-// gezeichnet, per <use> wiederholt): Hauptkamera und Tele des Pro, darüber der Kiesel 1,
-// den clip-path nur bis zur Trennlinie zeigt. Zoom, Linsenwechsel und die versteckten
-// Details macht kamera-zoom.js, hier steht nur die Trennlinie. Skala, Linsen-Leiste,
-// Zähler, Fokusring und Vorschaubilder wie im Artboard „Funktionen“ („Such das Gipfelkreuz“).
+// Das Bild ist das gemeinsame ZoomBild mit vergleich: drei gleich grosse Ebenen übereinander
+// (Hauptkamera und Tele des Pro, darüber der Kiesel 1, den clip-path nur bis zur Trennlinie
+// zeigt). Zoom, Unschärfe und Linsenwechsel macht kamera-zoom.js, hier stehen nur die
+// Trennlinie und die zwei Chips (Texte aus linsenText(), wie überall). Skala und
+// Linsen-Leiste wie im Artboard „Funktionen“.
 // Die Trennlinie steuert ein echtes <input type="range">: Damit funktionieren Pfeiltasten,
 // Pos1/Ende und Screenreader von selbst. Maus und Finger bedienen dazu die ganze Bildfläche.
 import Schalter from '../Schalter.astro';
 import Icon from '../Icon.astro';
 import GlasChip from '../GlasChip.astro';
+import ZoomBild from './ZoomBild.astro';
 import ZoomSkala from './ZoomSkala.astro';
 import LinsenLeiste from './LinsenLeiste.astro';
-import FokusRing from './FokusRing.astro';
-import FundZaehler from './FundZaehler.astro';
-import KameraFunde from './KameraFunde.astro';
-import { panoramaQuelle, panoramaAnsicht } from '../../lib/kiesel-draw/index.js';
-import { STUFEN, LINSEN } from '../../data/kamera.js';
+import { STUFEN, LINSEN, TELE_AB, MAX_ZOOM } from '../../data/kamera.js';
+import { vergleichTexte } from '../../lib/kamera.js';
 
 // Anfangs 5x wie im Artboard: crop(756, 246, 5)
-const START = { zoom: 5, cx: 756, cy: 246 };
-const quelle = panoramaQuelle();
-const ebene = () => panoramaAnsicht(quelle.id, START);
+const START = 5;
+const t = vergleichTexte(START);
 ---
-<div class="zoom-vergleich" data-zoom-vergleich data-linse="tele">
-  <Fragment set:html={quelle.svg} />
-  <div class="fenster" data-fenster style="--pos: 50%; --anteil: 0.5">
-    <div class="ebene" data-ebene="haupt" set:html={ebene()} />
-    <div class="ebene" data-ebene="tele" set:html={ebene()} />
-    <div class="ebene k1" data-ebene="k1" set:html={ebene()} />
-    <span class="vh" role="img" aria-label="Alpenpanorama bei 5x: links Kiesel 1 digital und unscharf, rechts Kiesel 1 Pro mit Tele scharf" data-bildtext></span>
-    <FokusRing />
-    <span class="chip-links"><GlasChip><span class="lang" data-text="k1">Kiesel 1 · 5x digital</span><span class="kurz" data-kurz="k1">Kiesel 1 · 5x</span></GlasChip></span>
+<div class="zoom-vergleich" data-kamera data-zoom-vergleich data-linse="tele">
+  <ZoomBild modell="pro" start={START} blick={[756, 246]} vergleich chip={false} bildtext={t.bild}>
+    <span class="chip-links"><GlasChip><span class="lang" data-text="k1">{t.lang.k1}</span><span class="kurz" data-kurz="k1">{t.kurz.k1}</span></GlasChip></span>
     <span class="chip-rechts"><GlasChip>
       <span class="linsen" aria-hidden="true" title="Aktive Linse"><span class="punkt haupt"></span><span class="punkt tele"></span></span>
-      <span class="lang" data-text="pro">Kiesel 1 Pro · 5x mit Tele</span><span class="kurz" data-kurz="pro">Pro · 5x Tele</span>
+      <span class="lang" data-text="pro">{t.lang.pro}</span><span class="kurz" data-kurz="pro">{t.kurz.pro}</span>
     </GlasChip></span>
-    <span class="chip-zaehler"><FundZaehler /></span>
     <div class="linie" aria-hidden="true"><span class="griff"><Icon name="swap" size={22} /></span></div>
     <input
       class="regler"
@@ -51,41 +41,17 @@ const ebene = () => panoramaAnsicht(quelle.id, START);
       aria-valuetext="Mitte"
       data-regler
     />
-  </div>
-  <ZoomSkala max={10} stufen={STUFEN.pro} tele={3} label="Zoom" />
+  </ZoomBild>
+  <ZoomSkala max={MAX_ZOOM.pro} stufen={STUFEN.pro} tele={TELE_AB} label="Zoom" />
   <LinsenLeiste abschnitte={LINSEN.pro} />
   <div class="vergleich-zeile">
     <Schalter an={true} data-vergleich-schalter>Mit Kiesel 1 vergleichen</Schalter>
   </div>
-  <KameraFunde quelle={quelle.id} />
   <p class="vh" aria-live="polite" data-ansage></p>
 </div>
 
 <style>
-  .fenster {
-    position: relative;
-    height: 360px;
-    overflow: hidden;
-    border: 1px solid var(--line);
-    border-radius: var(--radius-l);
-    background: var(--stage);
-    /* Senkrecht wischen scrollt weiter die Seite, waagrecht bedient den Regler */
-    touch-action: pan-y;
-    user-select: none;
-    -webkit-user-select: none;
-    cursor: ew-resize;
-  }
-  /* Jede Ebene ist rundherum --rand grösser als das Fenster, und das SVG zeichnet über
-     seinen Rand hinaus weiter (overflow: visible). Die Unschärfe (CSS blur) franst so nur
-     ausserhalb des sichtbaren Bereichs aus, statt am Bildrand hell oder dunkel zu werden. */
-  .fenster { --rand: 40px; }
-  .ebene { position: absolute; inset: calc(-1 * var(--rand)); padding: var(--rand); transform-origin: 50% 50%; }
-  .ebene :global(svg) { width: 100%; height: 100%; overflow: visible; }
-  /* Kiesel 1 nur bis zur Trennlinie. --anteil = Lage der Linie als Zahl 0…1 (--pos in %),
-     umgerechnet auf die grössere Ebene */
-  .k1 { clip-path: inset(0 calc(100% - var(--rand) - (100% - 2 * var(--rand)) * var(--anteil)) 0 0); }
-  .chip-links, .chip-rechts, .chip-zaehler { position: absolute; top: var(--space-3); z-index: 2; pointer-events: none; }
-  .chip-zaehler { top: auto; right: var(--space-3); bottom: var(--space-3); }
+  .chip-links, .chip-rechts { position: absolute; top: var(--space-3); z-index: 2; pointer-events: none; }
   .chip-links { left: var(--space-3); }
   .chip-rechts { right: var(--space-3); }
   /* Auf dem Handy wären beide Chips zusammen breiter als das Bild: Kurzfassung */
@@ -160,64 +126,43 @@ const ebene = () => panoramaAnsicht(quelle.id, START);
     pointer-events: none;
   }
   .regler:focus-visible ~ .linie .griff,
-  .fenster:has(.regler:focus-visible) .griff {
+  :global([data-fenster]):has(.regler:focus-visible) .griff {
     outline: 3px solid var(--accent);
     outline-offset: 3px;
   }
-  .fenster[data-allein] { cursor: default; }
-  .fenster[data-allein] .k1, .fenster[data-allein] .linie, .fenster[data-allein] .chip-links { display: none; }
+  /* Vergleich aus (data-allein am Bild): nur noch der Pro */
+  :global([data-allein]) .linie, :global([data-allein]) .chip-links { display: none; }
 
   .vergleich-zeile { display: flex; justify-content: flex-end; margin-top: var(--space-4); }
 
   @media (min-width: 900px) {
-    .fenster { height: 560px; border-radius: calc(var(--radius-l) + 4px); }
     .lang { display: inline; }
     .kurz { display: none; }
     .chip-links { left: var(--space-5); top: var(--space-5); }
     .chip-rechts { right: var(--space-5); top: var(--space-5); }
-    .chip-zaehler { right: var(--space-5); bottom: var(--space-5); }
   }
 </style>
 
 <script>
-  import { starteKamera, zahl } from '../../scripts/kamera-zoom.js';
-
-  // Texte je Zoom. Kiesel 1: bis 1x optisch (variable Linse), dann digital, max. 5x.
-  // Pro: bis 1x optisch, bis 3x digital aus der Hauptkamera, ab 3x Tele.
-  const TEXT = {
-    k1: (z) => (z <= 1 ? `Kiesel 1 · ${zahl(z)}x optisch` : z > 5 ? 'Kiesel 1 · max. 5x digital' : `Kiesel 1 · ${zahl(z)}x digital`),
-    pro: (z) => (z <= 1 ? `Kiesel 1 Pro · ${zahl(z)}x optisch` : z < 3 ? `Kiesel 1 Pro · ${zahl(z)}x digital` : z === 3 ? 'Kiesel 1 Pro · 3x Tele' : `Kiesel 1 Pro · ${zahl(z)}x mit Tele`),
-  };
-  const KURZ = {
-    k1: (z) => (z > 5 ? 'Kiesel 1 · max. 5x' : `Kiesel 1 · ${zahl(z)}x`),
-    pro: (z) => (z < 3 ? `Pro · ${zahl(z)}x` : `Pro · ${zahl(z)}x Tele`),
-  };
+  import { vergleichTexte } from '../../lib/kamera.js';
 
   document.querySelectorAll('[data-zoom-vergleich]').forEach((wurzel) => {
     const fenster = wurzel.querySelector('[data-fenster]');
     const regler = wurzel.querySelector('[data-regler]');
     const feld = (sel) => ({ k1: wurzel.querySelector(`[${sel}="k1"]`), pro: wurzel.querySelector(`[${sel}="pro"]`) });
     const text = feld('data-text'), kurz = feld('data-kurz');
-    const bildtext = wurzel.querySelector('[data-bildtext]');
+    const bildtext = fenster.querySelector('[data-bildtext]');
 
-    starteKamera(wurzel, {
-      max: 10,
-      start: 5,
-      blick: [756, 246],
-      zielZoom: 8,
-      beschrifte: ({ z, linse }) => {
-        for (const m of ['k1', 'pro']) {
-          text[m].textContent = TEXT[m](z);
-          kurz[m].textContent = KURZ[m](z);
-        }
-        const k1 = z <= 1 ? 'scharf' : z <= 2 ? 'leicht weich' : 'unscharf';
-        const pro = linse === 'tele' ? 'Tele-Linse, scharf' : z <= 1 ? 'scharf' : z <= 2 ? 'leicht weich' : 'unscharf';
-        bildtext.setAttribute('aria-label', fenster.hasAttribute('data-allein')
-          ? `Alpenpanorama bei ${zahl(z)}x: Kiesel 1 Pro, ${pro}`
-          : `Alpenpanorama bei ${zahl(z)}x: links Kiesel 1, ${k1}; rechts Kiesel 1 Pro, ${pro}`);
-        return `${zahl(z)}-fach, ${linse === 'tele' ? 'Tele-Linse' : 'Hauptkamera'}`;
-      },
-    });
+    // Der Kamera-Motor meldet jede neue Zoomstufe; die Texte kommen aus derselben Quelle wie überall
+    const beschrifte = ({ z, linse }) => {
+      const t = vergleichTexte(z, linse, fenster.hasAttribute('data-allein'));
+      for (const m of ['k1', 'pro']) {
+        text[m].textContent = t.lang[m];
+        kurz[m].textContent = t.kurz[m];
+      }
+      bildtext.setAttribute('aria-label', t.bild);
+    };
+    fenster.addEventListener('kiesel:kamera', (e) => beschrifte(e.detail));
 
     // ── Trennlinie ──
     function setze(wert) {
@@ -272,6 +217,8 @@ const ebene = () => panoramaAnsicht(quelle.id, START);
     wurzel.querySelector('[data-vergleich-schalter]').addEventListener('kiesel:schalter', (e) => {
       fenster.toggleAttribute('data-allein', !e.detail.an);
       regler.disabled = !e.detail.an;
+      const { z, linse } = fenster.kamera.zustand();
+      beschrifte({ z: Math.round(z * 10) / 10, linse });
     });
   });
 </script>

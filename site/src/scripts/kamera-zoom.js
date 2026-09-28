@@ -1,7 +1,8 @@
-// Kamera-Zoom (Etappe 5): stufenloser Zoom, Linsenwechsel bei 3x, acht versteckte Details im
-// Alpenpanorama. Gebraucht von ZoomVergleich (Pro-Seite), ZoomDemo (Kiesel-1-Seite) und
-// KameraSuche (/funktionen/, „Such das Gipfelkreuz“). Die Komponenten liefern das HTML nach
-// dem Artboard „Funktionen“, hier steckt das ganze Verhalten.
+// Kamera-Zoom (Etappe 5): stufenloser Zoom, Linsenwechsel bei 3x, auf /funktionen/ dazu acht
+// versteckte Details im Alpenpanorama. Gestartet wird der Motor nur von ZoomBild.astro, dem
+// gemeinsamen Zoom-Bild aller vier Zoom-Stellen (Startseite, /kiesel-1/, /kiesel-1-pro/,
+// /funktionen/). Die Einstellungen stehen als data-Attribute am Bild, die Rechnung
+// (Zoom-Umrechnung, Unschärfe, Linsen-Label) in src/lib/kamera.js. Hier steckt nur das Verhalten.
 //
 // Begriffe
 //   z      Kamera-Zoom, wie ihn die Kamera-App anzeigt (0.5x … 10x)
@@ -32,42 +33,20 @@
 //   Weil mix stetig läuft, kann ein Wechsel mittendrin umkehren (Regler hin und her um
 //   3x), ohne dass etwas springt. Bei „weniger Bewegung“ wechselt die Linse sofort.
 //
-// Versteckte Details: gefunden, sobald eines ab Bild-Zoom 5 nicht nur am Rand im Bild ist
-// (erst nach der ersten eigenen Bedienung) oder angeflogen wurde. Dann: Vorschaubild zeigt
-// es, Zähler zählt, und solange es im Bild ist, liegt der Fokusring darum (von mehreren das
-// zuletzt gefundene, sonst das mittigste).
-// Zielen (Option zielen, nur ohne Trennlinie): Tippen oder Klicken schwenkt dorthin, mit der
-// Maus ziehen verschiebt, mit dem Finger waagrecht ziehen auch (senkrecht scrollt die Seite).
+// Versteckte Details (nur mit data-details, also nur auf /funktionen/): gefunden, sobald
+// eines ab Bild-Zoom 5 nicht nur am Rand im Bild ist (erst nach der ersten eigenen
+// Bedienung) oder angeflogen wurde. Dann: Vorschaubild zeigt es, Zähler zählt, und solange
+// es im Bild ist, liegt der Fokusring darum (von mehreren das zuletzt gefundene, sonst das
+// mittigste).
+// Zielen (gehört zu den Details, also auch nur auf /funktionen/): Tippen oder Klicken
+// schwenkt dorthin, mit der Maus ziehen verschiebt, mit dem Finger waagrecht ziehen auch
+// (senkrecht scrollt die Seite).
 import { crop, begrenze, ZOOM_TARGETS } from '../lib/kiesel-draw/ausschnitt.js';
+import { bildZoom, kameraZoom, rund, zahl, UNSCHAERFE, linseBei, linsenText, schaerfeText } from '../lib/kamera.js';
+import { MAX_ZOOM } from '../data/kamera.js';
 
-// ── Zoom-Umrechnung ──
-// Stützpunkte Kamera-Zoom → Bild-Zoom, dazwischen gleichmässig im Logarithmus.
-// Wie die bisherigen Stufen: 0.5x = ganzes Bild, 1x = 1.5, ab 3x gleich.
-const STUETZ = [[0.5, 1], [1, 1.5], [3, 3], [5, 5], [10, 10]];
-function zwischen(wert, von, nach) {
-  const v = Math.min(STUETZ[STUETZ.length - 1][von], Math.max(STUETZ[0][von], wert));
-  for (let i = 1; i < STUETZ.length; i++) {
-    const a = STUETZ[i - 1], b = STUETZ[i];
-    if (v <= b[von]) return a[nach] * (b[nach] / a[nach]) ** (Math.log(v / a[von]) / Math.log(b[von] / a[von]));
-  }
-  return STUETZ[STUETZ.length - 1][nach];
-}
-export const bildZoom = (z) => zwischen(z, 0, 1);
-export const kameraZoom = (Z) => zwischen(Z, 1, 0);
-
-// Anzeige wie in der Kamera-App: eine Nachkommastelle, ohne „.0“ (2.8x, 3x)
-export const rund = (z) => Math.round(z * 10) / 10;
-export const zahl = (z) => String(rund(z));
-
-// Unschärfe in px bei 600 px Bildbreite (wird auf die echte Breite umgerechnet)
-//   Hauptkamera (auch Kiesel 1): bis 1x optisch scharf, darüber digital immer weicher.
-//     Über 5x kann der Kiesel 1 nicht, im Vergleich wird sein Bild dort nur noch breiiger.
-//   Tele: bei 3x optisch scharf, darüber digital, aber aus einem viel schärferen Bild.
-export const UNSCHAERFE = {
-  haupt: (z) => (z <= 1 ? 0 : 0.75 * (Math.min(z, 5) - 1) + 0.45 * Math.max(0, z - 5)),
-  tele: (z) => (z <= 3 ? 0 : 0.3 * (z - 3)),
-};
-UNSCHAERFE.k1 = UNSCHAERFE.haupt;
+// Für bestehende Skripte, die die Rechnung von hier holen
+export { bildZoom, kameraZoom, rund, zahl, UNSCHAERFE };
 
 export const WECHSEL_MS = 420;      // Dauer des Linsenwechsels
 const BLENDE_BIS = 0.5;             // Anteil davon für die Überblendung
@@ -78,35 +57,48 @@ const FOKUS_GROESSER = 0.012;       // … und so viel grösser (rastet auf 1 ei
 const WARM = { tele: 2.2, haupt: 4.5 }; // Tele zeichnet ab 2.2x mit, die Hauptkamera bis 4.5x
 const WARM_BILDER = 2;              // so viele Bilder muss eine Ebene gezeichnet sein vor dem Wechsel
 const RING_AB = 3.5, FUND_AB = 5;   // Bild-Zoom: Fokusring sichtbar ab / Detail gilt als gefunden ab
+const ZIEL_ZOOM = 8;                // Zoom beim Anfliegen eines Details
 
 const glatt = (t) => t * t * (3 - 2 * t);
 const ausrollen = (t) => 1 - (1 - t) ** 3;
 const hinUndHer = (t) => (t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2);
 const ruhig = matchMedia('(prefers-reduced-motion: reduce)');
 
-// wurzel: Element mit allem darin. Optionen:
-//   max: grösster Zoom (Pro 10, Kiesel 1 5)   start: Zoom beim Laden   blick: [x, y]
-//   zielZoom: Zoom beim Anvisieren eines Details   zielen: Tippen/Ziehen im Bild bewegt den Blick
-//   beschrifte(zustand): Texte der Komponente nachführen, zustand = { z (gerundet), linse, max },
-//     Rückgabe = aria-valuetext des Reglers
-export function starteKamera(wurzel, { max, start, blick: startBlick, zielZoom, zielen = false, beschrifte }) {
-  const fenster = wurzel.querySelector('[data-fenster]');
-  const ebenen = [...wurzel.querySelectorAll('[data-ebene]')].map((el) => ({ el, art: el.dataset.ebene, svg: el.querySelector('svg') }));
+// fenster: das Zoom-Bild (ZoomBild.astro, [data-zoom-bild]). Seine data-Attribute:
+//   data-modell   'pro' | 'k1' (bestimmt die Linsen und den grössten Zoom)
+//   data-start    Zoom beim Laden   data-blick  "x,y" im 1600 × 1000-Bild
+//   data-details  versteckte Details suchen, Bild verschieben (nur /funktionen/)
+// Die Bedienung drumherum (Zoom-Skala oder Zoom-Leiste, Linsen-Leiste, Vorschaubilder) sucht
+// der Motor im umgebenden Baustein, dem nächsten Element mit data-kamera.
+// Nach jeder neuen Beschriftung meldet das Bild „kiesel:kamera“ mit { z, linse }: Bausteine
+// mit eigenen Texten (der Zoom-Vergleich) hängen sich daran.
+export function starteKamera(fenster) {
+  const wurzel = fenster.closest('[data-kamera]') ?? fenster.parentElement;
+  const modell = fenster.dataset.modell;
+  const max = MAX_ZOOM[modell];
+  const start = Number(fenster.dataset.start);
+  const startBlick = fenster.dataset.blick.split(',').map(Number);
+  const details = fenster.hasAttribute('data-details');
+  const ebenen = [...fenster.querySelectorAll('[data-ebene]')].map((el) => ({ el, art: el.dataset.ebene, svg: el.querySelector('svg') }));
   const hatTele = ebenen.some((e) => e.art === 'tele');
   const skala = wurzel.querySelector('[data-zoom-skala]');
   const regler = wurzel.querySelector('[data-zoom-regler]');
   const stufen = [...wurzel.querySelectorAll('[data-stufe]')];
   const abschnitte = [...wurzel.querySelectorAll('[data-linsenabschnitt]')];
-  const kacheln = [...wurzel.querySelectorAll('[data-detail]')];
-  const zaehler = wurzel.querySelector('[data-entdeckt]');
-  const fundpunkte = [...wurzel.querySelectorAll('[data-fundpunkt]')];
-  const fokus = wurzel.querySelector('[data-fokusring]');
-  const fokustext = wurzel.querySelector('[data-fokustext]');
+  const linsenFeld = fenster.querySelector('[data-linsen-text]');
+  const bildtext = fenster.querySelector('[data-bildtext]');
   const ansage = wurzel.querySelector('[data-ansage]');
+  // Nur mit Details
+  const kacheln = details ? [...wurzel.querySelectorAll('[data-detail]')] : [];
+  const zaehler = details ? wurzel.querySelector('[data-entdeckt]') : null;
+  const fundpunkte = details ? [...wurzel.querySelectorAll('[data-fundpunkt]')] : [];
+  const fokus = details ? fenster.querySelector('[data-fokusring]') : null;
+  const fokustext = details ? fenster.querySelector('[data-fokustext]') : null;
+  const unschaerfe = {}; // zuletzt gesetzte Unschärfe je Ebene, px bei 600 px Breite (für Tests)
 
   let z = start;
   let blick = [...startBlick];
-  let linse = hatTele && rund(z) >= 3 ? 'tele' : 'haupt';
+  let linse = hatTele ? linseBei(modell, z) : 'haupt';
   let mix = linse === 'tele' ? 1 : 0;
   let wechsel = null;   // { von, nach, t0 }
   let fahrt = null;     // Zoomfahrt oder Flug zu einem Detail
@@ -159,7 +151,7 @@ export function starteKamera(wurzel, { max, start, blick: startBlick, zielZoom, 
     const zr = rund(z);
     // Linsenwechsel auslösen, sobald die angezeigte Zahl 3x erreicht oder unterschreitet.
     // Die neue Ebene muss aber schon WARM_BILDER Bilder lang gezeichnet sein (Aufwärmen).
-    const soll = hatTele && zr >= 3 ? 'tele' : 'haupt';
+    const soll = hatTele ? linseBei(modell, zr) : 'haupt';
     if (soll !== linse) {
       const neue = ebenen.find((e) => e.art === soll);
       neue.warmSeit ??= bild;
@@ -197,7 +189,8 @@ export function starteKamera(wurzel, { max, start, blick: startBlick, zielZoom, 
     const neu = linse; // die Linse, die gerade hereinkommt
     for (const e of ebenen) {
       if (e.svg.getAttribute('viewBox') !== vb) e.svg.setAttribute('viewBox', vb);
-      let blur = UNSCHAERFE[e.art](z) * fak;
+      unschaerfe[e.art] = UNSCHAERFE[e.art](z);
+      let blur = unschaerfe[e.art] * fak;
       let dx = 0, gross = 1, deck = 1;
       if (hatTele && e.art !== 'k1') {
         // Tele liegt oben und blendet über. Beide Bilder gleiten gegeneinander.
@@ -216,13 +209,13 @@ export function starteKamera(wurzel, { max, start, blick: startBlick, zielZoom, 
       // Warm = wird gezeichnet (evtl. mit Deckkraft 0), kalt = ganz aus
       e.el.style.visibility = e.warmSeit === null ? 'hidden' : '';
     }
-    wurzel.dataset.linse = linse;
+    wurzel.dataset.linse = fenster.dataset.linse = linse;
     wurzel.dataset.zoom = zahl(z);
     if (wechsel) wurzel.dataset.wechsel = ''; else delete wurzel.dataset.wechsel;
 
     const [vx, vy, vw, vh] = vb.split(' ').map(Number);
     ansicht = { vx, vy, vw, vh, W, H, s: Math.max(W / vw, H / vh) };
-    setzeFunde(Z);
+    if (details) setzeFunde(Z);
     setzeBedienung();
     if (weiter) plane();
   }
@@ -233,17 +226,21 @@ export function starteKamera(wurzel, { max, start, blick: startBlick, zielZoom, 
     // Beim Ziehen steht hier derselbe Wert, den der Regler selbst geliefert hat: harmlos
     if (regler) regler.value = String(alsWert(z));
     skala?.style.setProperty('--wert', (Math.log(z / 0.5) / LOG).toFixed(4));
-    const zustand = { z: r, linse, max };
-    const schluessel = `${r}|${linse}`;
+    // Während einer Fahrt zu einer Stufe ist deren Knopf schon gedrückt (sonst flackert er)
+    const gewaehlt = fahrt?.ziel ?? r;
+    const schluessel = `${r}|${linse}|${gewaehlt}`;
     if (schluessel === letzteBeschriftung) return;
     letzteBeschriftung = schluessel;
-    stufen.forEach((b) => b.setAttribute('aria-pressed', Number(b.dataset.stufe) === r ? 'true' : 'false'));
+    stufen.forEach((b) => b.setAttribute('aria-pressed', Number(b.dataset.stufe) === gewaehlt ? 'true' : 'false'));
     // Linsen-Leiste: der letzte Abschnitt, dessen „ab“ erreicht ist
     const aktiv = abschnitte.filter((a) => r >= Number(a.dataset.ab)).pop();
     abschnitte.forEach((a) => a.toggleAttribute('data-aktiv', a === aktiv));
-    const text = beschrifte(zustand);
-    regler?.setAttribute('aria-valuetext', text);
+    if (linsenFeld) linsenFeld.textContent = linsenText(modell, r, linse);
+    bildtext?.setAttribute('aria-label', `Alpenpanorama bei ${zahl(r)}x, ${linse === 'tele' ? 'Tele-Linse' : 'Hauptkamera'}, ${schaerfeText(UNSCHAERFE[linse](r))}`);
+    regler?.setAttribute('aria-valuetext', ansagetext());
+    fenster.dispatchEvent(new CustomEvent('kiesel:kamera', { bubbles: true, detail: { z: r, linse } }));
   }
+  const ansagetext = () => `${zahl(z)}-fach, ${linse === 'tele' ? 'Tele-Linse' : 'Hauptkamera'}`;
 
   function setzeZoom(zz) {
     bedient = true;
@@ -258,10 +255,11 @@ export function starteKamera(wurzel, { max, start, blick: startBlick, zielZoom, 
     ziel = klemme(ziel);
     const von = z, abstand = Math.abs(Math.log(ziel / von));
     fahrt = {
+      ziel,
       t0: performance.now(),
       dauer: 280 + 320 * Math.min(1, abstand / Math.log(20)),
       schritt: (t) => { z = von * (ziel / von) ** ausrollen(t); },
-      fertig: () => sage(beschrifte({ z: rund(z), linse, max })),
+      fertig: () => sage(ansagetext()),
     };
     plane();
   }
@@ -270,7 +268,7 @@ export function starteKamera(wurzel, { max, start, blick: startBlick, zielZoom, 
   function fliegeZu(i) {
     bedient = true;
     const [name, tx, ty] = ZOOM_TARGETS[i];
-    const Z0 = bildZoom(z), Z1 = bildZoom(zielZoom);
+    const Z0 = bildZoom(z), Z1 = bildZoom(ZIEL_ZOOM);
     const [x0, y0] = begrenze(blick[0], blick[1], Z0);
     const abstand = Math.hypot(tx - x0, ty - y0);
     // Mitten im Flug sollen Start und Ziel beide ins Bild passen
@@ -382,7 +380,7 @@ export function starteKamera(wurzel, { max, start, blick: startBlick, zielZoom, 
     });
   }
   stufen.forEach((b) => b.addEventListener('click', () => fahreZu(Number(b.dataset.stufe))));
-  if (zielen) {
+  if (details) {
     // Maus: ziehen verschiebt sofort, Klick ohne Bewegung schwenkt dorthin.
     // Finger: waagrecht ziehen verschiebt, senkrecht gehört dem Scrollen (touch-action: pan-y),
     // Tippen schwenkt dorthin.
@@ -440,8 +438,9 @@ export function starteKamera(wurzel, { max, start, blick: startBlick, zielZoom, 
   if (regler) regler.value = String(alsWert(z));
   plane();
 
-  // Für die Prüfskripte: wurzel.kamera.zustand()
-  const api = { setzeZoom, fahreZu, fliegeZu, schwenkeZu, zustand: () => ({ z, blick: [...blick], linse, mix, wechsel: !!wechsel, entdeckt: [...entdeckt] }) };
-  wurzel.kamera = api;
+  // Für die Prüfskripte: wurzel.kamera.zustand() (auch am Bild selbst: fenster.kamera)
+  const api = { setzeZoom, fahreZu, schwenkeZu, zustand: () => ({ z, blick: [...blick], linse, mix, wechsel: !!wechsel, unschaerfe: { ...unschaerfe }, details, entdeckt: [...entdeckt] }) };
+  if (details) api.fliegeZu = fliegeZu;
+  wurzel.kamera = fenster.kamera = api;
   return api;
 }

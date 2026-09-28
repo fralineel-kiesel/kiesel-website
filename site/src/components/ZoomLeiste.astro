@@ -1,8 +1,8 @@
 ---
 // Zoom-Leiste aus Glas (0.5 · 1 · 3x · 10), liegt auf dem Kamerabild.
 // Die gewählte Stufe zeigt ein „x“ dahinter, wie in der Kamera-App.
-// Nur noch im Zoom-Teaser der Startseite. Die Kamera-Demos der Modellseiten haben seit
-// Etappe 5 die stufenlose ZoomSkala (components/modell/).
+// Nur noch im Zoom-Teaser der Startseite (dort übernimmt der Kamera-Motor die Klicks über
+// data-stufe). Die anderen Kamera-Demos haben seit Etappe 5 die stufenlose ZoomSkala.
 const { stufen = ['0.5', '1', '3', '10'], aktiv = '3', label = 'Zoomstufe' } = Astro.props;
 ---
 <div class="zoom-leiste" role="group" aria-label={label}>
