@@ -28,7 +28,6 @@ const lage = (z) => Math.log(z / 0.5) / Math.log(max / 0.5); // 0 … 1 auf der 
         class:list={['stufe', { betont, erste: i === 0, letzte: i === stufen.length - 1 }]}
         style={`--an: ${lage(Number(wert))}`}
         aria-pressed="false"
-        aria-label={`${wert}-fach`}
         data-stufe={wert}
       >{text}</button>
     ))}
