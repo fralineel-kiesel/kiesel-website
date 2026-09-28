@@ -13,7 +13,7 @@ const aktuell = Astro.url.pathname;
 const links = [
   { name: 'Übersicht', pfad: m.pfad },
   { name: 'Technische Daten', pfad: `${m.pfad}technik/` },
-  { name: 'Vergleichen', pfad: 'vergleichen/' },
+  { name: 'Vergleichen', pfad: `vergleichen/?kiesel=${modell}` },
 ];
 ---
 <nav class="unterleiste" aria-label={m.name}>

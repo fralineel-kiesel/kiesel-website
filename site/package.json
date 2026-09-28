@@ -18,7 +18,8 @@
     "pruefe:funktionen": "astro build && node scripts/pruefe-funktionen.mjs",
     "fotos:funktionen": "astro build && node scripts/fotografiere-funktionen.mjs",
     "pruefe:kaufen": "astro build && node scripts/pruefe-kaufen.mjs",
-    "fotos:kaufen": "astro build && node scripts/fotografiere-kaufen.mjs"
+    "fotos:kaufen": "astro build && node scripts/fotografiere-kaufen.mjs",
+    "pruefe:vergleichen": "astro build && node scripts/pruefe-vergleichen.mjs"
   },
   "dependencies": {
     "astro": "^7.3.5",
