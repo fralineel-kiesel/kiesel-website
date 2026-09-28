@@ -13,7 +13,7 @@
 import Icon from './Icon.astro';
 import Logo from './Logo.astro';
 import Knopf from './Knopf.astro';
-import HandyPlatzhalter from './HandyPlatzhalter.astro';
+import MenueHandy from './MenueHandy.astro';
 import { MODELLE } from '../data/modelle.js';
 import { abPreis } from '../data/preise.js';
 import { HAUPTMENUE } from '../data/navigation.js';
@@ -44,7 +44,7 @@ const weitere = HAUPTMENUE.filter((p) => !p.menue);
         return (
           <li>
             <a class="modell" href={pfad(m.pfad)} aria-current={istAktiv(aktuell, m.pfad) ? 'page' : undefined}>
-              <span class="bild"><HandyPlatzhalter modell={id} hoehe={id === 'pro' ? 76 : 72} /></span>
+              <span class="bild"><MenueHandy modell={id} farbe={m.farbe} hoehe={id === 'pro' ? 76 : 72} /></span>
               <span class="text">
                 <span class="name">{m.name}</span>
                 <span class="kurz">{m.kurz}</span>
@@ -204,11 +204,18 @@ const weitere = HAUPTMENUE.filter((p) => !p.menue);
 </style>
 
 <script>
+  import { vorwaermen, zeichneMenueHandys } from '../scripts/menue-handys.js';
+
   document.querySelectorAll('[data-mobil-menue]').forEach((dialog) => {
     const burger = document.querySelector(`[data-burger][aria-controls="${dialog.id}"]`);
     const zu = dialog.querySelector('[data-schliessen]');
 
+    // Zeichen-Motor schon holen, sobald der Finger den Burger berührt (Handys erst beim Öffnen)
+    burger.addEventListener('pointerdown', vorwaermen, { once: true });
+    burger.addEventListener('focus', vorwaermen, { once: true });
+
     burger.addEventListener('click', () => {
+      zeichneMenueHandys(dialog);
       dialog.showModal();
       burger.setAttribute('aria-expanded', 'true');
       document.documentElement.style.overflow = 'hidden'; // Seite dahinter scrollt nicht mit

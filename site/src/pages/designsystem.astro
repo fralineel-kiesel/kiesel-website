@@ -15,7 +15,6 @@ import Farbwaehler from '../components/Farbwaehler.astro';
 import Schalter from '../components/Schalter.astro';
 import Zaehler from '../components/Zaehler.astro';
 import Feld from '../components/Feld.astro';
-import HandyPlatzhalter from '../components/HandyPlatzhalter.astro';
 import Akkordeon from '../components/Akkordeon.astro';
 import Buehne from '../components/Buehne.astro';
 import { FARBEN, FARBNAMEN } from '../data/farben.js';
@@ -165,11 +164,6 @@ const RADIEN = [['s', '8 · klein'], ['m', '16 · Felder'], ['l', '24 · Karten'
         </div>
         <div class="reihe">
           <Buehne radius="l" class="ds-buehne"><p class="t-small t-muted">Bühne (--stage → --stage-lo)</p></Buehne>
-        </div>
-        <div class="reihe">
-          <HandyPlatzhalter modell="k1" hoehe={170} />
-          <HandyPlatzhalter modell="pro" hoehe={180} />
-          <p class="t-small t-muted">Handy-Platzhalter bis zum Zeichen-Motor (Etappe 2)</p>
         </div>
       </div>
     </section>
