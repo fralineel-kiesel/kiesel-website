@@ -2,6 +2,9 @@
 // die FAQ-Seite (Etappe 7) später alle. Fragen und Antworten nur hier ändern.
 // Die erste Antwort stammt aus design/generator/gen2.py (faq()), die anderen aus den
 // Eckdaten in CLAUDE.md.
+import { HUELLE_PREIS } from './preise.js';
+import { chf } from '../lib/format.js';
+
 export const FAQ = [
   {
     id: 'kaufen',
@@ -21,6 +24,6 @@ export const FAQ = [
   {
     id: 'huelle',
     frage: 'Passt die Hülle auf beide Modelle?',
-    antwort: 'Es gibt sie für beide, aber jeweils passgenau: Der Pro ist grösser und hat eine zweite Linse. Beide Hüllen kommen in denselben fünf Farben wie die Handys und kosten CHF 59.–.',
+    antwort: `Es gibt sie für beide, aber jeweils passgenau: Der Pro ist grösser und hat eine zweite Linse. Beide Hüllen kommen in denselben fünf Farben wie die Handys und kosten ${chf(HUELLE_PREIS)}.`,
   },
 ];

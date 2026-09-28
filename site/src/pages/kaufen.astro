@@ -1,11 +1,385 @@
 ---
+// /kaufen/ nach dem Artboard „Kaufen“ (design/generator/gen2.py, Abschnitt 5).
+// Links die Bühne mit dem Handy (Zeichen-Motor, reagiert live auf Modell, Farbe, Hülle und
+// Gravur), rechts die Wahl: Modell, Farbe, Speicher, Hülle, Gravur, dann Preis und Knopf.
+//
+// Alle Wahlen sind echte Formular-Elemente (Radio-Knöpfe, Schalter, Textfeld). Die Tastatur
+// funktioniert darum ohne eigenen Code: Tab springt von Gruppe zu Gruppe, Pfeiltasten wählen.
+//
+// Vorwahl per Adresse, z.B. /kaufen/?modell=pro&farbe=Himmelblau&speicher=2tb&huelle=Mattweiss
+// (huelle = Farbe der Hülle, schaltet die Hülle ein). Ungültiges wird ignoriert. Jede Wahl
+// schreibt die Adresse nach (ohne Gravur), neu laden behält also die Auswahl.
+//
+// Ohne Adresse: Kiesel 1 Pro, Himmelblau, 512 GB, ohne Hülle (die kommt nur auf Wunsch dazu).
 import BaseLayout from '../layouts/BaseLayout.astro';
-import Platzhalter from '../components/Platzhalter.astro';
+import Buehne from '../components/Buehne.astro';
+import Knopf from '../components/Knopf.astro';
+import Farbwaehler from '../components/Farbwaehler.astro';
+import Schalter from '../components/Schalter.astro';
+import { handy } from '../lib/kiesel-draw/phone.js';
+import { PREISE, MODELL_IDS, HUELLE_PREIS, abPreis } from '../data/preise.js';
+import { GRAVUR_MAX } from '../lib/gravur.js';
+import { chf } from '../lib/format.js';
+
+const START = { modell: 'pro', farbe: 'Himmelblau', speicher: '512gb', huelleFarbe: 'Mattweiss' };
+const startPreis = PREISE[START.modell].speicher.find((s) => s.id === START.speicher);
+const svg = handy({ ansicht: 'hinten', modell: START.modell, farbe: START.farbe, hoehe: null, label: `${PREISE[START.modell].name} in ${START.farbe}, Rückseite` });
 ---
-<BaseLayout titel="Kaufen">
-  <Platzhalter
-    etappe={6}
-    titel="Kiesel kaufen"
-    einleitung="Modell, Farbe und Speicher wählen, auf Wunsch mit Hülle und Gravur."
-  />
+<BaseLayout titel="Kaufen" beschreibung="Kiesel 1 oder Kiesel 1 Pro zusammenstellen: Farbe, Speicher, Hülle und Gravur. Ein Fan-Konzept.">
+  <div class="container kaufen" data-kaufen data-start={JSON.stringify(START)}>
+    <h1 class="t-1 titel">Kiesel kaufen</h1>
+
+    <div class="raster">
+      <div class="links">
+        <Buehne class="buehne">
+          <div class="handy" data-kaufen-handy data-modell={START.modell} set:html={svg} />
+        </Buehne>
+        <p class="t-small t-muted lieferung">Lieferumfang: dein Kiesel und ein USB-C-Kabel.</p>
+      </div>
+
+      <form class="wahl" data-kaufen-form novalidate>
+        <fieldset class="block block--erstes">
+          <legend class="block-titel">Modell</legend>
+          <div class="modelle">
+            {MODELL_IDS.map((id) => (
+              <label class="karte">
+                <input class="vh" type="radio" name="modell" value={id} checked={id === START.modell} />
+                <span class="karte-name">{PREISE[id].name}</span>
+                <span class="karte-sub">{PREISE[id].sub}</span>
+                <span class="karte-preis">{abPreis(id)}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        <div class="block">
+          <Farbwaehler name="farbe" wert={START.farbe} legende="Farbe" class="farbe" />
+        </div>
+
+        <fieldset class="block">
+          <legend class="block-titel">Speicher</legend>
+          <div class="speicher" data-speicher-liste style={`--n: ${PREISE[START.modell].speicher.length}`}>
+            {PREISE[START.modell].speicher.map((s) => (
+              <label class="karte karte--klein">
+                <input class="vh" type="radio" name="speicher" value={s.id} checked={s.id === START.speicher} />
+                <span class="karte-name" data-name>{s.name}</span>
+                <span class="karte-sub" data-preis>{chf(s.preis)}</span>
+              </label>
+            ))}
+          </div>
+          <p class="hinweis" aria-live="polite" data-speicher-hinweis></p>
+          <template data-speicher-vorlage>
+            <label class="karte karte--klein">
+              <input class="vh" type="radio" name="speicher" />
+              <span class="karte-name" data-name></span>
+              <span class="karte-sub" data-preis></span>
+            </label>
+          </template>
+        </fieldset>
+
+        <div class="block">
+          <h2 class="block-titel">Kiesel-Hülle</h2>
+          <Schalter data-huelle-schalter>Hülle für {chf(HUELLE_PREIS)} dazu</Schalter>
+          <div class="huelle-farben" data-huelle-farben hidden>
+            <Farbwaehler name="huelle-farbe" wert={START.huelleFarbe} legende="Farbe der Hülle" groesse={30} class="huelle-waehler" />
+          </div>
+        </div>
+
+        <div class="block">
+          <h2 class="block-titel">Gravur, kostenlos</h2>
+          <label for="gravur" class="t-muted gravur-label"><span class="vh">Gravur. </span>Bis {GRAVUR_MAX} Zeichen, erscheint auf der Rückseite unter dem Kiesel.</label>
+          <input id="gravur" class="gravur" name="gravur" type="text" autocomplete="off" spellcheck="false" placeholder="z.B. Linos Kiesel" aria-invalid="false" aria-describedby="gravur-zaehler" data-gravur />
+          <div class="gravur-unten">
+            <p id="gravur-fehler" class="fehler" aria-live="polite" data-gravur-fehler></p>
+            <p id="gravur-zaehler" class="zaehler" data-gravur-zaehler>0 von {GRAVUR_MAX} Zeichen</p>
+          </div>
+        </div>
+
+        <div class="abschluss">
+          <div class="summe" aria-live="polite" aria-atomic="true">
+            <span class="zusammenfassung" data-zusammenfassung>{PREISE[START.modell].name}, {START.farbe}, {startPreis.name}</span>
+            <span class="total" data-total>{chf(startPreis.preis)}</span>
+          </div>
+          <Knopf type="submit" art="primaer" groesse="l" data-in-warenkorb>In den Warenkorb</Knopf>
+        </div>
+        <p class="vh" aria-live="polite" data-kaufen-ansage></p>
+      </form>
+    </div>
+  </div>
 </BaseLayout>
+
+<style>
+  .kaufen { padding-top: var(--space-6); padding-bottom: var(--space-9); }
+  .raster { display: grid; gap: var(--space-5); margin-top: var(--space-5); }
+
+  /* ── Bühne: Pro 560 von 720 px hoch, Kiesel 1 im echten Verhältnis (527) ── */
+  .links { display: flex; flex-direction: column; gap: 14px; }
+  .kaufen :global(.buehne) { height: 440px; }
+  .handy { display: flex; align-items: center; justify-content: center; height: calc(560 / 720 * 100%); }
+  .handy[data-modell="k1"] { height: calc(527 / 720 * 100%); }
+  .handy :global(svg) { width: auto; height: 100%; }
+  .lieferung { text-align: center; }
+
+  /* ── Optionsblöcke (opt_block() in gen2.py) ── */
+  .wahl { display: flex; flex-direction: column; min-width: 0; }
+  .block { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; margin: 0; padding: calc(var(--space-5) + 4px) 0; border: 0; border-top: 1px solid var(--line); }
+  .block--erstes { border-top: 0; }
+  fieldset.block > legend { float: left; width: 100%; padding: 0; } /* float: legend verhält sich dann wie eine normale Überschrift im Fluss */
+  fieldset.block > legend + * { clear: both; }
+  .block-titel, .wahl :global(.farbe legend) {
+    margin: 0;
+    font-family: var(--display);
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+  }
+  .wahl :global(.farbe legend) { margin-bottom: var(--space-4); }
+
+  /* ── Auswahl-Karten (sel_btn() in gen2.py): Rahmen, gewählt = doppelt so dick in Ink ── */
+  .modelle { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+  .speicher { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .karte {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    min-height: 44px;
+    padding: var(--space-4) 18px;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: var(--surface);
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .karte:hover { border-color: var(--muted); }
+  .karte:has(input:checked) { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+  .karte:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .karte-name { font-family: var(--display); font-size: 18px; font-weight: 600; line-height: 1.2; letter-spacing: -0.02em; }
+  .karte--klein .karte-name { font-size: 17px; }
+  .karte-sub { font-size: 14px; color: var(--muted); }
+  .karte-preis { margin-top: 6px; font-size: 15px; font-weight: 600; }
+  .hinweis { font-size: 14px; color: var(--muted); }
+  .hinweis:empty { display: none; }
+
+  /* ── Hülle ── */
+  /* Wie im Artboard in einer Zeile: „Farbe der Hülle: Mattweiss“ links, Punkte daneben.
+     Die Legende schwebt links (float), die Punkte bilden einen eigenen Block daneben. */
+  .huelle-farben :global(.huelle-waehler legend) { margin: 0 0 var(--space-2); font-size: 15px; font-weight: 400; color: var(--muted); }
+  @media (min-width: 900px) {
+    .huelle-farben :global(.huelle-waehler legend) { float: left; margin: 0 10px 0 0; line-height: 44px; }
+  }
+  .huelle-farben :global(.huelle-waehler .punkte) { display: flex; }
+
+  /* ── Gravur (wie Feld.astro, dazu Zähler und Fehler) ── */
+  .gravur-label { font-size: 14px; }
+  .gravur {
+    width: 100%;
+    padding: 14px 16px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 16px; /* ab 16 px zoomt iOS beim Antippen nicht hinein */
+  }
+  .gravur::placeholder { color: var(--muted); }
+  .gravur:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .gravur[aria-invalid="true"] { border-color: var(--heat); box-shadow: inset 0 0 0 1px var(--heat); }
+  .gravur-unten { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-4); margin-top: calc(-1 * var(--space-2)); }
+  .fehler { font-size: 14px; font-weight: 600; color: var(--heat); }
+  .zaehler { margin-left: auto; font-size: 13px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+  /* ── Preis und Knopf ── */
+  .abschluss {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 20px;
+    padding-top: calc(var(--space-5) + 4px);
+    border-top: 1px solid var(--line);
+  }
+  .summe { display: flex; flex: 1 1 240px; flex-direction: column; gap: var(--space-1); min-width: 0; }
+  .zusammenfassung { font-size: 15px; color: var(--muted); }
+  .total { font-family: var(--display); font-size: 40px; font-weight: 600; line-height: 1.05; letter-spacing: -0.035em; font-variant-numeric: tabular-nums; }
+  .abschluss :global([data-in-warenkorb]) { flex-grow: 1; }
+
+  @media (min-width: 900px) {
+    .kaufen { padding-top: calc(var(--space-7) + var(--space-2)); } /* 56 px wie im Artboard */
+    .titel { font-size: 64px; line-height: 1; letter-spacing: -0.045em; }
+    /* Artboard: Bühne 540 px, Wahl ab x = 700 (bei 1440 px), also 40 px Abstand */
+    .raster { grid-template-columns: minmax(0, 540px) minmax(0, 1fr); gap: calc(var(--space-6) + var(--space-2)); margin-top: calc(var(--space-6) + 4px); align-items: start; }
+    .links { position: sticky; top: calc(var(--header-h) + var(--space-5)); }
+    .kaufen :global(.buehne) { height: 720px; }
+    .speicher { grid-template-columns: repeat(var(--n), minmax(0, 1fr)); }
+    .abschluss :global([data-in-warenkorb]) { flex-grow: 0; }
+  }
+</style>
+
+<script>
+  import { handy } from '../lib/kiesel-draw/phone.js';
+  import { PREISE, HUELLE_PREIS, FARBNAMEN, speicherStufe } from '../data/preise.js';
+  import { pruefeGravur, saubereGravur, GRAVUR_MAX } from '../lib/gravur.js';
+  import { hinzufuegen } from '../scripts/warenkorb.js';
+  import { chf } from '../lib/format.js';
+
+  const farbeNormal = (f) => FARBNAMEN.find((n) => n.toLowerCase() === String(f ?? '').toLowerCase());
+  // „2 TB“, „2tb“, „512“ → '2tb', '512gb'
+  const speicherNormal = (s) => {
+    const t = String(s ?? '').toLowerCase().replace(/\s+/g, '');
+    return /^\d+$/.test(t) ? t + 'gb' : t;
+  };
+
+  document.querySelectorAll('[data-kaufen]').forEach((wurzel) => {
+    const form = wurzel.querySelector('[data-kaufen-form]');
+    const ort = wurzel.querySelector('[data-kaufen-handy]');
+    const speicherListe = wurzel.querySelector('[data-speicher-liste]');
+    const speicherVorlage = wurzel.querySelector('[data-speicher-vorlage]');
+    const speicherHinweis = wurzel.querySelector('[data-speicher-hinweis]');
+    const schalter = wurzel.querySelector('[data-huelle-schalter]');
+    const huelleFarben = wurzel.querySelector('[data-huelle-farben]');
+    const feld = wurzel.querySelector('[data-gravur]');
+    const fehler = wurzel.querySelector('[data-gravur-fehler]');
+    const zaehler = wurzel.querySelector('[data-gravur-zaehler]');
+    const ansage = wurzel.querySelector('[data-kaufen-ansage]');
+    const START = JSON.parse(wurzel.dataset.start);
+
+    // Der ganze Zustand der Seite. „wunsch“ merkt sich die zuletzt selbst gewählte Speicherstufe:
+    // Pro 2 TB → Kiesel 1 zeigt 1 TB (grösste vorhandene), zurück zum Pro gilt wieder 2 TB.
+    const z = { ...START, wunsch: START.speicher, huelle: false, gravur: '' };
+
+    // ------------------------------------------------------------ Adresse lesen
+    const q = new URLSearchParams(location.search);
+    if (PREISE[q.get('modell')]) z.modell = q.get('modell');
+    if (farbeNormal(q.get('farbe'))) z.farbe = farbeNormal(q.get('farbe'));
+    if (q.has('speicher') && speicherStufe(z.modell, speicherNormal(q.get('speicher')))) z.speicher = z.wunsch = speicherNormal(q.get('speicher'));
+    if (farbeNormal(q.get('huelle'))) { z.huelle = true; z.huelleFarbe = farbeNormal(q.get('huelle')); }
+
+    // ------------------------------------------------------------ Speicher
+    const stufen = () => PREISE[z.modell].speicher;
+    // Die gewünschte Stufe, oder die grösste vorhandene, die nicht grösser ist
+    function passendeStufe() {
+      if (speicherStufe(z.modell, z.wunsch)) return z.wunsch;
+      const alle = Object.values(PREISE).flatMap((m) => m.speicher.map((s) => s.id));
+      const rang = (id) => alle.indexOf(id);
+      const kleiner = stufen().filter((s) => rang(s.id) <= rang(z.wunsch));
+      return (kleiner[kleiner.length - 1] ?? stufen()[0]).id;
+    }
+    function zeichneSpeicher() {
+      const hatFokus = speicherListe.contains(document.activeElement);
+      const karten = stufen().map((s) => {
+        const karte = speicherVorlage.content.firstElementChild.cloneNode(true);
+        const radio = karte.querySelector('input');
+        radio.value = s.id;
+        radio.checked = s.id === z.speicher;
+        karte.querySelector('[data-name]').textContent = s.name;
+        karte.querySelector('[data-preis]').textContent = chf(s.preis);
+        return karte;
+      });
+      speicherListe.replaceChildren(...karten);
+      speicherListe.style.setProperty('--n', String(karten.length));
+      if (hatFokus) speicherListe.querySelector('input:checked')?.focus();
+    }
+
+    // ------------------------------------------------------------ Gravur
+    function pruefeFeld() {
+      const { laenge, fehler: meldung } = pruefeGravur(feld.value);
+      zaehler.textContent = `${laenge} von ${GRAVUR_MAX} Zeichen`;
+      if (fehler.textContent !== (meldung ?? '')) fehler.textContent = meldung ?? '';
+      feld.setAttribute('aria-invalid', meldung ? 'true' : 'false');
+      feld.setAttribute('aria-describedby', meldung ? 'gravur-fehler gravur-zaehler' : 'gravur-zaehler');
+      // Das Handy zeigt immer die letzte gültige Gravur, nie etwas Halbes
+      if (!meldung) z.gravur = saubereGravur(feld.value) ?? '';
+      return !meldung;
+    }
+
+    // ------------------------------------------------------------ Alles zeichnen
+    function preis() {
+      return speicherStufe(z.modell, z.speicher).preis + (z.huelle ? HUELLE_PREIS : 0);
+    }
+    function zusammenfassung() {
+      return [PREISE[z.modell].name, z.farbe, speicherStufe(z.modell, z.speicher).name]
+        .concat(z.huelle ? ['mit Hülle'] : [])
+        .concat(z.gravur ? ['mit Gravur'] : []).join(', ');
+    }
+    let letztesBild = '';
+    function zeichne() {
+      const huelle = z.huelle ? z.huelleFarbe : null;
+      const schluessel = [z.modell, z.farbe, huelle, z.gravur].join('|');
+      if (schluessel !== letztesBild) {
+        letztesBild = schluessel;
+        ort.dataset.modell = z.modell;
+        ort.innerHTML = handy({
+          ansicht: 'hinten', modell: z.modell, farbe: z.farbe, huelle, gravur: z.gravur || null, hoehe: null,
+          label: `${PREISE[z.modell].name} in ${z.farbe}` + (huelle ? ` mit Hülle in ${huelle}` : '') + ', Rückseite' + (z.gravur ? `, Gravur «${z.gravur}»` : ''),
+        });
+      }
+      wurzel.querySelector('[data-zusammenfassung]').textContent = zusammenfassung();
+      wurzel.querySelector('[data-total]').textContent = chf(preis());
+      schalter.setAttribute('aria-checked', z.huelle ? 'true' : 'false');
+      huelleFarben.hidden = !z.huelle;
+      // Adresse nachführen (ohne neuen Verlaufseintrag), damit Neuladen und Teilen die Wahl behalten
+      const p = new URLSearchParams({ modell: z.modell, farbe: z.farbe, speicher: z.speicher });
+      if (z.huelle) p.set('huelle', z.huelleFarbe);
+      history.replaceState(history.state, '', `${location.pathname}?${p}${location.hash}`);
+    }
+
+    // Radio-Knopf von aussen setzen (Adresse), Farbwähler-Beschriftung zieht mit
+    function setzeRadio(name, wert) {
+      const radio = form.querySelector(`input[name="${name}"][value="${wert}"]`);
+      if (radio && !radio.checked) { radio.checked = true; radio.dispatchEvent(new Event('change', { bubbles: true })); }
+    }
+
+    // ------------------------------------------------------------ Bedienung
+    form.addEventListener('change', (e) => {
+      const { name, value } = e.target;
+      if (name === 'modell') {
+        z.modell = value;
+        const vorher = z.speicher;
+        z.speicher = passendeStufe();
+        zeichneSpeicher();
+        const wunschStufe = Object.values(PREISE).flatMap((m) => m.speicher).find((s) => s.id === z.wunsch);
+        speicherHinweis.textContent = z.speicher !== z.wunsch
+          ? `${wunschStufe.name} gibt es nur beim ${Object.values(PREISE).find((m) => m.speicher.some((s) => s.id === z.wunsch)).name}, darum jetzt ${speicherStufe(z.modell, z.speicher).name}.`
+          : (vorher !== z.speicher ? `Wieder ${speicherStufe(z.modell, z.speicher).name}, wie vorher gewählt.` : '');
+      } else if (name === 'speicher') {
+        z.speicher = z.wunsch = value;
+        speicherHinweis.textContent = '';
+      } else if (name === 'farbe') {
+        z.farbe = value;
+      } else if (name === 'huelle-farbe') {
+        z.huelleFarbe = value;
+      } else {
+        return;
+      }
+      zeichne();
+    });
+    schalter.addEventListener('kiesel:schalter', (e) => { z.huelle = e.detail.an; zeichne(); });
+    feld.addEventListener('input', () => { pruefeFeld(); zeichne(); });
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (!pruefeFeld()) {
+        feld.focus();
+        ansage.textContent = `Die Gravur passt noch nicht: ${fehler.textContent}`;
+        return;
+      }
+      const handyArtikel = { art: 'handy', modell: z.modell, farbe: z.farbe, speicher: z.speicher, gravur: z.gravur || undefined };
+      const r = hinzufuegen(handyArtikel);
+      if (z.huelle) hinzufuegen({ art: 'huelle', modell: z.modell, farbe: z.huelleFarbe });
+      ansage.textContent = r?.gekappt ? 'Von diesem Kiesel liegen schon 9 im Warenkorb, mehr geht nicht.' : '';
+      // Schublade auf; beim Schliessen kommt der Fokus auf diesen Knopf zurück
+      window.dispatchEvent(new CustomEvent('kiesel:schublade', { detail: { ausloeser: e.submitter ?? form.querySelector('[data-in-warenkorb]') } }));
+    });
+
+    // ------------------------------------------------------------ Start
+    setzeRadio('modell', z.modell);
+    setzeRadio('farbe', z.farbe);
+    setzeRadio('huelle-farbe', z.huelleFarbe);
+    z.speicher = passendeStufe();
+    zeichneSpeicher();
+    speicherHinweis.textContent = '';
+    // Der Browser stellt beim Zurück-Navigieren Formularwerte wieder her: die Gravur übernehmen
+    pruefeFeld();
+    zeichne();
+  });
+</script>

@@ -1,7 +1,8 @@
 ---
 // Kauf-Box am Ende der Modellseite (letzter Abschnitt im Artboard „Modellseite Kiesel 1 Pro“)
 import Knopf from '../Knopf.astro';
-import { MODELLE, abPreis } from '../../data/modelle.js';
+import { MODELLE } from '../../data/modelle.js';
+import { abPreis } from '../../data/preise.js';
 import { pfad } from '../../lib/pfad.js';
 
 const { modell } = Astro.props;
@@ -14,7 +15,7 @@ const m = MODELLE[modell];
   </div>
   <div class="knoepfe">
     <Knopf art="sekundaer" groesse="l" href={pfad('vergleichen/')}>Vergleichen</Knopf>
-    <Knopf art="primaer" groesse="l" href={pfad(`kaufen/?modell=${modell}`)}>Kaufen</Knopf>
+    <Knopf art="primaer" groesse="l" href={pfad(`kaufen/?modell=${modell}&farbe=${m.seite.farbe}`)}>Kaufen</Knopf>
   </div>
 </div>
 

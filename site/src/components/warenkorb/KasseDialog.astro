@@ -1,0 +1,122 @@
+---
+// Die Kasse: öffnet sich über jedem „Zur Kasse“-Knopf ([data-zur-kasse]) als modaler Dialog,
+// auch über der offenen Schublade (zwei Dialoge übereinander, der obere sperrt den unteren).
+// Zeigt die Bestellübersicht und die traurige Wahrheit. Zwei Knöpfe:
+//   „Weiterträumen“    schliesst, Fokus zurück auf „Zur Kasse“
+//   „Warenkorb leeren“ leert und schliesst, Fokus auf „Kiesel zusammenstellen“ im leeren Warenkorb
+// Der Satz über das Speichern passt sich an, wenn localStorage gesperrt ist: keine Fehlermeldung,
+// aber auch keine falsche Behauptung.
+import Knopf from '../Knopf.astro';
+import { MWST_PROZENT } from '../../data/preise.js';
+---
+<dialog class="kasse" role="dialog" aria-modal="true" aria-labelledby="kasse-titel" aria-describedby="kasse-text" data-kasse>
+  <p class="kicker">Kasse</p>
+  <h2 id="kasse-titel" class="titel">Kiesel gibt es nur in unseren Köpfen.</h2>
+  <p id="kasse-text" class="t-muted text">Bezahlen kannst du darum nichts. <span data-kasse-speicher>Dein Warenkorb bleibt aber gespeichert, falls Cupertino es sich doch noch anders überlegt.</span></p>
+
+  <h3 class="unter">Deine Bestellung</h3>
+  <ul role="list" class="liste" data-kasse-liste></ul>
+  <dl class="summen">
+    <div><dt>davon MwSt. {MWST_PROZENT} %</dt><dd data-kasse-mwst></dd></div>
+    <div class="total"><dt>Total</dt><dd data-kasse-total></dd></div>
+  </dl>
+
+  <div class="knoepfe">
+    <Knopf art="primaer" groesse="l" autofocus data-weitertraeumen>Weiterträumen</Knopf>
+    <Knopf art="sekundaer" groesse="l" data-kasse-leeren>Warenkorb leeren</Knopf>
+  </div>
+</dialog>
+
+<style>
+  .kasse {
+    width: min(560px, 100% - 2 * var(--space-4));
+    max-height: calc(100dvh - 2 * var(--space-4));
+    padding: var(--space-6);
+    overflow-y: auto;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-xl);
+    background: var(--surface);
+    color: var(--ink);
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+    transition: opacity 0.22s, transform 0.22s, overlay 0.22s allow-discrete, display 0.22s allow-discrete;
+  }
+  .kasse[open] { opacity: 1; transform: none; }
+  @starting-style { .kasse[open] { opacity: 0; transform: translateY(12px) scale(0.98); } }
+  .kasse::backdrop { background: var(--overlay); }
+
+  .kicker { color: var(--accent); font-size: 14px; font-weight: 600; letter-spacing: 0.02em; }
+  .titel { margin-top: var(--space-2); font-family: var(--display); font-size: var(--fs-2); font-weight: 600; line-height: var(--lh-2); letter-spacing: var(--ls-2); }
+  .text { margin-top: var(--space-3); }
+  .unter { margin-top: var(--space-5); font-size: 15px; font-weight: 600; }
+  .liste { margin: var(--space-2) 0 0; border-top: 1px solid var(--line); }
+  .liste :global(li) { display: flex; justify-content: space-between; gap: var(--space-4); padding: var(--space-3) 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+  .liste :global(.was) { display: flex; flex-direction: column; min-width: 0; }
+  .liste :global(.details) { color: var(--muted); font-size: 14px; overflow-wrap: anywhere; }
+  .liste :global(.betrag) { font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .summen { margin: var(--space-3) 0 0; }
+  .summen div { display: flex; justify-content: space-between; padding: var(--space-1) 0; color: var(--muted); font-size: 15px; }
+  .summen dd { margin: 0; font-variant-numeric: tabular-nums; }
+  .summen .total { color: var(--ink); font-family: var(--display); font-size: 22px; font-weight: 600; letter-spacing: -0.02em; }
+  .knoepfe { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-5); }
+  @media (max-width: 899px) {
+    .kasse { padding: var(--space-5) 20px; border-radius: var(--radius-l); }
+    .knoepfe :global(.knopf) { width: 100%; }
+  }
+</style>
+
+<script>
+  import { modal } from '../../scripts/modal.js';
+  import { lesen, summen, artikelInfo, leeren, speicherOrt } from '../../scripts/warenkorb.js';
+  import { chfRappen } from '../../lib/format.js';
+
+  const SPEICHER_TEXT = {
+    dauerhaft: 'Dein Warenkorb bleibt aber gespeichert, falls Cupertino es sich doch noch anders überlegt.',
+    sitzung: 'Dein Warenkorb bleibt aber da, solange dieser Tab offen ist, falls Cupertino es sich doch noch anders überlegt.',
+    seite: 'Dein Warenkorb bleibt aber da, bis du diese Seite verlässt, falls Cupertino es sich doch noch anders überlegt.',
+  };
+
+  document.querySelectorAll('[data-kasse]').forEach((dialog) => {
+    // Nach „Warenkorb leeren“ gibt es „Zur Kasse“ nicht mehr: Fokus auf den Knopf im leeren
+    // Warenkorb, der gerade sichtbar ist (in der offenen Schublade oder auf /warenkorb/)
+    const ersatz = () => [...document.querySelectorAll('[data-wk-leer-knopf]')]
+      .find((k) => k.getClientRects().length && !k.closest('dialog:not([open])'));
+    const m = modal(dialog, { ersatz, beiOeffnen: fuellen });
+
+    function fuellen() {
+      const liste = lesen();
+      const ul = dialog.querySelector('[data-kasse-liste]');
+      ul.replaceChildren(...liste.map((a) => {
+        const info = artikelInfo(a);
+        const li = document.createElement('li');
+        const was = document.createElement('span');
+        was.className = 'was';
+        const name = document.createElement('span');
+        name.textContent = `${a.anzahl} × ${info.name}`;
+        const details = document.createElement('span');
+        details.className = 'details';
+        details.textContent = info.details; // textContent: eine Gravur wird nie zu HTML
+        was.append(name, details);
+        const betrag = document.createElement('span');
+        betrag.className = 'betrag';
+        betrag.textContent = chfRappen(info.stueck * a.anzahl);
+        li.append(was, betrag);
+        return li;
+      }));
+      const s = summen(liste);
+      dialog.querySelector('[data-kasse-mwst]').textContent = chfRappen(s.mwst);
+      dialog.querySelector('[data-kasse-total]').textContent = chfRappen(s.total);
+      dialog.querySelector('[data-kasse-speicher]').textContent = SPEICHER_TEXT[speicherOrt()];
+    }
+
+    document.addEventListener('click', (e) => {
+      const knopf = e.target.closest('[data-zur-kasse]');
+      if (knopf) m.oeffnen(knopf);
+    });
+    dialog.querySelector('[data-weitertraeumen]').addEventListener('click', () => m.schliessen());
+    dialog.querySelector('[data-kasse-leeren]').addEventListener('click', () => {
+      leeren();
+      m.schliessen();
+    });
+  });
+</script>

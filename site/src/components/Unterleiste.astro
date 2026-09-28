@@ -24,7 +24,7 @@ const links = [
         <li><a href={pfad(l.pfad)} aria-current={istAktiv(aktuell, l.pfad) ? 'page' : undefined}>{l.name}</a></li>
       ))}
     </ul>
-    <Knopf href={pfad(`kaufen/?modell=${modell}`)} art="primaer" groesse="s" class="kaufen">Kaufen</Knopf>
+    <Knopf href={pfad(`kaufen/?modell=${modell}&farbe=${m.seite.farbe}`)} art="primaer" groesse="s" class="kaufen">Kaufen</Knopf>
   </div>
 </nav>
 

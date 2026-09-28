@@ -31,6 +31,11 @@ export function f(x) {
 // Nur dort nötig, wo lib.py/scene.py eine Kommazahl ohne f() direkt in den Text schreibt.
 export const py = (x) => (Number.isInteger(x) ? x.toFixed(1) : String(x));
 
+// Fremden Text (z.B. die Gravur) sicher ins SVG setzen: & < > " ' werden zu Entitäten.
+// E() selbst escaped nichts, weil es sonst nur unsere eigenen Zahlen und Farben bekommt.
+// Ohne esc() wäre eine Gravur wie <img onerror=…> ausführbarer Code (innerHTML!).
+export const esc = (text) => String(text).replace(/[&<>"']/g, (z) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[z]);
+
 // Ein SVG-Element als Text: E('circle', { r: 5 }) → <circle r="5"></circle>
 // Die Reihenfolge der Attribute bleibt wie angegeben (wichtig für den Vergleich mit Python).
 export function E(tag, attrs, inner = '') {

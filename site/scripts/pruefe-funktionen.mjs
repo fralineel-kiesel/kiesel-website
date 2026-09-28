@@ -160,7 +160,8 @@ try {
     await seite.locator('[data-filter="alle"]').click();
     await seite.locator('[data-kaufen][data-modell="pro"]').click();
     const korb = await warenkorb(seite);
-    pruefe('„In den Warenkorb“ (Pro-Karte): genau diese Hülle, CHF 59', korb.length === 1 && korb[0].id === 'huelle-pro-mattschwarz' && korb[0].modell === 'pro' && korb[0].farbe === 'Mattschwarz' && korb[0].preis === 59 && korb[0].anzahl === 1, JSON.stringify(korb));
+    // Seit Etappe 6 steht im Speicher nur die Wahl, kein Preis (der kommt aus data/preise.js)
+    pruefe('„In den Warenkorb“ (Pro-Karte): genau diese Hülle, ohne Preis im Speicher', korb.length === 1 && korb[0].art === 'huelle' && korb[0].modell === 'pro' && korb[0].farbe === 'Mattschwarz' && !('preis' in korb[0]) && korb[0].anzahl === 1, JSON.stringify(korb));
     pruefe('Knopf meldet „Im Warenkorb ✓“, Zähler oben zeigt 1', (await seite.locator('[data-kaufen][data-modell="pro"]').textContent()).includes('Im Warenkorb') && (await zaehlerOben(seite)) === '1', await zaehlerOben(seite));
     await seite.locator('input[name="kombi-huelle"][value="Kieselbeige"]').check({ force: true });
     await seite.locator('input[name="kombi-handy"][value="Mattschwarz"]').check({ force: true });
@@ -185,7 +186,7 @@ try {
     await seite.locator('[data-huelle-kaufen]').click();
     const korb = await warenkorb(seite);
     const a = korb[0] ?? {};
-    pruefe('Warenkorb: Pro-Hülle in Himmelblau, ohne Vorschau-Handyfarbe', korb.length === 1 && a.id === 'huelle-pro-himmelblau' && a.modell === 'pro' && a.farbe === 'Himmelblau' && !JSON.stringify(a).includes('Kieselbeige'), JSON.stringify(korb));
+    pruefe('Warenkorb: Pro-Hülle in Himmelblau, ohne Vorschau-Handyfarbe', korb.length === 1 && a.art === 'huelle' && a.modell === 'pro' && a.farbe === 'Himmelblau' && !JSON.stringify(a).includes('Kieselbeige'), JSON.stringify(korb));
     await seite.locator('[data-huelle-kaufen]').click();
     pruefe('Zweimal: gleiche Hülle, Anzahl 2', (await warenkorb(seite))[0]?.anzahl === 2 && (await zaehlerOben(seite)) === '2');
     const details = await seite.evaluate(() => Object.fromEntries([...document.querySelectorAll('.details div')].map((d) => [d.querySelector('dt').textContent, d.querySelector('dd').textContent])));
