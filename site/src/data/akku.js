@@ -41,3 +41,45 @@ export const AKKU = {
     balken: [[GERAETE.se.name, SE_MAH], [GERAETE.mini.name, MINI], [GERAETE.pro.name, PRO]],
   },
 };
+
+// ---------------------------------------------------------------------------------------------
+// Akku-Rechner (/akku-rechner/, akku_js in design/generator/gen4.py, Werte 1:1 übernommen).
+// Der Tag läuft von 07:00 (100 %) bis 23:00, das sind 16 Stunden. Was nicht eingestellt ist,
+// ist Standby. Gerechnet wird in lib/akku-rechner.js.
+export const RECHNER = {
+  start: 7,
+  ende: 23,
+  // Verbrauch des Kiesel 1 in Prozent pro Stunde
+  verbrauch: { surf: 10, video: 7, music: 2, cam: 16, game: 20 },
+  standby: 0.6,
+  // Kiesel 1 Pro: Faktor auf den Verbrauch des Kiesel 1 (Vapor Chamber: Kamera und Spiele sparsamer)
+  proFaktor: { surf: 0.8, video: 0.8, music: 0.8, cam: 0.72, game: 0.75, idle: 0.8 },
+  // iPhone SE (2016): rund 46 % weniger Akku, darum 1.85-facher Verbrauch
+  seFaktor: 1.85,
+  // Regler: [Schlüssel, Beschriftung, Maximum in Stunden], Schritt 0.5 h
+  regler: [['surf', 'Surfen und Social Media', 10], ['video', 'Video', 6], ['music', 'Musik und Podcasts', 8], ['cam', 'Kamera und Navigation', 5], ['game', 'Spielen', 4]],
+  schritt: 0.5,
+  // Typische Tage (Stunden pro Tätigkeit). „Normal“ ist die Vorgabe.
+  tage: {
+    'Ruhiger Tag': { surf: 1.5, video: 0.5, music: 0.5, cam: 0, game: 0 },
+    'Normal': { surf: 3, video: 1.5, music: 1, cam: 0.5, game: 0 },
+    'Viel unterwegs': { surf: 5, video: 2.5, music: 1.5, cam: 1, game: 1 },
+    'Ferientag': { surf: 2, video: 1, music: 1, cam: 3, game: 0 },
+  },
+  vorgabe: 'Normal',
+};
+
+// Texte unter dem Rechner (Artboard „Akku-Rechner“), aus den Zahlen oben zusammengesetzt
+const R = RECHNER;
+const prozent = (x) => `${x} %`;
+const weniger = (f) => Math.round((1 - f) * 100);
+export const RECHNER_TEXTE = {
+  soWird: [
+    `Verbrauch pro Stunde beim Kiesel 1: Surfen ${prozent(R.verbrauch.surf)}, Video ${prozent(R.verbrauch.video)}, Musik ${prozent(R.verbrauch.music)}, Kamera und Navigation ${prozent(R.verbrauch.cam)}, Spielen ${prozent(R.verbrauch.game)}, Standby ${prozent(R.standby)}. Die Stunden verteilen sich gleichmässig über den Tag.`,
+    `Der Pro hat ${Math.round((GERAETE.pro.akku / GERAETE.k1.akku - 1) * 100)} % mehr Akku. Sein grösseres Display kostet etwas, dafür arbeitet der Chip dank Vapor Chamber bei Kamera und Spielen kühler und effizienter. Unterm Strich braucht er ${weniger(R.proFaktor.surf)} % weniger pro Stunde, bei Kamera ${weniger(R.proFaktor.cam)} % und bei Spielen ${weniger(R.proFaktor.game)} % weniger.`,
+  ],
+  gutZuWissen: [
+    'Je mehr du das Handy nutzt, desto grösser wird der Vorsprung des Pro. An einem ruhigen Tag liegen beide nah beieinander, an einem langen Ferientag zählt jedes Prozent.',
+    `Das SE von 2016 dient als Vergleich. Es hat rund ${Math.round((1 - SE_MAH / K1) * 100)} % weniger Akku als der Kiesel 1, das Modell rechnet es deshalb mit ${R.seFaktor}-fachem Verbrauch.`,
+  ],
+};
