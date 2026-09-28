@@ -22,6 +22,7 @@ import {
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { baueKiesel } from './modell.js';
+import { bauplan } from './bauplan.js';
 import { neuerWaechter } from './waechter.js';
 
 const NEIGUNG = 10;           // Grad, das Handy lehnt leicht nach links (wie drehung -10 in 2D)
@@ -99,7 +100,7 @@ export async function starte3D({ ziel, modell = 'pro', farbe = 'Himmelblau', lab
   // ── Modell ───────────────────────────────────────────────────────────────
   await luftholen();
   if (beendet) return null;
-  const kiesel = await baueKiesel({ modell, farbe, maxAniso: Math.min(4, renderer.capabilities.getMaxAnisotropy()) });
+  const kiesel = await baueKiesel(bauplan(modell), { farbe, maxAniso: Math.min(4, renderer.capabilities.getMaxAnisotropy()) });
   aufraeumen.push(() => kiesel.dispose());
   if (beendet) return null;
   const { H, W } = kiesel.masse;

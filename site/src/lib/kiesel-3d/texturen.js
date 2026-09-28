@@ -8,8 +8,8 @@
 //
 // Koordinaten: 1 Pixel = 1 Zeichen-Einheit = 0.1 mm, (0, 0) = linke obere Ecke der
 // Rückseite (von hinten gesehen) bzw. der Vorderseite (von vorne gesehen).
+// z = bauplan().zeichnung: { W, H, R } in Zeichen-Einheiten.
 import { PEB, V1, V2, WALL } from '../kiesel-draw/phone.js';
-import { MODELS } from '../kiesel-draw/models.js';
 
 function leinwand(b, h) {
   const c = document.createElement('canvas');
@@ -20,8 +20,8 @@ function leinwand(b, h) {
 
 // Rückseite: Farbe (col.back), MagSafe-Ring und das eingeprägte Kiesel-Logo.
 // Zeichnet in eine bestehende Leinwand (beim Farbwechsel wird sie nur übermalt).
-export function zeichneRuecken(c, mk, col) {
-  const { W, H } = MODELS[mk];
+export function zeichneRuecken(c, z, col) {
+  const { W, H } = z;
   const g = c.getContext('2d');
   g.setTransform(c.width / W, 0, 0, c.height / H, 0, 0);
   g.fillStyle = col.back;
@@ -67,8 +67,8 @@ export function zeichneRuecken(c, mk, col) {
 
 // Rauheit der Rückseite als Graustufen (hell = matt, dunkel = glänzend).
 // Das Logo glänzt, der Rest ist mattes Glas. Farbunabhängig, wird nur einmal gezeichnet.
-export function zeichneRauheit(c, mk) {
-  const { W, H } = MODELS[mk];
+export function zeichneRauheit(c, z) {
+  const { W, H } = z;
   const g = c.getContext('2d');
   g.setTransform(c.width / W, 0, 0, c.height / H, 0, 0);
   g.fillStyle = 'rgb(190, 190, 190)'; // ≈ 0.75
@@ -81,8 +81,8 @@ export function zeichneRauheit(c, mk) {
 
 // Sperrbildschirm wie in frontSvg(): Hintergrund mit Kieseln, Datum, Uhrzeit, Knöpfe,
 // Dynamic Island. Die Schriften sind dieselben wie auf der Seite (per @font-face geladen).
-export async function zeichneBildschirm(c, mk) {
-  const { W, H, R } = MODELS[mk];
+export async function zeichneBildschirm(c, z) {
+  const { W, H, R } = z;
   try {
     await Promise.all([document.fonts.load("400 150px 'Unbounded'"), document.fonts.load("500 34px 'Instrument Sans'")]);
   } catch { /* dann eben mit Ersatzschrift */ }

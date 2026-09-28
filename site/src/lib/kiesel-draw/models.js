@@ -25,12 +25,19 @@ export function geo(m) {
   return [W, H, R, { act: 200 * s, v1: 310 * s, v2: 450 * s, pw: 330 * s, cc: 800 * s }];
 }
 
+// Feste Grössen, die 2D (phone.js) und 3D (kiesel-3d/bauplan.js) teilen, in 1/10 mm:
+//   Knopf-Höhen, Radien der Linsen (Metallring aussen), Mikrofon und Blitz-Ring
+export const KNOPF_HOEHE = { act: 70, v1: 120, v2: 120, pw: 180, cc: 110 };
+export const LINSE_R = { haupt: 68, tele: 64 };
+export const MIKRO_R = 6;
+export const BLITZ_R = 25;
+
 // Kamerareihe hinten. Die Mitte der ersten Linse liegt genau im Eckradius (c = R),
 // darum wirkt sie in die Ecke "eingebettet". Die Tele-Linse sitzt 164 Einheiten daneben.
 // Rückgabe: [Mitte (x und y), x der Linsen, x des Mikrofons, x des Blitzes]
 export function camrow(m) {
   const c = m.R;
   const xs = [c].concat(m.cams === 2 ? [c + 164] : []);
-  const lr = m.cams === 2 ? 64 : 68;
+  const lr = m.cams === 2 ? LINSE_R.tele : LINSE_R.haupt; // Radius der letzten Linse
   return [c, xs, xs[xs.length - 1] + lr + 22, xs[xs.length - 1] + lr + 74];
 }

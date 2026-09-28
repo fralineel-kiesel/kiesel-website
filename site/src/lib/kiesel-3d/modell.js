@@ -1,7 +1,11 @@
 // Der Kiesel als 3D-Modell, zusammengesetzt aus einfachen Formen.
 //
-// Einheit: 1 = 1 mm. Masse aus kiesel-draw/models.js (dort in 1/10 mm), darum MM = 0.1.
-// Achsen: x nach rechts, y nach oben, z zur Kamera. Die Rückseite schaut zur Kamera (+z),
+// EINE Funktion für beide Modelle: baueKiesel(bauplan('k1')) und baueKiesel(bauplan('pro')).
+// Was die beiden unterscheidet (Masse, Eckradius, Kameras, Lage von Mikrofon, Blitz, Knöpfen
+// und Lautsprecher-Löchern), steht im Bauplan (bauplan.js, Werte aus data/geraete.js).
+// Hier steht nur, WIE ein Kiesel gebaut ist: Materialien und Formen.
+//
+// Einheit: 1 = 1 mm. Achsen: x nach rechts, y nach oben, z zur Kamera. Die Rückseite schaut zur Kamera (+z),
 // wie im Artboard. Von hinten gesehen liegen die Linsen oben links.
 //
 // Aufbau (ca. 7000 Dreiecke, 6 verschiedene Shader-Programme):
@@ -19,12 +23,9 @@ import {
   AdditiveBlending, Vector2,
 } from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { MODELS, DICKE, geo, camrow } from '../kiesel-draw/models.js';
 import { palette } from '../kiesel-draw/colors.js';
 import { leinwand, zeichneRuecken, zeichneRauheit, zeichneBildschirm, zeichneBodenschatten } from './texturen.js';
 import { unterkante } from './unterkante.js';
-
-const MM = 0.1;
 
 // Rechteck mit runden Ecken, Mitte im Ursprung
 function rundesRechteck(b, h, r) {
@@ -63,10 +64,9 @@ function linsenRing(r, h) {
   return g;
 }
 
-export async function baueKiesel({ modell = 'pro', farbe = 'Himmelblau', maxAniso = 1 } = {}) {
-  const m = MODELS[modell];
-  const [Wu, Hu, Ru, gu] = geo(m);
-  const W = Wu * MM, H = Hu * MM, R = Ru * MM, D = DICKE * MM;
+// plan = bauplan('k1'|'pro'). Liefert { handy, boden, masse, plan, setzeFarbe(), dispose() }.
+export async function baueKiesel(plan, { farbe = 'Himmelblau', maxAniso = 1 } = {}) {
+  const { W, H, R, D, zeichnung: z } = plan;
   let col = palette(farbe);
 
   const handy = new Group();
@@ -85,13 +85,13 @@ export async function baueKiesel({ modell = 'pro', farbe = 'Himmelblau', maxAnis
   // Rückseite: Textur aus Canvas. Die Farbe steckt in der Textur (map), darum color weiss.
   // roughnessMap macht das Logo glänzend, den Rest matt. Ein wenig clearcoat (zweite,
   // eigene Glanzschicht) gibt mattem Glas den typischen seidigen Schimmer.
-  const rueckBild = leinwand(Wu, Hu);
-  zeichneRuecken(rueckBild, modell, col);
+  const rueckBild = leinwand(z.W, z.H);
+  zeichneRuecken(rueckBild, z, col);
   const rueckTex = merke(new CanvasTexture(rueckBild));
   rueckTex.colorSpace = SRGBColorSpace;
   rueckTex.anisotropy = maxAniso;
-  const rauBild = leinwand(Wu / 2, Hu / 2);
-  zeichneRauheit(rauBild, modell);
+  const rauBild = leinwand(z.W / 2, z.H / 2);
+  zeichneRauheit(rauBild, z);
   const rauTex = merke(new CanvasTexture(rauBild));
   rauTex.colorSpace = NoColorSpace; // Messwerte, keine Farbe
   const ruecken = merke(new MeshPhysicalMaterial({
@@ -100,8 +100,8 @@ export async function baueKiesel({ modell = 'pro', farbe = 'Himmelblau', maxAnis
 
   // Vorderseite: schwarzes Glas. Der Bildschirm leuchtet selbst (emissiveMap), unabhängig
   // vom Licht. clearcoat 1 mit fast 0 Rauheit = Spiegelung auf dem Deckglas.
-  const schirmBild = leinwand(Wu, Hu);
-  await zeichneBildschirm(schirmBild, modell);
+  const schirmBild = leinwand(z.W, z.H);
+  await zeichneBildschirm(schirmBild, z);
   const schirmTex = merke(new CanvasTexture(schirmBild));
   schirmTex.colorSpace = SRGBColorSpace;
   schirmTex.anisotropy = maxAniso;
@@ -160,24 +160,18 @@ export async function baueKiesel({ modell = 'pro', farbe = 'Himmelblau', maxAnis
   vorne.rotation.y = Math.PI; // zeigt nach hinten; dadurch ist die Textur richtig herum
 
   // ── Knöpfe ───────────────────────────────────────────────────────────────
-  // Von hinten gesehen: Power und Kamera-Knopf links, Action und Lautstärke rechts.
+  // Lage aus dem Bauplan. Der Kamera-Knopf ist aus Saphirglas, die anderen aus Rahmen-Metall.
   // In der SVG stehen sie 1 mm über und sind 1.2 mm breit, also Mitte 0.4 mm ausserhalb.
-  const knopf = (k, hoehe, links, material = rahmen) => {
-    const y = H / 2 - (gu[k] + hoehe / 2) * MM;
-    teil(new RoundedBoxGeometry(1.2, hoehe * MM, 3.6, 2, 0.5), material, links ? -W / 2 - 0.4 : W / 2 + 0.4, y, 0);
-  };
-  knopf('pw', 180, true);
-  knopf('cc', 110, true, saphir);
-  knopf('act', 70, false);
-  knopf('v1', 120, false);
-  knopf('v2', 120, false);
+  for (const k of plan.knoepfe) {
+    const x = k.seite === 'links' ? -W / 2 - 0.4 : W / 2 + 0.4;
+    teil(new RoundedBoxGeometry(1.2, k.hoehe, 3.6, 2, 0.5), k.art === 'cc' ? saphir : rahmen, x, k.y, 0);
+  }
 
   // ── Kameras ──────────────────────────────────────────────────────────────
-  const [c, xs, mic, fl] = camrow(m);
+  // So viele Linsen, wie der Bauplan hat, an seinen Positionen (camrow() aus lib.py)
   const hinten = D / 2 + 0.05;
-  const px = (u) => -W / 2 + u * MM, py = (u) => H / 2 - u * MM;
-  const linse = (u, r, tele) => {
-    const x = px(u), y = py(c), hr = 1.6; // Ring steht 1.6 mm über dem Rücken
+  const linse = ({ x, y, r, art }) => {
+    const tele = art === 'tele', hr = 1.6; // Ring steht 1.6 mm über dem Rücken
     teil(linsenRing(r, hr), ringe, x, y, hinten);
     teil(new CircleGeometry(r - 1.0, 48), fassung, x, y, hinten + hr * 0.55);
     // Linsenglas als flache Kuppel: Halbkugel, in der Tiefe auf 30 % gestaucht
@@ -187,13 +181,13 @@ export async function baueKiesel({ modell = 'pro', farbe = 'Himmelblau', maxAnis
     teil(kuppel, linsenGlas(tele ? '#3B2F63' : '#2C4466'), x, y, hinten + hr * 0.55);
     teil(new CircleGeometry(r - 1.0, 48), deckglas, x, y, hinten + hr - 0.05);
   };
-  linse(xs[0], 6.8, false);
-  if (m.cams === 2) linse(xs[1], 6.4, true);
-  // Blitz: kleiner Ring mit cremefarbener LED
-  teil(linsenRing(2.5, 1.0), ringe, px(fl), py(c), hinten);
-  teil(new CircleGeometry(1.7, 32), blitzLed, px(fl), py(c), hinten + 0.5);
-  teil(new CircleGeometry(1.5, 32), deckglas, px(fl), py(c), hinten + 0.95);
-  teil(new CircleGeometry(0.6, 16), mikro, px(mic), py(c), hinten + 0.01);
+  plan.kameras.forEach(linse);
+  // Blitz: kleiner Ring mit cremefarbener LED, in derselben Reihe wie die Linsen
+  const { blitz: b, mikrofon: mi } = plan;
+  teil(linsenRing(b.r, 1.0), ringe, b.x, b.y, hinten);
+  teil(new CircleGeometry(b.r - 0.8, 32), blitzLed, b.x, b.y, hinten + 0.5);
+  teil(new CircleGeometry(b.r - 1.0, 32), deckglas, b.x, b.y, hinten + 0.95);
+  teil(new CircleGeometry(mi.r, 16), mikro, mi.x, mi.y, hinten + 0.01);
 
   // ── Unterkante: USB-C und Lautsprecher ──────────────────────────────────
   // Fase im polierten Metall der Linsenringe, Innenwand im dunklen Rahmenton (färbt beim
@@ -201,7 +195,7 @@ export async function baueKiesel({ modell = 'pro', farbe = 'Himmelblau', maxAnis
   // heller. Alles bekannte Materialarten, also kein zusätzliches Shader-Programm.
   const lochGrund = merke(new MeshStandardMaterial({ color: '#030405', roughness: 1, envMapIntensity: 0.1 }));
   const usbZunge = merke(new MeshStandardMaterial({ color: '#1E2328', roughness: 0.5, envMapIntensity: 0.6 }));
-  const unten = unterkante({ H, flachBis: W / 2 - R });
+  const unten = unterkante({ H, plan: plan.unterkante });
   teil(unten.fase, ringe);
   teil(unten.wand, mikro);
   teil(unten.grund, lochGrund);
@@ -221,13 +215,14 @@ export async function baueKiesel({ modell = 'pro', farbe = 'Himmelblau', maxAnis
     handy,
     boden,
     masse: { W, H, D },
+    plan,
     // Farbe wechseln: Materialfarben setzen, Rückseite neu malen
     setzeFarbe(neu) {
       col = palette(neu);
       rahmen.color.set(col.frame);
       ringe.color.set(col.frame);
       mikro.color.set(col.lo);
-      zeichneRuecken(rueckBild, modell, col);
+      zeichneRuecken(rueckBild, z, col);
       rueckTex.needsUpdate = true;
     },
     dispose() {
