@@ -2,6 +2,8 @@
 // Startseite (Artboards „Startseite Desktop“ und „Startseite Handy“, gen2.py Abschnitt 1+2).
 // Jeder Abschnitt ist ein eigener Baustein in src/components/startseite/.
 // Die 3D-Bühne lädt three.js nur hier und nur, wenn das Gerät es verträgt (Buehne3D.astro).
+// Die Knöpfe oben folgen dem Modell der Bühne: Beide Fassungen stehen im HTML, CSS zeigt die
+// passende ([data-nur-modell], siehe Buehne3D). Das Skript unten trägt die Farbe nach.
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Knopf from '../components/Knopf.astro';
 import Buehne3D from '../components/Buehne3D.astro';
@@ -13,9 +15,16 @@ import FunktionsKacheln from '../components/startseite/FunktionsKacheln.astro';
 import HuelleTeaser from '../components/startseite/HuelleTeaser.astro';
 import { FAQ } from '../data/faq.js';
 import { abPreis } from '../data/preise.js';
+import { MODELLE } from '../data/modelle.js';
+import { KIESEL_IDS } from '../data/geraete.js';
 import { pfad } from '../lib/pfad.js';
+import { KOPF_SKRIPT, STANDARD } from '../scripts/startmodell.js';
+
+const START_FARBE = 'Himmelblau';
+const kaufen = (id, farbe) => pfad(`kaufen/?modell=${id}&farbe=${encodeURIComponent(farbe)}`);
 ---
 <BaseLayout>
+  <script is:inline slot="kopf" set:html={KOPF_SKRIPT} />
   <section class="held container" aria-labelledby="titel">
     <h1 class="t-display" id="titel">Passt in jede Hand.</h1>
     <p class="t-lead t-muted einleitung">
@@ -23,11 +32,15 @@ import { pfad } from '../lib/pfad.js';
       <span class="kurz">Kiesel 1 und Kiesel 1 Pro: zwei kompakte Handys mit Akku bis in die Nacht.</span>
     </p>
     <div class="knoepfe">
-      <Knopf art="primaer" groesse="l" href={pfad('kiesel-1-pro/')}>Kiesel 1 Pro entdecken</Knopf>
-      <Knopf art="sekundaer" groesse="l" href={pfad('kaufen/')}>Kaufen {abPreis('k1')}</Knopf>
+      {KIESEL_IDS.map((id) => <Knopf art="primaer" groesse="l" href={pfad(MODELLE[id].pfad)} data-nur-modell={id}>{MODELLE[id].name} entdecken</Knopf>)}
+      {KIESEL_IDS.map((id) => (
+        <Knopf art="sekundaer" groesse="l" href={kaufen(id, START_FARBE)} data-nur-modell={id} data-held-kaufen={id}>
+          Kaufen {abPreis(id)}<span class="vh">: {MODELLE[id].name}</span>
+        </Knopf>
+      ))}
     </div>
     <div class="buehne">
-      <Buehne3D modell="pro" farbe="Himmelblau" name="held-farbe" />
+      <Buehne3D modell={STANDARD} farbe={START_FARBE} name="held-farbe" />
     </div>
   </section>
 
@@ -64,6 +77,18 @@ import { pfad } from '../lib/pfad.js';
     </div>
   </section>
 </BaseLayout>
+
+<script>
+  import { pfad } from '../lib/pfad.js';
+
+  // Kaufen-Knöpfe: gewählte Farbe mitgeben (das Modell steckt schon im jeweiligen Knopf)
+  document.addEventListener('kiesel:modell', (e) => {
+    const { farbe } = e.detail;
+    document.querySelectorAll('[data-held-kaufen]').forEach((a) => {
+      a.href = pfad(`kaufen/?modell=${a.dataset.heldKaufen}&farbe=${encodeURIComponent(farbe)}`);
+    });
+  });
+</script>
 
 <style>
   /* ── Handy (bis 899 px) ── */

@@ -84,6 +84,10 @@
 /* ── Grundlagen ── */
 *, *::before, *::after { box-sizing: border-box; }
 [hidden] { display: none !important; }
+/* Inhalte je gewähltem Modell (Startseite: 3D-Bühne und Knöpfe). Buehne3D setzt
+   data-held-modell auf <html>, schon vor dem ersten Bild. Ohne Wahl gilt der Pro. */
+:root:not([data-held-modell="k1"]) [data-nur-modell="k1"],
+:root[data-held-modell="k1"] [data-nur-modell="pro"] { display: none !important; }
 
 html {
   -webkit-text-size-adjust: 100%;
