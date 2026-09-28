@@ -3,8 +3,11 @@
 // Wird NUR per import() geladen, wenn pruefen.js "ja" sagt. Vite legt diese Datei samt
 // three.js dann in eine eigene JS-Datei, die ausser der Startseite niemand anfordert.
 //
-//   const b = await starte3D({ ziel, modell, farbe, label, beiAbbruch, waechter })
-//   b.setzeFarbe('Mattschwarz')   b.beenden()
+//   const b = await starte3D({ ziel, modell, farbe, label, beiAbbruch, waechter, gerade })
+//   gerade: nur für Tests (?3d=gerade), Handy still und genau von hinten, ohne Neigung
+//   freiOben(): wie viele Pixel oben auf der Bühne belegt sind (Umschalter). Das Bild rückt um
+//   die Hälfte nach unten, damit das Handy in der Mitte des freien Teils steht.
+//   b.setzeFarbe('Mattschwarz')   await b.setzeModell('k1')   b.beenden()
 //   beiAbbruch(grund) wird aufgerufen, wenn 3D unterwegs aufgibt ('kontextverlust',
 //   'zu-langsam', 'beendet'). Dann ist die Leinwand schon entfernt und aufgeräumt.
 //
@@ -15,6 +18,15 @@
 // Drehteller. Genau so hier: OrbitControls steuert eine unsichtbare "Steuerkamera". Daraus
 // rechnen wir jedes Bild aus, wie sich das Handy drehen müsste, damit die echte, feste
 // Kamera dasselbe sieht. Das Licht kommt dadurch immer von vorne oben links, wie in der SVG.
+//
+// ── Modellwechsel im echten Massstab ──
+// Beide Kiesel entstehen aus derselben Funktion (baueKiesel + bauplan). Gebaut wird zuerst nur
+// das angezeigte Modell, das andere beim ersten Umschalten, danach bleiben beide im Speicher.
+// Die Kamera steht fest (Abstand nach dem grössten Kiesel), darum ist der Kiesel 1 im Bild
+// wirklich kleiner. Übergang: Das letzte Bild des alten Modells liegt als Schnappschuss
+// darüber und blendet aus, darunter wächst oder schrumpft das neue von der alten Grösse auf
+// seine echte. (Die Modelle selbst halb durchsichtig zu machen, gäbe Sortierfehler bei Glas
+// und Metall.)
 import {
   WebGLRenderer, Scene, PerspectiveCamera, PMREMGenerator, DirectionalLight, Group, Matrix4,
   NeutralToneMapping, MathUtils, Vector3,
@@ -24,19 +36,22 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { baueKiesel } from './modell.js';
 import { bauplan } from './bauplan.js';
 import { neuerWaechter } from './waechter.js';
+import { GERAETE, KIESEL_IDS } from '../../data/geraete.js';
 
 const NEIGUNG = 10;           // Grad, das Handy lehnt leicht nach links (wie drehung -10 in 2D)
 const BLICK_VON_OBEN = 84;    // Grad von der Senkrechten: 90 = genau von vorne, kleiner = von oben
 const SEKUNDEN_PRO_RUNDE = 40;
 const PAUSE_NACH_ANFASSEN = 6000; // ms, danach dreht es sich wieder von selbst
 const MAX_FPS = 60;
+const WECHSEL_MS = 350;       // Modellwechsel: Grösse und Überblenden
+const ABSTAND_NACH_H = Math.max(...KIESEL_IDS.map((id) => GERAETE[id].hoehe)); // mm, grösster Kiesel
 
 // Hauptthread kurz freigeben, damit Klicks und Scrollen zwischendurch drankommen.
 // Sonst wäre der ganze Start (Modell bauen, Licht vorberechnen, Shader übersetzen) eine
 // einzige lange Aufgabe, während der die Seite nicht reagiert.
 const luftholen = () => new Promise((r) => setTimeout(r, 0));
 
-export async function starte3D({ ziel, modell = 'pro', farbe = 'Himmelblau', label = '', beiAbbruch = () => {}, waechter: mitWaechter = true }) {
+export async function starte3D({ ziel, modell = 'pro', farbe = 'Himmelblau', label = '', beiAbbruch = () => {}, waechter: mitWaechter = true, gerade = false, freiOben = () => 0 }) {
   const leinwand = document.createElement('canvas');
   leinwand.className = 'leinwand-3d';
   leinwand.setAttribute('role', 'img');
@@ -98,32 +113,65 @@ export async function starte3D({ ziel, modell = 'pro', farbe = 'Himmelblau', lab
   szene.add(hauptlicht);
 
   // ── Modell ───────────────────────────────────────────────────────────────
-  await luftholen();
-  if (beendet) return null;
-  const kiesel = await baueKiesel(bauplan(modell), { farbe, maxAniso: Math.min(4, renderer.capabilities.getMaxAnisotropy()) });
-  aufraeumen.push(() => kiesel.dispose());
-  if (beendet) return null;
-  const { H, W } = kiesel.masse;
-  // drehteller (Drehung aus der Steuerkamera) → neigung (lehnt nach links) → Handy
-  const neigung = new Group();
-  neigung.rotation.z = MathUtils.degToRad(NEIGUNG);
-  neigung.add(kiesel.handy);
+  // wurzel (Grösse beim Wechsel) → drehteller (Drehung aus der Steuerkamera) → neigung (lehnt
+  // nach links) → Handys. Die Bodenschatten hängen an der wurzel: Sie drehen nicht mit.
+  const wurzel = new Group();
   const drehteller = new Group();
   drehteller.matrixAutoUpdate = false;
+  const neigung = new Group();
+  const neigungGrad = gerade ? 0 : NEIGUNG;
+  neigung.rotation.z = MathUtils.degToRad(neigungGrad);
   drehteller.add(neigung);
-  szene.add(drehteller);
-  // Boden knapp unter der tiefsten Ecke des geneigten Handys
-  const neig = MathUtils.degToRad(NEIGUNG);
-  kiesel.boden.position.set(0, -(H / 2 * Math.cos(neig) + W / 2 * Math.sin(neig)) - 3, 0);
-  szene.add(kiesel.boden);
+  wurzel.add(drehteller);
+  szene.add(wurzel);
+  const maxAniso = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+  const modelle = new Map(); // id → gebautes Modell, bleibt bis zum Beenden
+  let farbeJetzt = farbe;
+  const farbeVon = new Map(); // id → Farbe, in der das Modell zuletzt gemalt wurde
+
+  // Ein Modell bauen und (unsichtbar) in die Szene hängen
+  async function baue(id) {
+    const k = await baueKiesel(bauplan(id), { farbe: farbeJetzt, maxAniso });
+    if (beendet) { k.dispose(); return null; }
+    aufraeumen.push(() => k.dispose());
+    farbeVon.set(id, farbeJetzt);
+    // Boden knapp unter der tiefsten Ecke des geneigten Handys
+    const { H, W } = k.masse, neig = MathUtils.degToRad(neigungGrad);
+    k.boden.position.set(0, -(H / 2 * Math.cos(neig) + W / 2 * Math.sin(neig)) - 3, 0);
+    // Shader vorab übersetzen (compileAsync überspringt Unsichtbares, darum vor dem Verstecken).
+    // Beim zweiten Modell sind es dieselben Materialarten: meist schon fertig im Zwischenspeicher.
+    if (kamera) {
+      await renderer.compileAsync(k.handy, kamera, szene);
+      if (beendet) return null;
+    }
+    k.handy.visible = k.boden.visible = false;
+    neigung.add(k.handy);
+    wurzel.add(k.boden);
+    modelle.set(id, k);
+    leinwand.dataset.gebaut = [...modelle.keys()].join(' '); // zum Nachschauen (Tests)
+    return k;
+  }
+  function zeige(id) {
+    for (const [i, k] of modelle) k.handy.visible = k.boden.visible = i === id;
+    if (farbeVon.get(id) !== farbeJetzt) { modelle.get(id).setzeFarbe(farbeJetzt); farbeVon.set(id, farbeJetzt); }
+    leinwand.dataset.modell = id;
+  }
+
+  let kamera = null;
+  await luftholen();
+  if (beendet) return null;
+  if (!(await baue(modell))) return null;
+  let aktiv = modell;
+  zeige(aktiv);
 
   // ── Kamera ───────────────────────────────────────────────────────────────
-  // fov 30°: eher Teleobjektiv, wie Produktfotos (wenig Verzerrung). Abstand so, dass das
-  // Handy etwa 65 % der Bühnenhöhe füllt.
-  const kamera = new PerspectiveCamera(30, 1, 50, 2000);
-  const abstand = (H / 0.65) / (2 * Math.tan(MathUtils.degToRad(15)));
+  // fov 30°: eher Teleobjektiv, wie Produktfotos (wenig Verzerrung). Abstand so, dass der
+  // grösste Kiesel (Pro) etwa 65 % der Bühnenhöhe füllt. Der Abstand ändert sich beim
+  // Modellwechsel nicht: echter Massstab.
+  kamera = new PerspectiveCamera(30, 1, 50, 2000);
+  const abstand = (ABSTAND_NACH_H / 0.65) / (2 * Math.tan(MathUtils.degToRad(15)));
   const ziel3d = new Vector3(0, -4, 0);
-  const startPos = new Vector3().setFromSphericalCoords(abstand, MathUtils.degToRad(BLICK_VON_OBEN), 0).add(ziel3d);
+  const startPos = new Vector3().setFromSphericalCoords(abstand, MathUtils.degToRad(gerade ? 90 : BLICK_VON_OBEN), 0).add(ziel3d);
   kamera.position.copy(startPos);
   kamera.lookAt(ziel3d);
   kamera.updateMatrixWorld();
@@ -139,7 +187,7 @@ export async function starte3D({ ziel, modell = 'pro', farbe = 'Himmelblau', lab
   steuerung.rotateSpeed = 0.8;
   steuerung.minPolarAngle = MathUtils.degToRad(50); // nicht kopfüber drehen
   steuerung.maxPolarAngle = MathUtils.degToRad(135); // weit genug, um die Unterkante zu sehen
-  steuerung.autoRotate = true;
+  steuerung.autoRotate = !gerade;
   steuerung.autoRotateSpeed = 60 / SEKUNDEN_PRO_RUNDE; // 1 = eine Runde pro Minute
   steuerung.update();
   aufraeumen.push(() => steuerung.dispose());
@@ -154,7 +202,7 @@ export async function starte3D({ ziel, modell = 'pro', farbe = 'Himmelblau', lab
   });
   steuerung.addEventListener('end', () => {
     clearTimeout(pause);
-    pause = setTimeout(() => { steuerung.autoRotate = true; wecken(); }, PAUSE_NACH_ANFASSEN);
+    pause = setTimeout(() => { steuerung.autoRotate = !gerade; wecken(); }, PAUSE_NACH_ANFASSEN);
   });
   aufraeumen.push(() => clearTimeout(pause));
   steuerung.addEventListener('change', () => wecken());
@@ -183,6 +231,8 @@ export async function starte3D({ ziel, modell = 'pro', farbe = 'Himmelblau', lab
     if (!b || !h) return;
     renderer.setSize(b, h, false); // false: CSS-Grösse nicht anfassen (100 % per CSS)
     kamera.aspect = steuerkamera.aspect = b / h;
+    // Bildausschnitt verschieben statt Kamera bewegen: gleiche Perspektive, gleiche Grösse
+    kamera.setViewOffset(b, h, 0, -Math.round(freiOben() / 2), b, h);
     kamera.updateProjectionMatrix();
     steuerkamera.updateProjectionMatrix();
     neuZeichnen = true;
@@ -209,9 +259,10 @@ export async function starte3D({ ziel, modell = 'pro', farbe = 'Himmelblau', lab
   // oder etwas neu ist (Farbe, Grösse). Steht alles still, schläft die Schleife ganz.
   let bilder = 0;
   let rafId = 0, letzte = 0; // letzte = Zeit des letzten Bilds, 0 = Schleife schläft
+  let amBauen = false;        // zweites Modell entsteht gerade: Schleife bleibt still
   const drehung = new Matrix4();
   function wecken() {
-    if (!rafId && !beendet && sichtbar && !document.hidden) rafId = requestAnimationFrame(bild);
+    if (!rafId && !beendet && !amBauen && sichtbar && !document.hidden) rafId = requestAnimationFrame(bild);
   }
   function schlafen() {
     cancelAnimationFrame(rafId);
@@ -224,6 +275,7 @@ export async function starte3D({ ziel, modell = 'pro', farbe = 'Himmelblau', lab
     if (letzte && jetzt - letzte < 1000 / MAX_FPS - 4) { rafId = requestAnimationFrame(bild); return; }
     const dauer = letzte ? jetzt - letzte : 0; // 0 = erstes Bild nach einer Pause
     const bewegt = steuerung.update(dauer ? Math.min(0.1, dauer / 1000) : 1 / MAX_FPS);
+    if (uebergang) wechselSchritt(jetzt);
     if (bewegt || neuZeichnen) {
       // Drehteller = feste Kamera × Kehrwert der Steuerkamera (siehe oben)
       steuerkamera.updateMatrixWorld();
@@ -235,7 +287,7 @@ export async function starte3D({ ziel, modell = 'pro', farbe = 'Himmelblau', lab
       leinwand.dataset.bilder = ++bilder; // zum Nachschauen: läuft die Schleife noch?
       if (dauer) waechter(dauer);
     }
-    if (steuerung.autoRotate || bewegt) {
+    if (steuerung.autoRotate || bewegt || uebergang) {
       letzte = jetzt;
       wecken();
       if (!rafId) letzte = 0; // wecken() hat abgelehnt (unsichtbar): Schleife schläft
@@ -258,6 +310,83 @@ export async function starte3D({ ziel, modell = 'pro', farbe = 'Himmelblau', lab
     if (urteil) abbrechen(urteil);
   }
 
+  // ── Modellwechsel ───────────────────────────────────────────────────────
+  // uebergang = { start, von, bild }: start = Zeit des ersten Bilds (aus requestAnimationFrame,
+  // nicht performance.now(): so stimmt es auch mit den künstlichen Bildzeiten der Tests),
+  // von = Anfangsgrösse relativ zur echten, bild = Schnappschuss des alten Modells.
+  let uebergang = null;
+  const WENIGER_BEWEGUNG = matchMedia('(prefers-reduced-motion: reduce)');
+  function wechselSchritt(jetzt) {
+    uebergang.start ??= jetzt;
+    const t = Math.min(1, (jetzt - uebergang.start) / WECHSEL_MS);
+    const weich = 1 - (1 - t) ** 3; // schnell los, sanft ankommen
+    wurzel.scale.setScalar(uebergang.von + (1 - uebergang.von) * weich);
+    uebergang.bild.style.opacity = String(Math.max(0, 1 - t / 0.6)); // Überblenden in den ersten 60 %
+    neuZeichnen = true;
+    if (t >= 1) wechselEnde();
+  }
+  function wechselEnde() {
+    if (!uebergang) return;
+    uebergang.bild.remove();
+    uebergang = null;
+    wurzel.scale.setScalar(1);
+    neuZeichnen = true;
+  }
+  aufraeumen.push(wechselEnde);
+  // Das Bild, das gerade zu sehen ist, als 2D-Leinwand über die 3D-Leinwand legen.
+  // render() und drawImage() im selben Durchgang: Danach verwirft WebGL den Bildpuffer.
+  function schnappschuss() {
+    renderer.render(szene, kamera);
+    const bild = document.createElement('canvas');
+    bild.width = leinwand.width;
+    bild.height = leinwand.height;
+    bild.className = 'leinwand-3d-bild';
+    bild.setAttribute('aria-hidden', 'true');
+    bild.getContext('2d').drawImage(leinwand, 0, 0);
+    leinwand.after(bild);
+    return bild;
+  }
+  function wechsle(id) {
+    const alt = modelle.get(aktiv), neu = modelle.get(id);
+    const sanft = !WENIGER_BEWEGUNG.matches;
+    // Mitten in einem Wechsel: von der Grösse aus weiter, die gerade zu sehen ist
+    const jetzigeGroesse = wurzel.scale.x;
+    wechselEnde();
+    const bild = sanft ? schnappschuss() : null;
+    zeige(id);
+    aktiv = id;
+    if (sanft) {
+      uebergang = { start: null, von: (jetzigeGroesse * alt.masse.H) / neu.masse.H, bild };
+      wurzel.scale.setScalar(uebergang.von);
+    }
+    neuZeichnen = true;
+    wecken();
+  }
+  // Wünsche, die während des Bauens kommen (schnell hin und her klicken), zählen: Am Ende
+  // gilt der letzte. Beim Bauen schläft die Schleife, sonst würde das eine lange Bild den
+  // Wächter auslösen (es sagt nichts über die Grafikkarte aus).
+  let wunsch = modell;
+  async function setzeModell(id) {
+    if (!KIESEL_IDS.includes(id)) return;
+    wunsch = id;
+    if (amBauen) return;
+    while (wunsch !== aktiv && !beendet) {
+      const ziel = wunsch;
+      if (!modelle.has(ziel)) {
+        amBauen = true;
+        schlafen();
+        try {
+          await luftholen();
+          if (!beendet) await baue(ziel);
+        } finally {
+          amBauen = false;
+        }
+        if (beendet) return;
+      }
+      wechsle(ziel);
+    }
+  }
+
   // ── Los ──────────────────────────────────────────────────────────────────
   ziel.appendChild(leinwand);
   anpassen();
@@ -271,11 +400,14 @@ export async function starte3D({ ziel, modell = 'pro', farbe = 'Himmelblau', lab
 
   return {
     leinwand,
+    // Nur das sichtbare Modell wird umgemalt, das andere beim nächsten Zeigen (zeige())
     setzeFarbe(neu) {
-      kiesel.setzeFarbe(neu);
+      farbeJetzt = neu;
+      if (farbeVon.get(aktiv) !== neu) { modelle.get(aktiv).setzeFarbe(neu); farbeVon.set(aktiv, neu); }
       neuZeichnen = true;
       wecken();
     },
+    setzeModell,
     setzeLabel(text) { leinwand.setAttribute('aria-label', text); },
     beenden(grund = 'beendet') { abbrechen(grund); },
   };

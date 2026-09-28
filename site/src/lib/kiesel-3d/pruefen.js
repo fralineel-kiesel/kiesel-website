@@ -23,6 +23,8 @@
 //   ?3d=software  lässt Software-Rendering zu. Alle anderen Gründe gelten trotzdem.
 //   ?3d=foto      dazu ohne Wächter (buehne.js), nur fürs Foto-Skript: Headless Chrome liefert
 //                 dort so stockend Bilder, dass der Wächter sonst zu Recht auf 2D schaltet.
+//   ?3d=gerade    wie foto, dazu steht das Handy still und gerade, genau von hinten gesehen
+//                 (keine Neigung, keine Drehung): zum Nachmessen gegen die 2D-Zeichnung.
 export const TESTMODUS = new URLSearchParams(location.search).get('3d');
 
 export function grundGegen3D() {
@@ -31,7 +33,7 @@ export function grundGegen3D() {
   if (kerne && kerne < 4) return 'schwaches-geraet';
   if (navigator.connection?.saveData) return 'datensparen';
 
-  const software = TESTMODUS === 'software' || TESTMODUS === 'foto';
+  const software = ['software', 'foto', 'gerade'].includes(TESTMODUS);
   try {
     const probe = document.createElement('canvas');
     const gl = probe.getContext('webgl2', { failIfMajorPerformanceCaveat: !software });
