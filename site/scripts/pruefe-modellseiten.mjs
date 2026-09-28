@@ -318,12 +318,31 @@ try {
   }
 
   console.log('\n── Technische Daten ──');
-  for (const adresse of ['kiesel-1/technik/', 'kiesel-1-pro/technik/']) {
+  const alleZeilen = TECHNIK.flatMap((g) => g.zeilen);
+  const soll = alleZeilen.length;
+  const unterschiede = alleZeilen.filter((z) => z[1] !== z[2]).length;
+  for (const [adresse, erstes, zweites] of [['kiesel-1/technik/', 'Kiesel 1', 'Kiesel 1 Pro'], ['kiesel-1-pro/technik/', 'Kiesel 1 Pro', 'Kiesel 1']]) {
     const { seite, ctx, status } = await oeffne(adresse);
-    const zeilen = await seite.locator('table.tabelle tbody tr').count();
-    const kopf = await seite.locator('table.tabelle th[scope="row"]').count();
-    const soll = TECHNIK.reduce((n, g) => n + g.zeilen.length, 0);
-    pruefe(`${adresse}: Tabelle mit ${soll} Zeilen und Zeilenköpfen`, zeilen === soll && kopf === zeilen, `${zeilen} Zeilen`);
+    const zeilen = await seite.locator('[data-technik] tbody tr').count();
+    const kopf = await seite.locator('[data-technik] th[scope="row"]').count();
+    pruefe(`${adresse}: ${TECHNIK.length} Tabellen mit zusammen ${soll} Zeilen und Zeilenköpfen`, zeilen === soll && kopf === zeilen && await seite.locator('[data-technik] table').count() === TECHNIK.length, `${zeilen} Zeilen`);
+    const reihe = await seite.evaluate(() => [...document.querySelectorAll('[data-technik] .kopf .name')].map((n) => n.textContent));
+    const spalten = await seite.locator('[data-technik] thead').first().locator('th').allTextContents();
+    pruefe(`${adresse}: ${erstes} steht in der ersten Spalte`, reihe[0] === erstes && reihe[1] === zweites && spalten[1] === erstes && spalten[2] === zweites, reihe.join(' | '));
+    const aktiv = await seite.locator('.unterleiste a[aria-current="page"]').allTextContents();
+    pruefe(`${adresse}: Unterleiste markiert „Technische Daten“`, aktiv.length === 1 && aktiv[0] === 'Technische Daten', aktiv.join(', '));
+    const blau = await seite.locator('[data-technik] td.anders').count();
+    pruefe(`${adresse}: ${unterschiede} Unterschiede blau markiert`, blau === unterschiede, String(blau));
+    // Schalter per Tastatur: Fokus drauf, Leertaste
+    const schalter = seite.locator('[data-nur-unterschiede]');
+    await schalter.focus();
+    await seite.keyboard.press('Space');
+    const an = { checked: await schalter.getAttribute('aria-checked'), sichtbar: await seite.locator('[data-technik] tbody tr:visible').count(), gruppen: await seite.locator('[data-gruppe]:visible').count() };
+    const gruppenMitUnterschied = TECHNIK.filter((g) => g.zeilen.some((z) => z[1] !== z[2])).length;
+    pruefe(`${adresse}: „Nur Unterschiede“ per Leertaste zeigt ${unterschiede} Zeilen in ${gruppenMitUnterschied} Gruppen`, an.checked === 'true' && an.sichtbar === unterschiede && an.gruppen === gruppenMitUnterschied, JSON.stringify(an));
+    await seite.keyboard.press('Enter');
+    const aus = await seite.locator('[data-technik] tbody tr:visible').count();
+    pruefe(`${adresse}: wieder aus per Enter zeigt alle ${soll} Zeilen`, aus === soll && await schalter.getAttribute('aria-checked') === 'false', String(aus));
     pruefe(`${adresse}: kein Platzhalter mehr, kein three.js, keine Fehler`, !(await seite.content()).includes('Inhalt folgt') && !status.dreiD && status.fehler.length === 0);
     await ctx.close();
   }
