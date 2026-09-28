@@ -24,7 +24,15 @@ const DREI_D = /\/buehne\.[\w-]+\.js$/;
 // So viel stärker als beim gewöhnlichen Ziehen darf ein Bild beim Linsenwechsel springen.
 // Ein harter Schnitt ohne Animation liegt bei rund 1.5 (siehe Gegenprobe), die Animation bei 1.
 const SPRUNG_MAX = 1.25;
-const browser = await chromium.launch();
+// Stufenlose Unschärfe: Headless Chrome rastert sonst auf der CPU, und Skia nähert CSS-blur()
+// dort mit drei Box-Filtern an. Deren Breite ist ganzzahlig, floor(σ · 1.88 + 0.5), darum
+// ändert sich das Bild nur bei σ = 0.8, 1.33, 1.86, 2.39, 2.93 … (alle 0.53 px) und unter
+// 0.8 px gar nicht. Fällt eine solche Stufe in ein Bild des Linsenwechsels, misst der
+// Pixeltest die Rundung mit (1440 px: Verhältnis 0.98 statt 0.70). Mit GPU-Rasterung (hier
+// SwiftShader, also ohne echte Grafikkarte, aber deterministisch) rechnet Skia einen echten
+// Gauss-Shader wie auf Geräten mit Grafikkarte. Ob das greift, prüft der erste Fall unten.
+const STUFENLOS = ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--enable-gpu-rasterization', '--ignore-gpu-blocklist'];
+const browser = await chromium.launch({ args: STUFENLOS });
 const { basis, schliessen } = await starteServer();
 let fehler = 0;
 
@@ -103,6 +111,24 @@ function zieheMesser(seite, fenster, uhr, k) {
 }
 
 try {
+  console.log('\n── Browser ──');
+  {
+    // Streifenmuster mit wenig Unschärfe fotografieren. Bei CPU-Rasterung sind 0 und 0.5 px
+    // sowie 1.0/1.1/1.2 px jeweils dasselbe Bild (gleiche Box-Breite), stufenlos nicht.
+    const seite = await browser.newPage({ viewport: { width: 300, height: 120 } });
+    await seite.setContent('<body style="margin:0;background:#fff"><div id="b" style="width:260px;height:80px;margin:20px;background:repeating-linear-gradient(90deg,#000 0 6px,#fff 6px 12px)"></div>');
+    const mit = async (px) => {
+      await seite.evaluate((px) => { document.getElementById('b').style.filter = px ? `blur(${px}px)` : ''; }, px);
+      return (await seite.screenshot({ clip: { x: 40, y: 40, width: 220, height: 40 } })).toString('base64');
+    };
+    const bilder = [];
+    for (const px of [0, 0.5, 1, 1.1, 1.2]) bilder.push(await mit(px));
+    const verschieden = bilder.slice(1).every((b, i) => b !== bilder[i]);
+    pruefe('Unschärfe wird stufenlos gerechnet (sonst misst der Pixeltest die Rundung von Skia mit)', verschieden,
+      verschieden ? 'GPU-Rasterung' : 'CPU-Rasterung mit Box-Stufen: Chrome-Schalter STUFENLOS wirkt nicht');
+    await seite.close();
+  }
+
   console.log('\n── Zoom-Regler (Pro) ──');
   {
     const { seite, ctx, status, uhr, k } = await oeffne('kiesel-1-pro/');
