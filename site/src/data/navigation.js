@@ -65,14 +65,3 @@ export const FOOTER_SPALTEN = [
     ],
   },
 ];
-
-// Die Etappen von Kiesel 2.0 (für die Platzhalter „Inhalt folgt in Etappe X“)
-export const ETAPPEN = {
-  1: 'Fundament',
-  2: 'Zeichen-Motor',
-  3: 'Startseite mit 3D',
-  4: 'Modellseiten mit Akku-Story',
-  5: 'Kamera-Demos, Funktionen, Zubehör',
-  6: 'Kaufen, Warenkorb',
-  7: 'Vergleichen, FAQ, Feinschliff',
-};

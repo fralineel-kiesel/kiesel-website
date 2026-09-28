@@ -18,6 +18,8 @@ import { MODELLE } from '../../data/modelle.js';
 import { akku } from '../../data/geraete.js';
 import { WERTE } from '../../data/technik.js';
 
+const W = WERTE;
+
 const { modell } = Astro.props;
 const m = MODELLE[modell];
 const pro = modell === 'pro';
@@ -35,14 +37,14 @@ const beschreibung = pro
   <section class="abschnitt container" id="kamera" aria-labelledby="kamera-titel">
     {pro ? (
       <>
-        <h2 class="t-1" id="kamera-titel">3x Tele. Echt optisch.</h2>
-        <p class="t-lead t-muted unter">Links der Kiesel 1 bei 5x, rein digital. Rechts der Pro, der bei 3x auf die Tele-Linse wechselt und bei 5x noch aus einem scharfen Bild schneidet. Zieh den Regler und schau selbst.</p>
+        <h2 class="t-1" id="kamera-titel">{W.tele}x Tele. Echt optisch.</h2>
+        <p class="t-lead t-muted unter">Links der Kiesel 1 bei {W.zoomDigital.k1}x, rein digital. Rechts der Pro, der bei {W.tele}x auf die Tele-Linse wechselt und bei {W.zoomDigital.k1}x noch aus einem scharfen Bild schneidet. Zieh den Regler und schau selbst.</p>
         <div class="demo"><ZoomVergleich /></div>
       </>
     ) : (
       <>
         <h2 class="t-1" id="kamera-titel">Eine Kamera. Alles drin.</h2>
-        <p class="t-lead t-muted unter">Die variable Linse fährt stufenlos von 0.5x bis 1x, jeweils mit vollen 50 MP. Darüber zoomt der Kiesel 1 digital bis 5x, dann wird es weicher. Wer echtes Tele will, nimmt den Pro.</p>
+        <p class="t-lead t-muted unter">Die variable Linse fährt stufenlos von 0.5x bis 1x, jeweils mit vollen {W.megapixel} MP. Darüber zoomt der Kiesel 1 digital bis {W.zoomDigital.k1}x, dann wird es weicher. Wer echtes Tele will, nimmt den Pro.</p>
         <div class="demo"><ZoomDemo /></div>
       </>
     )}
@@ -53,7 +55,7 @@ const beschreibung = pro
       <div class="makro-text">
         <h2 class="t-1" id="makro-titel">Ganz nah dran.</h2>
         <p class="t-lead t-muted">{pro
-          ? 'Die Tele-Linse stellt schon ab rund 20 cm scharf. Die Blume bleibt gross, der Hintergrund verschwimmt weich. Tipp aufs Bild, um den Fokus zu verschieben.'
+          ? `Die Tele-Linse stellt schon ab rund ${W.nahfokusCm} cm scharf. Die Blume bleibt gross, der Hintergrund verschwimmt weich. Tipp aufs Bild, um den Fokus zu verschieben.`
           : 'Die Hauptkamera kann Makro: Blüte, Biene und Tautropfen ganz aus der Nähe. Tipp aufs Bild, um den Fokus zu verschieben.'}</p>
       </div>
       <MakroDemo modell={modell} />

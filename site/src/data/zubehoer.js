@@ -1,6 +1,7 @@
 // Texte der Seiten /zubehoer/ und /zubehoer/huelle/, 1:1 aus den Artboards „Zubehör“ und
 // „Kiesel-Hülle“ (design/generator/gen3.py). Der Preis steht in preise.js (HUELLE_PREIS).
 // Platzhalter in eckigen Klammern sind bewusst so: nichts erfinden, bis es feststeht.
+import { FARBEN_TEXT } from './farben.js';
 
 export const ZUBEHOER = {
   titel: 'Zubehör',
@@ -20,6 +21,15 @@ export const ZUBEHOER = {
     knopf: 'Diese Kombination kaufen',
   },
 };
+
+// Masse der Kiesel-Hülle in mm (gen3.py): Text der technischen Details und Profilschnitt
+export const HUELLE_MASSE = {
+  rand: 1.2,          // trägt pro Seite auf
+  ueberDisplay: 0.8,  // erhöhter Rahmen vorne
+  ueberKamera: 0.6,   // Luft unter der Kamera, wenn das Handy auf dem Rücken liegt
+  boden: 1.4,         // Rückseite (nur im Profilschnitt)
+};
+const HM = HUELLE_MASSE;
 
 export const HUELLE = {
   titel: 'Kiesel-Hülle',
@@ -41,9 +51,9 @@ export const HUELLE = {
   detailsTitel: 'Technische Details',
   details: [
     ['Passt auf', 'Kiesel 1 oder Kiesel 1 Pro, je eigene Grösse'],
-    ['Farben', 'Mattschwarz, Titangrau, Himmelblau, Mattweiss, Kieselbeige'],
-    ['Rand', 'trägt ca. 1.2 mm pro Seite auf'],
-    ['Überstand', 'ca. 0.8 mm über dem Display, ca. 0.6 mm über den Kameras'],
+    ['Farben', FARBEN_TEXT.join(', ')],
+    ['Rand', `trägt ca. ${HM.rand} mm pro Seite auf`],
+    ['Überstand', `ca. ${HM.ueberDisplay} mm über dem Display, ca. ${HM.ueberKamera} mm über den Kameras`],
     ['MagSafe', 'kompatibel, Magnetring sichtbar durch die Rückseite'],
     ['Material', '[Material]'],
     ['Preis', null], // aus HUELLE_PREIS
