@@ -3,7 +3,7 @@
 
 // Hauptmenü in der Kopfzeile. „Handys“ ist kein Link, sondern öffnet das Aufklappmenü.
 export const HAUPTMENUE = [
-  { name: 'Handys', menue: true, bereich: ['kiesel-1/', 'kiesel-1-pro/'] },
+  { name: 'Handys', menue: true, bereich: ['kiesel-1/', 'kiesel-1-pro/', 'akku-rechner/'] },
   { name: 'Funktionen', pfad: 'funktionen/' },
   { name: 'Zubehör', pfad: 'zubehoer/' },
   { name: 'Vergleichen', pfad: 'vergleichen/' },
@@ -17,7 +17,7 @@ export const HANDYS_SPALTEN = [
     links: [
       { name: 'Vergleichen', pfad: 'vergleichen/' },
       { name: 'Technische Daten', pfad: 'kiesel-1-pro/technik/' },
-      { name: 'Akku-Rechner', pfad: 'kiesel-1/#akku' },
+      { name: 'Akku-Rechner', pfad: 'akku-rechner/' },
       { name: 'Farben', pfad: 'kaufen/' },
     ],
   },
@@ -46,7 +46,7 @@ export const FOOTER_SPALTEN = [
     links: [
       { name: 'Funktionen', pfad: 'funktionen/' },
       { name: 'Technische Daten', pfad: 'kiesel-1-pro/technik/' },
-      { name: 'Akku-Rechner', pfad: 'kiesel-1/#akku' },
+      { name: 'Akku-Rechner', pfad: 'akku-rechner/' },
     ],
   },
   {
@@ -65,14 +65,3 @@ export const FOOTER_SPALTEN = [
     ],
   },
 ];
-
-// Die Etappen von Kiesel 2.0 (für die Platzhalter „Inhalt folgt in Etappe X“)
-export const ETAPPEN = {
-  1: 'Fundament',
-  2: 'Zeichen-Motor',
-  3: 'Startseite mit 3D',
-  4: 'Modellseiten mit Akku-Story',
-  5: 'Kamera-Demos, Funktionen, Zubehör',
-  6: 'Kaufen, Warenkorb',
-  7: 'Vergleichen, FAQ, Feinschliff',
-};

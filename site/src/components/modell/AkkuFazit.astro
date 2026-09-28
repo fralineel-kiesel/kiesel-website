@@ -5,6 +5,8 @@
 import { phoneOpen } from '../../lib/kiesel-draw/index.js';
 import { AKKU } from '../../data/akku.js';
 import { MODELLE } from '../../data/modelle.js';
+import Knopf from '../Knopf.astro';
+import { pfad } from '../../lib/pfad.js';
 
 const { modell } = Astro.props;
 const daten = AKKU[modell];
@@ -28,6 +30,7 @@ const zahl = (w) => w.toLocaleString('de-CH').replace(/[’']/g, '’');
         );
       })}
     </ul>
+    <Knopf art="text" icon="arrow" href={pfad('akku-rechner/')}>Rechne deinen Tag durch</Knopf>
   </div>
   <div class="legende">
     <h3 class="t-4">Was im {MODELLE[modell].name} steckt</h3>

@@ -13,7 +13,7 @@ const aktuell = Astro.url.pathname;
 const links = [
   { name: 'Übersicht', pfad: m.pfad },
   { name: 'Technische Daten', pfad: `${m.pfad}technik/` },
-  { name: 'Vergleichen', pfad: 'vergleichen/' },
+  { name: 'Vergleichen', pfad: `vergleichen/?kiesel=${modell}` },
 ];
 ---
 <nav class="unterleiste" aria-label={m.name}>
@@ -92,3 +92,17 @@ const links = [
     .links { flex-grow: 0; gap: 28px; overflow: visible; mask-image: none; }
   }
 </style>
+
+<script>
+  // Handy: Die Linkliste scrollt seitlich. Steht der aktive Punkt (z.B. „Technische Daten“)
+  // halb ausserhalb, die Liste so weit schieben, dass er ganz zu sehen ist. Nur die Liste
+  // scrollt, nicht die Seite.
+  document.querySelectorAll('.unterleiste .links').forEach((liste) => {
+    const aktiv = liste.querySelector('[aria-current="page"]');
+    if (!aktiv || liste.scrollWidth <= liste.clientWidth) return;
+    // Positionen auf dem Bildschirm; rechts blendet die Liste aus (mask 85 %)
+    const l = liste.getBoundingClientRect(), a = aktiv.getBoundingClientRect();
+    const zuWeitRechts = a.right - (l.left + l.width * 0.85);
+    if (zuWeitRechts > 0) liste.scrollLeft += Math.min(zuWeitRechts + 8, a.left - l.left);
+  });
+</script>

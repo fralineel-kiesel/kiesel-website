@@ -1,0 +1,231 @@
+---
+// /akku-rechner/ nach dem Artboard „Akku-Rechner“ (gen4.py): typischer Tag per Chips oder
+// fünf Reglern, Ergebnis um 23:00 als Akku-Balken, Verlauf über den Tag als Diagramm.
+// Rechnung: lib/akku-rechner.js, Werte: data/akku.js (RECHNER). Der Build rechnet den Tag
+// „Normal“ schon ins HTML, das Skript rechnet bei jeder Änderung neu.
+//
+// Die Regler sind echte <input type="range">: Pfeiltasten ±0.5 h, Bild auf/ab in grösseren
+// Schritten (1 h, Skript unten), Pos1/Ende ganz links/rechts. aria-valuetext sagt „3.0 Stunden“ statt „3“.
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Chip from '../components/Chip.astro';
+import { RECHNER, RECHNER_TEXTE } from '../data/akku.js';
+import { rechne, diagramm, stunden, geschuetzt } from '../lib/akku-rechner.js';
+
+const erg = rechne(RECHNER.tage[RECHNER.vorgabe]);
+const bild = diagramm(erg);
+const vorlesen = (x) => `${stunden(x).replace(' h', '')} Stunden`;
+const LEGENDE = [['pro', 'Kiesel 1 Pro'], ['k1', 'Kiesel 1'], ['se', 'iPhone SE (2016)']];
+---
+<BaseLayout titel="Akku-Rechner" beschreibung="Wie viel Akku bleibt am Abend? Stell deinen typischen Tag ein und vergleiche Kiesel 1, Kiesel 1 Pro und das iPhone SE von 2016. Ein Fan-Konzept.">
+  <div class="rechner container" data-akku-rechner>
+    <h1 class="t-display">Akku-Rechner</h1>
+    <p class="t-lead t-muted einleitung">Stell deinen typischen Tag ein. Der Rechner startet um 07:00 mit 100 % und rechnet bis 23:00. Die restliche Zeit liegt das Handy im Standby.</p>
+
+    <div class="raster">
+      <div class="eingabe">
+        <div class="tage" role="group" aria-label="Typischer Tag">
+          {Object.keys(RECHNER.tage).map((name) => <Chip gedrueckt={name === erg.tag} data-tag={name}>{name}</Chip>)}
+        </div>
+        {RECHNER.regler.map(([key, label, max]) => (
+          <div class="regler">
+            <div class="kopf">
+              <label for={`sl-${key}`}>{label}</label>
+              <output for={`sl-${key}`} data-aus={key}>{stunden(erg.werte[key])}</output>
+            </div>
+            <input type="range" id={`sl-${key}`} data-regler={key} min="0" max={max} step={RECHNER.schritt} value={erg.werte[key]} aria-valuetext={vorlesen(erg.werte[key])} />
+          </div>
+        ))}
+        <p class="fehler" role="alert" data-fehler>{erg.fehler}</p>
+      </div>
+
+      <div class="ausgabe">
+        <section class="karte" aria-labelledby="um-23">
+          <h2 class="t-small t-muted" id="um-23">Um 23:00</h2>
+          <p class="schlagzeile" data-schlagzeile aria-live="polite">{geschuetzt(erg.schlagzeile)}</p>
+          <ul role="list" class="akkus">
+            {erg.balken.map((b) => (
+              <li data-akku={b.id}>
+                <div class="zeile">
+                  <span class="name">{b.name}</span>
+                  <span class="ergebnis" data-text class:list={{ leer: b.leer }}>{geschuetzt(b.text)}</span>
+                </div>
+                <span class="batterie" aria-hidden="true"><span class="fuellung" data-fuellung style={`width: ${b.prozent}%; background: var(--${b.farbe})`}></span></span>
+                <span class="t-small t-muted" data-tage>{b.tage}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section class="karte diagramm" aria-labelledby="verlauf">
+          <h2 class="t-text" id="verlauf">Akkustand über den Tag</h2>
+          <svg viewBox={bild.viewBox} role="img" aria-label={erg.label} data-diagramm set:html={bild.inhalt}></svg>
+          <ul role="list" class="legende" aria-hidden="true">
+            {LEGENDE.map(([id, name]) => <li><span class:list={['strich', id]}></span>{name}</li>)}
+          </ul>
+        </section>
+      </div>
+    </div>
+
+    <section class="erklaerung" aria-label="Erklärungen zum Rechner">
+      <div>
+        <h2 class="t-3">So wird gerechnet</h2>
+        {RECHNER_TEXTE.soWird.map((t) => <p class="t-muted">{geschuetzt(t)}</p>)}
+      </div>
+      <div>
+        <h2 class="t-3">Gut zu wissen</h2>
+        {RECHNER_TEXTE.gutZuWissen.map((t) => <p class="t-muted">{geschuetzt(t)}</p>)}
+      </div>
+    </section>
+  </div>
+</BaseLayout>
+
+<style>
+  .rechner { padding-top: var(--space-7); }
+  .einleitung { max-width: 680px; margin-top: var(--space-4); }
+  .raster { display: grid; gap: var(--space-7); margin-top: var(--space-7); align-items: start; }
+
+  .tage { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: 12px; }
+  .tage :global(.chip) { min-height: 44px; padding: 0 16px; font-size: 15px; }
+  .regler { display: flex; flex-direction: column; gap: 10px; padding: 18px 0 8px; border-top: 1px solid var(--line); }
+  .kopf { display: flex; justify-content: space-between; gap: 12px; }
+  label { font-weight: 600; }
+  output { color: var(--muted); font-variant-numeric: tabular-nums; }
+  /* Tippfläche 44 px hoch, der Regler selbst bleibt schmal (Browser-Standard in Akzentfarbe) */
+  input[type="range"] { width: 100%; height: 44px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+  .fehler { min-height: 24px; margin-top: 12px; font-size: 15px; font-weight: 600; color: var(--heat); }
+
+  .ausgabe { display: flex; flex-direction: column; gap: var(--space-5); }
+  .karte { background: var(--surface); border: 1px solid var(--line); border-radius: 28px; padding: var(--space-5) var(--space-5) 12px; }
+  .schlagzeile { margin: 4px 0 12px; font-family: var(--display); font-size: var(--fs-2); font-weight: 600; line-height: 1.15; letter-spacing: var(--ls-2); }
+  .akkus li { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4) 0; border-top: 1px solid var(--line); }
+  .zeile { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .name { font-size: 17px; font-weight: 600; }
+  .ergebnis { font-family: var(--display); font-size: 22px; font-weight: 600; line-height: 1.2; letter-spacing: var(--ls-3); white-space: nowrap; }
+  .ergebnis.leer { color: var(--heat); }
+  /* Akku-Symbol: Rahmen mit Pol rechts, Füllung nach Prozent */
+  .batterie {
+    position: relative;
+    display: block;
+    height: 30px;
+    margin-right: 8px;
+    padding: 3px;
+    border: 2px solid var(--ink);
+    border-radius: 9px;
+  }
+  .batterie::after { content: ''; position: absolute; right: -8px; top: 8px; width: 4px; height: 10px; border-radius: 0 3px 3px 0; background: var(--ink); }
+  .fuellung { display: block; height: 100%; border-radius: 5px; transition: width 0.25s; }
+
+  .diagramm { padding: var(--space-5) 20px 20px; }
+  .diagramm h2 { font-weight: 600; margin-bottom: 12px; }
+  .diagramm svg { display: block; width: 100%; height: auto; }
+  .diagramm :global(.gitter) { stroke: var(--line); stroke-width: 1; }
+  .diagramm :global(.achse) { font-family: var(--body); font-size: 12px; fill: var(--muted); }
+  .diagramm :global(.linie) { fill: none; }
+  .diagramm :global(.linie.se) { stroke: var(--muted); stroke-width: 2.5; stroke-dasharray: 6 5; }
+  .diagramm :global(.linie.k1) { stroke: var(--ink); stroke-width: 3; }
+  .diagramm :global(.linie.pro) { stroke: var(--accent); stroke-width: 3.5; }
+  .legende { display: flex; flex-wrap: wrap; gap: var(--space-2) 20px; margin-top: 12px; font-size: var(--fs-small); }
+  .legende li { display: inline-flex; align-items: center; gap: var(--space-2); }
+  .strich { display: block; width: 22px; height: 4px; border-radius: 2px; }
+  .strich.pro { background: var(--accent); }
+  .strich.k1 { background: var(--ink); }
+  .strich.se { background: var(--muted); }
+
+  .erklaerung {
+    display: grid;
+    gap: var(--space-6);
+    margin-top: var(--space-8);
+    padding: var(--space-5);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 28px;
+  }
+  .erklaerung div { display: flex; flex-direction: column; gap: 10px; }
+  .erklaerung p { font-size: 15px; line-height: 1.6; }
+
+  @media (prefers-reduced-motion: reduce) { .fuellung { transition: none; } }
+
+  /* Handy: Diagramm schmaler gerechnet (Skript), Beschriftung etwas grösser */
+  @media (max-width: 899px) {
+    .diagramm :global(.achse) { font-size: 14px; }
+  }
+
+  @media (min-width: 900px) {
+    .rechner { padding-top: var(--space-9); }
+    .einleitung { margin-top: 20px; }
+    .raster { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: var(--space-8); margin-top: 56px; }
+    .karte { padding: 28px 28px 12px; }
+    .schlagzeile { font-size: 36px; }
+    .erklaerung { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px; margin-top: 80px; padding: var(--space-6); }
+  }
+</style>
+
+<script>
+  import { rechne, diagramm, stunden, geschuetzt } from '../lib/akku-rechner.js';
+  import { RECHNER } from '../data/akku.js';
+
+  document.querySelectorAll('[data-akku-rechner]').forEach((wurzel) => {
+    const $ = (s) => wurzel.querySelector(s);
+    const regler = [...wurzel.querySelectorAll('[data-regler]')];
+    const svg = $('[data-diagramm]');
+    const schmal = matchMedia('(max-width: 899px)');
+    let letzte = null;
+
+    const werte = () => Object.fromEntries(regler.map((r) => [r.dataset.regler, parseFloat(r.value)]));
+
+    function zeige(erg) {
+      letzte = erg;
+      for (const r of regler) {
+        const x = erg.werte[r.dataset.regler];
+        if (parseFloat(r.value) !== x) r.value = String(x);
+        r.setAttribute('aria-valuetext', `${stunden(x).replace(' h', '')} Stunden`);
+        $(`[data-aus="${r.dataset.regler}"]`).textContent = stunden(x);
+      }
+      wurzel.querySelectorAll('[data-tag]').forEach((c) => c.setAttribute('aria-pressed', c.dataset.tag === erg.tag ? 'true' : 'false'));
+      const fehler = $('[data-fehler]');
+      if (fehler.textContent !== erg.fehler) fehler.textContent = erg.fehler;
+      const kopf = $('[data-schlagzeile]');
+      const schlagzeile = geschuetzt(erg.schlagzeile);
+      if (kopf.textContent !== schlagzeile) kopf.textContent = schlagzeile;
+      for (const b of erg.balken) {
+        const li = $(`[data-akku="${b.id}"]`);
+        const text = li.querySelector('[data-text]');
+        text.textContent = geschuetzt(b.text);
+        text.classList.toggle('leer', b.leer);
+        const f = li.querySelector('[data-fuellung]');
+        f.style.width = `${b.prozent}%`;
+        f.style.background = `var(--${b.farbe})`;
+        li.querySelector('[data-tage]').textContent = b.tage;
+      }
+      zeichne();
+    }
+
+    // Diagramm: Desktop 620 Einheiten breit (wie im Artboard), Handy 360, damit die Schrift lesbar bleibt
+    function zeichne() {
+      const bild = diagramm(letzte, schmal.matches ? 360 : 620);
+      svg.setAttribute('viewBox', bild.viewBox);
+      svg.innerHTML = bild.inhalt;
+      svg.setAttribute('aria-label', letzte.label);
+    }
+    schmal.addEventListener('change', zeichne);
+
+    // input: schon beim Ziehen und bei jedem Tastendruck neu rechnen
+    wurzel.addEventListener('input', (e) => { if (e.target.matches('[data-regler]')) zeige(rechne(werte())); });
+    // Bild auf/ab: Chrome macht dort nur einen Schritt (0.5 h). Empfohlen sind grössere
+    // Sprünge, hier eine ganze Stunde.
+    wurzel.addEventListener('keydown', (e) => {
+      if (!e.target.matches('[data-regler]') || (e.key !== 'PageUp' && e.key !== 'PageDown')) return;
+      e.preventDefault();
+      const r = e.target;
+      r.value = String(Math.min(parseFloat(r.max), Math.max(0, parseFloat(r.value) + (e.key === 'PageUp' ? 1 : -1))));
+      zeige(rechne(werte()));
+    });
+    wurzel.addEventListener('click', (e) => {
+      const chip = e.target.closest('[data-tag]');
+      if (chip) zeige(rechne(RECHNER.tage[chip.dataset.tag]));
+    });
+
+    // Zurück-Knopf (bfcache) oder Formular-Wiederherstellung: Regler können andere Werte haben
+    zeige(rechne(werte()));
+  });
+</script>

@@ -1,4 +1,5 @@
 ---
+import { GERAETE, akku } from '../../data/geraete.js';
 // Versteckte Seite /designsystem/spielwiese/: Werkbank für den Zeichen-Motor (Etappe 2).
 // Hier lässt sich alles durchspielen, was src/lib/kiesel-draw kann, bevor die echten
 // Seiten es benutzen. Steht in keinem Menü, noindex für Suchmaschinen.
@@ -35,7 +36,7 @@ const huellen = FARBNAMEN_PAL.map((farbe) => ({
   vorne: handy({ ansicht: 'vorne', modell: 'k1', farbe: 'Titangrau', huelle: farbe, hoehe: 190, boden: false }),
 }));
 const leds = Object.keys(LED_NAMEN).map((z) => ({ z, name: LED_NAMEN[z], svg: handy({ ansicht: 'hinten', modell: 'pro', farbe: 'Mattschwarz', led: z, hoehe: 190, boden: false }) }));
-const innen = [['se', 'iPhone SE (2016)', '1624 mAh'], ['k1', 'Kiesel 1', 'ca. 3000 mAh'], ['pro', 'Kiesel 1 Pro', 'ca. 3600 mAh']]
+const innen = [['se', GERAETE.se.name, akku('se')], ['k1', GERAETE.k1.name, akku('k1')], ['pro', GERAETE.pro.name, akku('pro')]]
   .map(([mk, titel, akku]) => ({ titel, akku, ...innenleben({ modell: mk }) }));
 ---
 <BaseLayout titel="Spielwiese" noindex beschreibung="Werkbank für den Zeichen-Motor: Handys, Alpenpanorama und Blume mit allen Reglern.">

@@ -48,7 +48,6 @@ export const DREHBUCH = {
 // solo: Solange das Gerät allein mittig steht, ist es grösser (die Welt ist für zwei Handys gebaut)
 const SCHRAEG = { x: 52, z: -30, drift: -8, zoom: 0.08, solo: 0.22, soloSchmal: 0.06 };
 const TIEFE = { gehaeuse: 0, luecke: 1, platine: 2, akku: 2, akkutext: 3, magsafe: 4, standard: 3 };
-const WAND_MM = [7.6, 9]; // Dicke SE → Kiesel
 const PX_PRO_MM = 3.4;
 
 export function starteAkkuStory(wurzel) {
@@ -58,6 +57,8 @@ export function starteAkkuStory(wurzel) {
   const [weltB, weltH] = zahlen(wurzel.dataset.welt);
   const [mitteX, mitteY] = zahlen(wurzel.dataset.mitte);
   const mahSe = Number(wurzel.dataset.mahSe), mah = Number(wurzel.dataset.mah);
+  // Dicke SE → Kiesel in mm (aus data/geraete.js, über data-dicke-se/data-dicke)
+  const WAND_MM = [Number(wurzel.dataset.dickeSe), Number(wurzel.dataset.dicke)];
   const zahl = wurzel.querySelector('[data-mah-zahl]');
   const anzeige = wurzel.querySelector('.anzeige');
   const dicke = wurzel.querySelector('[data-dicke]');

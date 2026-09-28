@@ -497,10 +497,13 @@ try {
     pruefe('Startseite: Modellkarten übergeben Modell und Farbe', links.includes('?modell=k1&farbe=Kieselbeige') && links.includes('?modell=pro&farbe=Himmelblau'), links.join(', '));
     await seite.locator('[data-teaser-huelle]').click();
     pruefe('Startseite: Hülle kommt wirklich in den Warenkorb (Pro, Mattweiss)', JSON.stringify(await speicher(seite)) === JSON.stringify([{ art: 'huelle', modell: 'pro', farbe: 'Mattweiss', anzahl: 1 }]), JSON.stringify(await speicher(seite)));
-    for (const [adresse, erwartet] of [['kiesel-1/', '?modell=k1&farbe=Kieselbeige'], ['kiesel-1-pro/', '?modell=pro&farbe=Himmelblau'], ['kiesel-1-pro/technik/', '?modell=pro&farbe=Himmelblau']]) {
+    const K1 = '?modell=k1&farbe=Kieselbeige', PRO = '?modell=pro&farbe=Himmelblau';
+    for (const [adresse, erwartet, anderes] of [['kiesel-1/', K1], ['kiesel-1-pro/', PRO], ['kiesel-1/technik/', K1, PRO], ['kiesel-1-pro/technik/', PRO, K1]]) {
       await seite.goto(basis + adresse, { waitUntil: 'load' });
       const hrefs = await seite.evaluate(() => [...document.querySelectorAll('main a[href*="kaufen/"], .unterleiste a[href*="kaufen/"]')].map((a) => a.getAttribute('href').split('kaufen/')[1]));
-      pruefe(`/${adresse}: alle Kaufen-Links mit ${erwartet}`, hrefs.length >= 2 && hrefs.every((h) => h === erwartet), hrefs.join(', '));
+      // Technik (Etappe 7): Der Kopf zeigt beide Modelle mit je eigenem Kaufen-Knopf
+      const eigene = hrefs.filter((h) => h === erwartet).length, fremde = hrefs.filter((h) => h !== erwartet);
+      pruefe(`/${adresse}: alle Kaufen-Links mit ${erwartet}${anderes ? `, ausser genau einem mit ${anderes} (Technik-Kopf)` : ''}`, eigene >= 2 && (anderes ? fremde.length === 1 && fremde[0] === anderes : fremde.length === 0), hrefs.join(', '));
     }
     await seite.goto(basis + 'zubehoer/', { waitUntil: 'load' });
     await seite.locator('[data-kombi-kaufen]').click();
@@ -548,11 +551,21 @@ try {
     await ctx.close();
   }
   {
+    // Bild für Bild messen statt nach fester Zeit: Wann das erste Bild nach dem Klick kommt,
+    // hängt von der Rechnerlast ab (nach 30 ms war die Schublade mal schon da, mal noch nicht).
+    // „Sofort“ heisst: keine Zwischenlage (keine Fahrt), nach wenigen Bildern an Ort.
     const { seite, ctx } = await oeffne('kaufen/', { reducedMotion: 'reduce' });
+    await seite.evaluate(() => {
+      window.__lagen = [];
+      const d = document.querySelector('[data-schublade]');
+      const bild = () => { window.__lagen.push(new DOMMatrix(getComputedStyle(d).transform).m41); if (window.__lagen.length < 15) requestAnimationFrame(bild); };
+      document.querySelector('[data-in-warenkorb]').addEventListener('click', () => requestAnimationFrame(bild));
+    });
     await seite.locator('[data-in-warenkorb]').click();
-    await seite.waitForTimeout(30);
-    const x = await seite.evaluate(() => new DOMMatrix(getComputedStyle(document.querySelector('[data-schublade]')).transform).m41);
-    pruefe('Weniger Bewegung: Schublade sofort da', x === 0, String(x));
+    await seite.waitForFunction(() => window.__lagen.length >= 15);
+    const lagen = await seite.evaluate(() => window.__lagen);
+    const start = Math.max(...lagen);
+    pruefe('Weniger Bewegung: Schublade sofort da (keine Zwischenlage, nach wenigen Bildern an Ort)', lagen.every((x) => x === 0 || x === start) && lagen.indexOf(0) >= 0 && lagen.indexOf(0) <= 8 && lagen.at(-1) === 0, lagen.join(' '));
     await ctx.close();
   }
 } finally {

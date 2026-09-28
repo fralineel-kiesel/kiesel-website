@@ -1,77 +1,192 @@
 ---
-// Unterseite „Technische Daten“ (/kiesel-1/technik/, /kiesel-1-pro/technik/).
-// Eine echte Tabelle: Merkmal in der ersten Spalte (th scope="row"), Wert daneben.
-// Auf dem Handy stehen Merkmal und Wert untereinander (display: block). Das kann die
-// Tabellen-Bedeutung für Screenreader kosten, darum die ausdrücklichen role-Attribute.
-// Speicher und Preise kommen aus data/preise.js, alles andere aus data/technik.js.
+// Unterseite „Technische Daten“ (/kiesel-1/technik/, /kiesel-1-pro/technik/) nach dem Artboard
+// „Technische Daten“ (gen4.py): vier Kennzahlen, Kopf mit beiden Modellen, Schalter
+// „Nur Unterschiede zeigen“, dann die Tabelle in Gruppen.
+// Beide Seiten zeigen dieselbe Tabelle, aber das Modell der Seite steht in der ersten Spalte.
+// Die zweite Spalte ist blau, wo sie sich von der ersten unterscheidet.
+//
+// Jede Gruppe ist eine eigene echte <table> mit Spaltenköpfen (für Screenreader, sichtbar ist
+// der gemeinsame Kopf mit den Handys darüber). Auf dem Handy stehen die Werte unter dem
+// Merkmal (per CSS ein Raster, darum die ausdrücklichen role-Attribute wie in Eckdaten.astro).
+// Daten: data/technik.js (dort auch Masse aus geraete.js, Preise aus preise.js).
 //   modell: 'k1' | 'pro'
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Knopf from '../Knopf.astro';
+import Schalter from '../Schalter.astro';
+import Kennzahlen from '../startseite/Kennzahlen.astro';
 import { MODELLE } from '../../data/modelle.js';
-import { TECHNIK, WEGGELASSEN } from '../../data/technik.js';
-import { PREISE } from '../../data/preise.js';
-import { chf } from '../../lib/format.js';
+import { TECHNIK, TECHNIK_KENNZAHLEN } from '../../data/technik.js';
+import { abPreis } from '../../data/preise.js';
+import { handy, MODELS } from '../../lib/kiesel-draw/index.js';
 import { pfad } from '../../lib/pfad.js';
 
 const { modell } = Astro.props;
+const anderes = modell === 'pro' ? 'k1' : 'pro';
+const reihe = [modell, anderes];
+const spalte = { k1: 1, pro: 2 };
 const m = MODELLE[modell];
-const spalte = modell === 'pro' ? 2 : 1;
-const zeilen = [
-  ...TECHNIK.map((z) => [z[0], z[spalte]]),
-  ['Speicher und Preis', PREISE[modell].speicher.map((s) => `${s.name}: ${chf(s.preis)}`).join(' · ')],
-];
+const o = MODELLE[anderes];
+
+// Kopf: Handy von vorne, 160 bzw. 170 px hoch wie im Artboard. handy() lässt 200 Einheiten
+// Rand um das Gerät (für Schatten und Drehung), der wird hier mit negativem Rand weggenommen.
+const kopf = reihe.map((id) => {
+  const hoch = id === 'pro' ? 170 : 160;
+  const H = MODELS[id].H;
+  const rand = Math.round(hoch * 200 / H);
+  const svg = handy({ ansicht: 'vorne', modell: id, farbe: MODELLE[id].seite.farbe, hoehe: hoch + 2 * rand, boden: false, label: `${MODELLE[id].name}, Vorderseite in ${MODELLE[id].seite.farbe}` });
+  return { id, svg, rand, name: MODELLE[id].name, preis: abPreis(id), kaufen: pfad(`kaufen/?modell=${id}&farbe=${MODELLE[id].seite.farbe}`) };
+});
+
+const gruppen = TECHNIK.map((g, i) => ({
+  id: `technik-${i}`,
+  titel: g.titel,
+  zeilen: g.zeilen.map((z) => {
+    const a = z[spalte[modell]], b = z[spalte[anderes]];
+    return { merkmal: z[0], a, b, anders: a !== b };
+  }),
+}));
+
+// Kennzahlen: Kennzahlen.astro erwartet Titel und Text als [lang, kurz]
+const kennzahlen = TECHNIK_KENNZAHLEN.map((k) => ({ zahl: k.zahl, titel: [k.titel], text: [k.text] }));
 ---
-<BaseLayout titel={`${m.name} · Technische Daten`} beschreibung={`Alle technischen Daten des ${m.name} auf einen Blick. Ein Fan-Konzept, alle Werte sind Schätzungen.`} unterleiste={modell}>
-  <section class="technik container" aria-labelledby="technik-titel">
-    <h1 class="t-1" id="technik-titel">{m.name}: Technische Daten</h1>
-    <p class="t-lead t-muted einleitung">Alle Masse und Werte auf einen Blick. Der Kiesel ist ein Konzept, darum sind alle Angaben Schätzungen.</p>
+<BaseLayout titel={`${m.name} · Technische Daten`} beschreibung={`Alle technischen Daten des ${m.name} im Vergleich zum ${o.name}. Ein Fan-Konzept, alle Werte sind Schätzungen.`} unterleiste={modell}>
+  <div class="technik container" data-technik>
+    <h1 class="t-display">Technische Daten</h1>
+    <p class="t-lead t-muted einleitung">{m.name} und {o.name} nebeneinander. Blau markiert, was beim {o.name} anders ist.</p>
 
-    <table class="tabelle" role="table">
-      <caption class="vh">Technische Daten des {m.name}</caption>
-      <tbody role="rowgroup">
-        {zeilen.map(([merkmal, wert]) => (
-          <tr role="row">
-            <th scope="row" role="rowheader">{merkmal}</th>
-            <td role="cell">{wert}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <section class="kennzahlen" aria-label="Kennzahlen">
+      <Kennzahlen zahlen={kennzahlen} />
+    </section>
 
-    <h2 class="t-2 weg-titel">Bewusst weggelassen</h2>
-    <ul role="list" class="weg">
-      {WEGGELASSEN.map(([was, warum]) => (
-        <li><s>{was}</s><span class="t-muted">{warum}</span></li>
-      ))}
-    </ul>
-
-    <div class="knoepfe">
-      <Knopf art="sekundaer" href={pfad(m.pfad)}>Zurück zur Übersicht</Knopf>
-      <Knopf art="primaer" href={pfad(`kaufen/?modell=${modell}&farbe=${m.seite.farbe}`)}>Kaufen</Knopf>
+    <div class="schalter-zeile">
+      <Schalter data-nur-unterschiede aria-controls={gruppen.map((g) => g.id).join(' ')}>Nur Unterschiede zeigen</Schalter>
     </div>
-  </section>
+
+    <div class="kopf">
+      <span class="leer" aria-hidden="true"></span>
+      {kopf.map((k) => (
+        <div class="modell">
+          <div class="bild" style={`--rand: -${k.rand}px`}><Fragment set:html={k.svg} /></div>
+          <div class="info">
+            <p class="name">{k.name}</p>
+            <p class="t-small t-muted">{k.preis}</p>
+            <Knopf art="primaer" groesse="s" href={k.kaufen} aria-label={`${k.name} kaufen`}>Kaufen</Knopf>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    {gruppen.map((g) => (
+      <section class="gruppe" id={g.id} aria-labelledby={`${g.id}-titel`} data-gruppe>
+        <h2 class="t-2" id={`${g.id}-titel`}>{g.titel}</h2>
+        <table role="table" aria-labelledby={`${g.id}-titel`}>
+          <thead class="vh" role="rowgroup">
+            <tr role="row">
+              <th scope="col" role="columnheader">Merkmal</th>
+              <th scope="col" role="columnheader">{m.name}</th>
+              <th scope="col" role="columnheader">{o.name}</th>
+            </tr>
+          </thead>
+          <tbody role="rowgroup">
+            {g.zeilen.map((z) => (
+              <tr role="row" data-gleich={z.anders ? undefined : ''}>
+                <th scope="row" role="rowheader">{z.merkmal}</th>
+                <td role="cell"><span class="wer" aria-hidden="true">{m.name}</span>{z.a}</td>
+                <td role="cell" class:list={{ anders: z.anders }}><span class="wer" aria-hidden="true">{o.name}</span>{z.b}{z.anders && <span class="vh"> (anders)</span>}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+    ))}
+
+    <p class="t-small t-muted hinweis" data-hinweis-leer hidden>Keine Unterschiede in dieser Ansicht.</p>
+    <p class="t-small t-muted hinweis">Alle Werte sind Konzept-Angaben und teilweise geschätzt. Kiesel ist kein echtes Produkt.</p>
+  </div>
 </BaseLayout>
 
 <style>
   .technik { padding-top: var(--space-7); }
-  .einleitung { max-width: 640px; margin-top: var(--space-4); }
-  .tabelle { width: 100%; margin-top: var(--space-6); border-collapse: collapse; }
-  tr { border-top: 1px solid var(--line); }
-  tr:last-child { border-bottom: 1px solid var(--line); }
-  th, td { display: block; text-align: left; vertical-align: top; }
-  th { padding: var(--space-4) 0 var(--space-1); font-size: var(--fs-small); font-weight: 600; color: var(--muted); }
-  td { padding: 0 0 var(--space-4); font-size: var(--fs-4); font-weight: 500; line-height: 1.4; }
-  .weg-titel { margin-top: var(--space-8); }
-  .weg { display: grid; gap: var(--space-3); margin: var(--space-5) 0 0; }
-  .weg li { display: flex; flex-direction: column; gap: 2px; }
-  .weg s { font-weight: 600; text-decoration-color: var(--heat); text-decoration-thickness: 2px; }
-  .knoepfe { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-7); }
+  .einleitung { max-width: 680px; margin-top: var(--space-4); }
+  .kennzahlen { margin-top: var(--space-7); }
+  .schalter-zeile { display: flex; justify-content: flex-end; margin-top: var(--space-7); }
+
+  /* Raster: Merkmal | erstes Modell | zweites Modell. Auf dem Handy steht das Merkmal oben
+     über die ganze Breite, die zwei Werte darunter nebeneinander. */
+  .kopf, tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--space-4);
+  }
+  .kopf {
+    align-items: end;
+    margin-top: var(--space-5);
+    padding: var(--space-5) 0;
+    border-bottom: 2px solid var(--ink);
+  }
+  .leer { display: none; }
+  .modell { display: flex; flex-direction: column; gap: var(--space-3); }
+  .bild { width: 90px; height: 180px; display: flex; align-items: flex-end; justify-content: center; }
+  /* Das SVG ist wegen des Rands grösser als das Gerät: überstehen lassen */
+  .bild :global(svg) { flex-shrink: 0; max-width: none; margin: var(--rand); }
+  .info { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+  .name { font-family: var(--display); font-size: var(--fs-3); font-weight: 600; line-height: 1.15; letter-spacing: var(--ls-3); }
+  .info :global(.knopf) { margin-top: var(--space-2); }
+
+  .gruppe { padding-top: var(--space-7); }
+  .gruppe h2 { margin-bottom: var(--space-3); }
+  table { display: block; width: 100%; border-collapse: collapse; }
+  thead, tbody { display: block; }
+  tr {
+    row-gap: var(--space-1);
+    padding: var(--space-4) 0;
+    border-top: 1px solid var(--line);
+  }
+  th[scope="row"] { grid-column: 1 / -1; text-align: left; font-weight: 600; }
+  td { line-height: 1.5; }
+  td.anders { color: var(--accent); }
+  /* Auf dem Handy fehlt der Kopf über den Spalten: kleiner Name über jedem Wert */
+  .wer { display: block; font-size: var(--fs-small); color: var(--muted); }
+  [data-gleich][hidden], .gruppe[hidden] { display: none; }
+  .hinweis { margin-top: var(--space-6); }
+  .hinweis + .hinweis { margin-top: var(--space-2); }
 
   @media (min-width: 900px) {
     .technik { padding-top: var(--space-9); }
-    /* Ab Desktop wieder eine echte zweispaltige Tabelle */
-    th, td { display: table-cell; padding: var(--space-4) 0; }
-    th { width: 30%; padding-right: var(--space-5); font-size: var(--fs-text); }
-    .weg { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-5); }
+    /* Im Artboard passt der Titel auf eine Zeile (112 px bei 1440 px Breite) */
+    h1 { font-size: calc(var(--fs-display) * 0.93); }
+    .einleitung { margin-top: 20px; }
+    .kennzahlen { margin-top: var(--space-8); }
+    .schalter-zeile { margin-top: var(--space-8); }
+    .kopf, tr { grid-template-columns: 260px minmax(0, 1fr) minmax(0, 1fr); column-gap: var(--space-6); }
+    .kopf { margin-top: var(--space-6); }
+    .leer { display: block; }
+    .modell { flex-direction: row; align-items: flex-end; gap: 20px; }
+    .name { font-size: 26px; }
+    .gruppe { padding-top: var(--space-7); }
+    th[scope="row"] { grid-column: auto; }
+    .wer { display: none; }
+    .hinweis { margin-top: var(--space-6); }
   }
 </style>
+
+<script>
+  // „Nur Unterschiede zeigen“: gleiche Zeilen und leere Gruppen ausblenden.
+  // Schalter.astro schaltet aria-checked selbst um und meldet kiesel:schalter.
+  document.querySelectorAll('[data-technik]').forEach((seite) => {
+    const leer = seite.querySelector('[data-hinweis-leer]');
+    seite.addEventListener('kiesel:schalter', (e) => {
+      if (!e.target.closest('[data-nur-unterschiede]')) return;
+      const nur = e.detail.an;
+      let sichtbar = 0;
+      seite.querySelectorAll('[data-gruppe]').forEach((g) => {
+        const gleich = g.querySelectorAll('tr[data-gleich]');
+        gleich.forEach((z) => { z.hidden = nur; });
+        const rest = g.querySelectorAll('tbody tr').length - (nur ? gleich.length : 0);
+        g.hidden = rest === 0;
+        sichtbar += rest;
+      });
+      leer.hidden = sichtbar > 0;
+    });
+  });
+</script>

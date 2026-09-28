@@ -17,6 +17,10 @@ import WarenkorbInhalt from '../components/warenkorb/WarenkorbInhalt.astro';
 <style>
   .warenkorb { padding-top: var(--space-6); padding-bottom: var(--space-9); }
   .einleitung { margin: var(--space-3) 0 var(--space-6); }
+  /* Was hier steht (Liste oder „noch leer“), weiss erst das Skript (localStorage). Damit der
+     Footer beim Einblenden nicht sichtbar nach unten rutscht (Layout-Verschiebung, CLS), steht
+     er schon beim ersten Bild unterhalb des Bildschirms. */
+  .warenkorb :global(.wk--seite) { min-height: 70vh; min-height: 70svh; }
   @media (min-width: 900px) {
     .warenkorb { padding-top: var(--space-8); }
     .titel { font-size: 64px; line-height: 1; letter-spacing: -0.045em; }

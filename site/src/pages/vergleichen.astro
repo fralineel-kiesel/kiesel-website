@@ -1,11 +1,300 @@
 ---
+// /vergleichen/ nach dem Artboard „Vergleichen“ (gen4.py): Kiesel wählen, Gegner wählen,
+// Nebeneinander/Übereinander, Kreditkarte, Vergleichssatz und Tabelle mit Balken.
+//
+// Alles steht im selben Massstab (3 SVG-Einheiten pro mm). Die beiden Kiesel zeichnet der
+// Zeichen-Motor schon im Build, beide liegen im SVG, sichtbar ist nur der gewählte. Die
+// iPhone-Umrisse und die Kreditkarte sind einfache Rechtecke, deren Lage das Skript unten
+// mit derselben Funktion rechnet wie der Build: vergleich() in lib/vergleich.js.
+// Werte: data/geraete.js. Vorwahl per Adresse: ?kiesel=pro&gegen=mini (Unterleiste der Modellseiten).
 import BaseLayout from '../layouts/BaseLayout.astro';
-import Platzhalter from '../components/Platzhalter.astro';
+import Chip from '../components/Chip.astro';
+import { GERAETE, KIESEL_IDS } from '../data/geraete.js';
+import { vergleich, BUEHNE, GEGNER } from '../lib/vergleich.js';
+import { frontSvg, palette, uid } from '../lib/kiesel-draw/index.js';
+
+const v = vergleich({ kiesel: 'k1', gegen: 'pmax', modus: 'side' });
+const kiesel = KIESEL_IDS.map((id) => ({ id, svg: frontSvg(id, palette('Himmelblau'), uid('v')) }));
+const gegner = [...GEGNER, 'anderer'];
+const gegnerName = (id) => GERAETE[id === 'anderer' ? v.anderer : id].name;
+const pt = (x) => String(x);
 ---
-<BaseLayout titel="Vergleichen">
-  <Platzhalter
-    etappe={7}
-    titel="Welcher Kiesel passt zu dir?"
-    einleitung="Kiesel 1 und Kiesel 1 Pro Seite an Seite, im echten Massstab."
-  />
+<BaseLayout titel="Vergleichen" beschreibung="Kiesel 1 und Kiesel 1 Pro im echten Massstab neben iPhone SE, 13 mini, 18 Pro und 18 Pro Max. Ein Fan-Konzept.">
+  <div class="vergleichen container" data-vergleichen>
+    <h1 class="t-display">Vergleichen</h1>
+    <p class="t-lead t-muted einleitung">Alle Geräte im echten Massstab zueinander. Stell deinen Kiesel neben ein iPhone 18 Pro Max, und du siehst sofort, was «kompakt» wirklich heisst.</p>
+
+    <div class="steuerung">
+      <div class="zeile">
+        <div class="gruppe" role="group" aria-labelledby="v-kiesel">
+          <span class="t-muted beschriftung" id="v-kiesel">Dein Kiesel</span>
+          {KIESEL_IDS.map((id) => <Chip gedrueckt={id === v.kiesel} data-kiesel={id}>{GERAETE[id].name}</Chip>)}
+        </div>
+        <div class="gruppe" role="group" aria-labelledby="v-gegen">
+          <span class="t-muted beschriftung" id="v-gegen">gegen</span>
+          {gegner.map((id) => <Chip gedrueckt={id === v.gegen} data-gegen={id}>{gegnerName(id)}</Chip>)}
+        </div>
+      </div>
+      <div class="zeile">
+        <div class="gruppe" role="group" aria-labelledby="v-ansicht">
+          <span class="t-muted beschriftung" id="v-ansicht">Ansicht</span>
+          <Chip gedrueckt data-modus="side">Nebeneinander</Chip>
+          <Chip data-modus="over">Übereinander</Chip>
+        </div>
+        <Chip data-karte>Kreditkarte einblenden</Chip>
+      </div>
+    </div>
+
+    <div class="buehne" data-ueber="false" data-karte-an="false">
+      <p class="legende t-small t-muted" data-legende aria-hidden="true">{v.legende}</p>
+      <svg viewBox={`0 0 ${BUEHNE.breite} ${BUEHNE.hoehe}`} role="img" aria-label={v.label} data-svg>
+        <line x1="40" y1="572" x2="1160" y2="572" class="boden" />
+        <g data-gegner>
+          <rect class="umriss" data-o="rahmen" x={pt(v.o.x)} y={pt(v.o.y)} width={pt(v.o.w)} height={pt(v.o.h)} rx={pt(v.o.r)} />
+          <rect class="schirm" data-o="schirm" x={pt(v.o.sx)} y={pt(v.o.sy)} width={pt(v.o.sw)} height={pt(v.o.sh)} rx={pt(v.o.sr)} />
+          <circle class="home" data-o="home" cx={pt(v.o.hx)} cy={pt(v.o.hy)} r={pt(v.o.hr)} visibility={v.o.homeSichtbar ? 'visible' : 'hidden'} />
+          <rect class="insel" data-o="insel" x={pt(v.o.nx)} y={pt(v.o.ny)} width={pt(v.o.nw)} height={pt(v.o.nh)} rx={pt(v.o.nr)} />
+        </g>
+        {kiesel.map((k) => (
+          <g data-kiesel-bild={k.id} transform={`translate(${v.kz.x} ${v.kz.y}) scale(${v.kz.s})`} visibility={k.id === v.kiesel ? 'visible' : 'hidden'}>
+            <Fragment set:html={k.svg} />
+          </g>
+        ))}
+        <g class="namen">
+          <text class="name" data-t="kname" x={pt(v.kz.cx)} y="598">{v.kz.name}</text>
+          <text class="masse" data-t="kmasse" x={pt(v.kz.cx)} y="620">{v.kz.masse}</text>
+          <text class="name" data-t="oname" x={pt(v.o.cx)} y="598">{v.o.name}</text>
+          <text class="masse" data-t="omasse" x={pt(v.o.cx)} y="620">{v.o.masse}</text>
+        </g>
+        <g class="karte" data-kreditkarte>
+          <rect x={pt(v.karte.x)} y={pt(v.karte.y)} width={pt(v.karte.w)} height={pt(v.karte.h)} rx="10" />
+          <text x={pt(v.karte.cx)} y={pt(v.karte.ty)}>Kreditkarte</text>
+        </g>
+      </svg>
+    </div>
+
+    <p class="satz" data-satz aria-live="polite">{v.satz}</p>
+
+    <table class="tabelle">
+      <caption class="vh" data-caption>{v.kz.name} und {v.o.name} in Zahlen</caption>
+      <thead>
+        <tr>
+          <td></td>
+          <th scope="col" class="kiesel-kopf" data-t="kname">{v.kz.name}</th>
+          <th scope="col" class="gegner-kopf" data-t="oname">{v.o.name}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {v.zeilen.map((z, i) => (
+          <tr data-zeile={i}>
+            <th scope="row">{z.titel}</th>
+            <td>
+              <span class="wert" data-a>{z.a}</span>
+              <span class="spur" aria-hidden="true"><span class="balken a" data-aw style={`width: ${z.aw}%`}></span></span>
+            </td>
+            <td>
+              <span class="wert" data-b>{z.b}</span>
+              <span class="spur" aria-hidden="true"><span class="balken b" data-bw style={`width: ${z.bw}%`}></span></span>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+    <p class="t-small t-muted hinweis">Kiesel-Werte sind Schätzungen aus dem Konzept. iPhone-Werte laut Hersteller und Presseberichten, beim iPhone 18 Pro Max weichen die Quellen bei Dicke und Akku leicht voneinander ab.</p>
+  </div>
 </BaseLayout>
+
+<style>
+  .vergleichen { padding-top: var(--space-7); }
+  .einleitung { max-width: 680px; margin-top: var(--space-4); }
+
+  .steuerung { display: flex; flex-direction: column; gap: var(--space-4); margin-top: var(--space-7); }
+  .zeile { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4) var(--space-6); }
+  .gruppe { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+  .beschriftung { width: 100%; font-size: 15px; }
+  /* Chips wie im Artboard: 44 px hoch, 15 px Text */
+  .steuerung :global(.chip) { min-height: 44px; padding: 0 16px; font-size: 15px; }
+
+  .buehne {
+    position: relative;
+    margin-top: 28px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-xl);
+    background: linear-gradient(180deg, var(--stage), var(--stage-lo));
+    overflow: hidden;
+  }
+  .buehne svg { display: block; width: 100%; height: auto; }
+  .legende { position: absolute; top: var(--space-4); left: var(--space-5); display: none; }
+  .buehne[data-ueber="true"] .legende { display: block; }
+  .boden { stroke: var(--line); stroke-width: 1.5; }
+  .umriss { fill: var(--surface); stroke: var(--ink); stroke-width: 1.8; }
+  .schirm { fill: var(--line); }
+  .home { fill: none; stroke: var(--muted); stroke-width: 2; }
+  .insel { fill: var(--muted); }
+  /* Übereinander: Gegner nur noch gestrichelter Umriss, Kiesel darin, keine Namen */
+  .buehne[data-ueber="true"] .umriss { fill: none; stroke-dasharray: 8 6; }
+  .buehne[data-ueber="true"] :is(.schirm, .home, .insel, .namen) { visibility: hidden; }
+  .name, .masse, .karte text { font-family: var(--body); text-anchor: middle; }
+  .name { font-size: 16px; font-weight: 600; fill: var(--ink); }
+  .masse { font-size: 13px; fill: var(--muted); }
+  .karte { visibility: hidden; }
+  .buehne[data-karte-an="true"] .karte { visibility: visible; }
+  .karte rect { fill: none; stroke: var(--heat); stroke-width: 2; stroke-dasharray: 7 5; }
+  .karte text { font-size: 13px; font-weight: 600; fill: var(--heat); }
+
+  .satz {
+    margin-top: var(--space-6);
+    max-width: 980px;
+    font-family: var(--display);
+    font-size: var(--fs-3);
+    font-weight: 500;
+    line-height: 1.3;
+    letter-spacing: var(--ls-3);
+  }
+
+  .tabelle { display: block; width: 100%; margin-top: var(--space-8); border-collapse: collapse; }
+  thead, tbody { display: block; }
+  tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--space-4);
+    row-gap: var(--space-2);
+    align-items: center;
+  }
+  thead tr { padding-bottom: 12px; }
+  thead td { display: none; }
+  thead th { text-align: left; font-size: 15px; font-weight: 600; }
+  .kiesel-kopf { color: var(--accent); }
+  .gegner-kopf { color: var(--muted); }
+  tbody tr { padding: var(--space-4) 0; border-top: 1px solid var(--line); }
+  tbody th { grid-column: 1 / -1; text-align: left; font-weight: 600; }
+  tbody td { display: flex; flex-direction: column; gap: var(--space-2); }
+  .spur { display: block; height: 8px; border-radius: 4px; background: var(--raised); overflow: hidden; }
+  .balken { display: block; height: 100%; border-radius: 4px; transition: width 0.3s; }
+  .balken.a { background: var(--accent); }
+  .balken.b { background: var(--muted); }
+  .hinweis { margin-top: 20px; }
+
+  @media (prefers-reduced-motion: reduce) { .balken { transition: none; } }
+
+  /* Handy: Die Bühne zeigt nur einen Ausschnitt und wird auf ca. 60 % verkleinert. Damit die
+     Namen lesbar bleiben (mind. 13 px), sind sie in SVG-Einheiten grösser. Die Legende steht
+     über der Zeichnung statt darauf. */
+  @media (max-width: 899px) {
+    .name { font-size: 22px; }
+    .masse { font-size: 19px; }
+    .karte text { font-size: 19px; }
+    .legende { position: static; padding: var(--space-4) var(--space-4) 0; }
+  }
+
+  @media (min-width: 900px) {
+    .vergleichen { padding-top: var(--space-9); }
+    .einleitung { margin-top: 20px; }
+    .steuerung { margin-top: var(--space-7); }
+    .zeile { gap: 20px var(--space-6); }
+    .beschriftung { width: auto; margin-right: 4px; }
+    .satz { font-size: 28px; margin-top: var(--space-6); }
+    .tabelle { margin-top: 80px; }
+    tr { grid-template-columns: 160px minmax(0, 1fr) minmax(0, 1fr); column-gap: var(--space-5); }
+    thead td { display: block; }
+    tbody th { grid-column: auto; }
+  }
+</style>
+
+<script>
+  import { vergleich, BUEHNE, BUEHNE_SCHMAL } from '../lib/vergleich.js';
+  import { GERAETE, KIESEL_IDS } from '../data/geraete.js';
+
+  const gueltig = (id, liste) => (liste.includes(id) ? id : null);
+
+  document.querySelectorAll('[data-vergleichen]').forEach((wurzel) => {
+    const $ = (s) => wurzel.querySelector(s);
+    const $$ = (s) => [...wurzel.querySelectorAll(s)];
+    const buehne = $('.buehne');
+    const svg = $('[data-svg]');
+
+    // Vorwahl per Adresse (Gross/Klein egal, Unbekanntes wird ignoriert)
+    const q = new URLSearchParams(location.search);
+    const zustand = {
+      kiesel: gueltig(q.get('kiesel')?.toLowerCase(), KIESEL_IDS) ?? 'k1',
+      gegen: gueltig(q.get('gegen')?.toLowerCase(), Object.keys(GERAETE)) ?? 'pmax',
+      modus: q.get('ansicht') === 'uebereinander' ? 'over' : 'side',
+      karte: q.get('karte') === '1',
+    };
+
+    const setze = (el, attr) => { for (const [k, v] of Object.entries(attr)) el.setAttribute(k, String(v)); };
+    const druecke = (liste, an) => liste.forEach((c) => c.setAttribute('aria-pressed', an(c) ? 'true' : 'false'));
+
+    function zeige() {
+      const v = vergleich(zustand);
+      zustand.gegen = v.gegen;
+      // Chips
+      druecke($$('[data-kiesel]'), (c) => c.dataset.kiesel === v.kiesel);
+      $$('[data-gegen]').forEach((c) => {
+        const id = c.dataset.gegen === 'anderer' ? v.anderer : c.dataset.gegen;
+        if (c.dataset.gegen === 'anderer') c.textContent = GERAETE[id].name;
+        c.setAttribute('aria-pressed', id === v.gegen ? 'true' : 'false');
+      });
+      druecke($$('[data-modus]'), (c) => c.dataset.modus === zustand.modus);
+      $('[data-karte]').setAttribute('aria-pressed', zustand.karte ? 'true' : 'false');
+      // Bühne
+      buehne.dataset.ueber = String(v.ueber);
+      buehne.dataset.karteAn = String(zustand.karte);
+      $$('[data-kiesel-bild]').forEach((g) => {
+        g.setAttribute('visibility', g.dataset.kieselBild === v.kiesel ? 'visible' : 'hidden');
+        g.setAttribute('transform', `translate(${v.kz.x} ${v.kz.y}) scale(${v.kz.s})`);
+      });
+      const o = v.o;
+      setze($('[data-o="rahmen"]'), { x: o.x, y: o.y, width: o.w, height: o.h, rx: o.r });
+      setze($('[data-o="schirm"]'), { x: o.sx, y: o.sy, width: o.sw, height: o.sh, rx: o.sr });
+      setze($('[data-o="home"]'), { cx: o.hx, cy: o.hy, r: o.hr, visibility: o.homeSichtbar ? 'visible' : 'hidden' });
+      setze($('[data-o="insel"]'), { x: o.nx, y: o.ny, width: o.nw, height: o.nh, rx: o.nr });
+      const k = v.kz;
+      $$('[data-t="kname"]').forEach((t) => { t.textContent = k.name; if (t.tagName === 'text') t.setAttribute('x', k.cx); });
+      $$('[data-t="oname"]').forEach((t) => { t.textContent = o.name; if (t.tagName === 'text') t.setAttribute('x', o.cx); });
+      setze($('[data-t="kmasse"]'), { x: k.cx }); $('[data-t="kmasse"]').textContent = k.masse;
+      setze($('[data-t="omasse"]'), { x: o.cx }); $('[data-t="omasse"]').textContent = o.masse;
+      const karte = $('[data-kreditkarte]');
+      setze(karte.querySelector('rect'), { x: v.karte.x, y: v.karte.y });
+      setze(karte.querySelector('text'), { x: v.karte.cx, y: v.karte.ty });
+      $('[data-legende]').textContent = v.legende;
+      svg.setAttribute('aria-label', v.label + (zustand.karte ? ', mit Kreditkarte zum Grössenvergleich' : ''));
+      // Satz und Tabelle
+      const satz = $('[data-satz]');
+      if (satz.textContent !== v.satz) satz.textContent = v.satz;
+      $('[data-caption]').textContent = `${k.name} und ${o.name} in Zahlen`;
+      v.zeilen.forEach((z, i) => {
+        const tr = $(`[data-zeile="${i}"]`);
+        tr.querySelector('[data-a]').textContent = z.a;
+        tr.querySelector('[data-b]').textContent = z.b;
+        tr.querySelector('[data-aw]').style.width = `${z.aw}%`;
+        tr.querySelector('[data-bw]').style.width = `${z.bw}%`;
+      });
+      // Adresse nachführen (teilbar, Zurück-Knopf bleibt unberührt)
+      const p = new URLSearchParams(location.search);
+      p.set('kiesel', v.kiesel); p.set('gegen', v.gegen);
+      if (v.ueber) p.set('ansicht', 'uebereinander'); else p.delete('ansicht');
+      if (zustand.karte) p.set('karte', '1'); else p.delete('karte');
+      history.replaceState(history.state, '', `${location.pathname}?${p}${location.hash}`);
+    }
+
+    // Schmaler Bildschirm: nur den Ausschnitt zeigen, in dem die Geräte stehen (fest, damit
+    // der Massstab beim Umschalten gleich bleibt)
+    const schmal = matchMedia('(max-width: 899px)');
+    const ausschnitt = () => svg.setAttribute('viewBox', schmal.matches ? BUEHNE_SCHMAL : `0 0 ${BUEHNE.breite} ${BUEHNE.hoehe}`);
+    schmal.addEventListener('change', ausschnitt);
+    ausschnitt();
+
+    wurzel.addEventListener('click', (e) => {
+      const c = e.target.closest('.chip');
+      if (!c) return;
+      if (c.dataset.kiesel) zustand.kiesel = c.dataset.kiesel;
+      else if (c.dataset.gegen) zustand.gegen = c.dataset.gegen === 'anderer' ? (zustand.kiesel === 'k1' ? 'pro' : 'k1') : c.dataset.gegen;
+      else if (c.dataset.modus) zustand.modus = c.dataset.modus;
+      else if (c.hasAttribute('data-karte')) zustand.karte = !zustand.karte;
+      else return;
+      zeige();
+    });
+    zeige();
+  });
+</script>

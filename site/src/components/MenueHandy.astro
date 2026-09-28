@@ -1,0 +1,23 @@
+---
+// Handy in den Menüs (Aufklappmenü „Handys“, Burger-Menü): ein leerer Platz in der richtigen
+// Grösse. Gezeichnet wird erst beim ersten Öffnen des Menüs im Browser (scripts/menue-handys.js),
+// damit die Menüs, die auf jeder Seite stehen, das Laden nicht bremsen.
+//   modell: 'k1' | 'pro'   farbe: Produktfarbe   hoehe: Höhe des Geräts in px
+//
+// handy() lässt 200 Einheiten Rand um das Gerät (Schatten, Drehung). Die Zeichnung wird darum
+// um genau diesen Rand grösser bestellt und mit negativem Rand (--rand) wieder eingepasst.
+import { MODELS } from '../lib/kiesel-draw/models.js';
+
+const { modell, farbe, hoehe } = Astro.props;
+const { W, H } = MODELS[modell];
+const rand = hoehe * 200 / H;
+---
+<span class="menue-handy" aria-hidden="true"
+  data-menue-handy={modell} data-farbe={farbe} data-hoehe={(hoehe + 2 * rand).toFixed(1)}
+  style={`width: ${(hoehe * W / H).toFixed(1)}px; height: ${hoehe}px; --rand: -${rand.toFixed(1)}px`}></span>
+
+<style>
+  .menue-handy { display: block; flex-shrink: 0; }
+  /* max-width: none, sonst staucht global.css (svg { max-width: 100% }) die Zeichnung samt Rand */
+  .menue-handy :global(svg) { max-width: none; margin: var(--rand); }
+</style>

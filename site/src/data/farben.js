@@ -13,3 +13,6 @@ export const FARBEN = {
 
 // Reihenfolge wie im Designsystem
 export const FARBNAMEN = Object.keys(FARBEN);
+
+// Reihenfolge in Aufzählungen (Texte, Technische Daten), wie in der Produktbeschreibung
+export const FARBEN_TEXT = ['Mattschwarz', 'Titangrau', 'Himmelblau', 'Mattweiss', 'Kieselbeige'];

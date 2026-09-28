@@ -12,7 +12,7 @@
 //             mit Tab aus dem Panel hinaus schliesst es ebenfalls
 //   aria-expanded sagt Screenreadern, ob das Menü offen ist.
 import Icon from './Icon.astro';
-import HandyPlatzhalter from './HandyPlatzhalter.astro';
+import MenueHandy from './MenueHandy.astro';
 import { MODELLE } from '../data/modelle.js';
 import { abPreis } from '../data/preise.js';
 import { HANDYS_SPALTEN } from '../data/navigation.js';
@@ -32,7 +32,7 @@ const { aktiv = false } = Astro.props;
         const m = MODELLE[id];
         return (
           <a class="kachel" href={pfad(m.pfad)}>
-            <span class="bild"><HandyPlatzhalter modell={id} hoehe={id === 'pro' ? 180 : 170} /></span>
+            <span class="bild"><MenueHandy modell={id} farbe={m.farbe} hoehe={id === 'pro' ? 180 : 170} /></span>
             <span class="text">
               <span class="name">{m.name}</span>
               <span class="kurz">{m.kurz}</span>
@@ -158,6 +158,8 @@ const { aktiv = false } = Astro.props;
 </style>
 
 <script>
+  import { vorwaermen, zeichneMenueHandys } from '../scripts/menue-handys.js';
+
   document.querySelectorAll('[data-handys-menue]').forEach((menue) => {
     const knopf = menue.querySelector('[data-ausloeser]');
     const panel = menue.querySelector('[data-panel]');
@@ -167,6 +169,7 @@ const { aktiv = false } = Astro.props;
     const istOffen = () => knopf.getAttribute('aria-expanded') === 'true';
 
     function oeffnen() {
+      zeichneMenueHandys(panel); // nur beim ersten Mal, danach sofort fertig
       knopf.setAttribute('aria-expanded', 'true');
       panel.hidden = false;
       if (schleier) schleier.hidden = false;
@@ -178,6 +181,10 @@ const { aktiv = false } = Astro.props;
       if (schleier) schleier.hidden = true;
       if (fokusZurueck) knopf.focus();
     }
+
+    // Zeichen-Motor schon holen, wenn die Maus auf „Handys“ zeigt oder der Knopf den Fokus hat
+    knopf.addEventListener('pointerenter', vorwaermen, { once: true });
+    knopf.addEventListener('focus', vorwaermen, { once: true });
 
     // Maus und Tastatur: Ein <button> löst "click" auch bei Enter und Leertaste aus.
     knopf.addEventListener('click', () => (istOffen() ? schliessen() : oeffnen()));
