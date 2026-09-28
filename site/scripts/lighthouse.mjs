@@ -1,6 +1,7 @@
 // Lighthouse für jede öffentliche Seite: Leistung und Barrierefreiheit, Handy und Desktop.
 //
-//   npm run lighthouse            (LAEUFE=1 npm run lighthouse für einen schnellen Durchgang)
+//   npm run lighthouse            (LAEUFE=1 npm run lighthouse für einen schnellen Durchgang,
+//                                  NUR=warenkorb/,faq/ für einzelne Seiten → bericht-teil.md)
 //
 // Handy = Lighthouse-Standard: simuliert ein Mittelklasse-Handy mit langsamem 4G und 4-fach
 // gebremster CPU. Desktop = Lighthouse-Desktop-Einstellung (schnelle Leitung, kaum gebremst).
@@ -23,6 +24,8 @@ const hier = path.dirname(fileURLToPath(import.meta.url));
 const ziel = path.join(hier, 'ausgabe', 'lighthouse');
 fs.mkdirSync(ziel, { recursive: true });
 const LAEUFE = Number(process.env.LAEUFE || 3);
+const NUR = process.env.NUR ? process.env.NUR.split(',') : null;
+const SEITEN = NUR ? OEFFENTLICH.filter(([a]) => NUR.includes(a)) : OEFFENTLICH;
 const KATEGORIEN = ['performance', 'accessibility'];
 const name = (adresse) => adresse.replace(/\/$/, '').replace(/\//g, '-') || 'startseite';
 const median = (liste, f) => [...liste].sort((a, b) => f(a) - f(b))[Math.floor(liste.length / 2)];
@@ -31,7 +34,7 @@ const { basis, schliessen } = await starteServer();
 const chrome = await chromeLauncher.launch({ chromePath: chromium.executablePath(), chromeFlags: ['--headless=new', '--no-sandbox', '--disable-dev-shm-usage'] });
 const ergebnisse = [];
 try {
-  for (const [adresse, titel] of OEFFENTLICH) {
+  for (const [adresse, titel] of SEITEN) {
     const zeile = { adresse, titel };
     for (const [geraet, config] of [['handy', undefined], ['desktop', desktopConfig]]) {
       const laeufe = [];
@@ -71,6 +74,6 @@ const tabelle = [
 ];
 const fehlerListe = ergebnisse.flatMap((e) => ['handy', 'desktop'].flatMap((g) => e[g].a11yFehler.map((f) => `- ${e.titel} (${g}): ${f}`)));
 const bericht = `# Lighthouse, ${new Date().toISOString().slice(0, 10)}\n\nMedian aus ${LAEUFE} Läufen pro Seite und Gerät (Leistung). Handy: simuliertes Mittelklasse-Handy mit langsamem 4G.\n\n${tabelle.join('\n')}\n\n## Nicht bestandene Barrierefreiheits-Prüfungen\n\n${fehlerListe.join('\n') || 'keine'}\n`;
-fs.writeFileSync(path.join(ziel, 'bericht.md'), bericht);
-fs.writeFileSync(path.join(ziel, 'ergebnisse.json'), JSON.stringify(ergebnisse, null, 1));
+fs.writeFileSync(path.join(ziel, NUR ? 'bericht-teil.md' : 'bericht.md'), bericht);
+if (!NUR) fs.writeFileSync(path.join(ziel, 'ergebnisse.json'), JSON.stringify(ergebnisse, null, 1));
 console.log('\n' + bericht);
