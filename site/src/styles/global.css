@@ -26,6 +26,61 @@
   font-display: swap;
 }
 
+/* ── Ersatzschriften ohne Layoutsprung ──
+   Bis die Schriften da sind (swap), zeigt der Browser eine Systemschrift. Arial ist aber viel
+   schmaler als Unbounded, beim Wechsel brechen Zeilen anders um und der Inhalt darunter
+   springt (auf langsamer Leitung bis CLS 0.06 auf dem Handy). Darum hier eine Arial, die auf
+   die Masse der echten Schrift gezogen ist: size-adjust = gleiche Breite bei einem deutschen
+   Mustertext, ascent/descent = gleiche Grundlinie. Die Werte hat fontTools aus den woff2-
+   Dateien und Liberation Sans (gleiche Masse wie Arial) gerechnet, je Gewicht gegen die
+   passende Arial (Regular für 400/500, Bold für 600). Auf Android fehlt Arial, dort greift
+   Roboto (ähnlich breit). Neue Schrift oder neues Gewicht → Werte neu rechnen. */
+@font-face {
+  font-family: "Unbounded Ersatz";
+  src: local("Arial"), local("ArialMT"), local("Liberation Sans"), local("Arimo"), local("Roboto");
+  font-weight: 400 500;
+  size-adjust: 132.9%;
+  ascent-override: 74.9%;
+  descent-override: 18.4%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: "Unbounded Ersatz";
+  src: local("Arial Bold"), local("Arial-BoldMT"), local("Liberation Sans Bold"), local("Arimo Bold"), local("Roboto Bold");
+  font-weight: 600;
+  size-adjust: 128.2%;
+  ascent-override: 77.6%;
+  descent-override: 19.1%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: "Instrument Sans Ersatz";
+  src: local("Arial"), local("ArialMT"), local("Liberation Sans"), local("Arimo"), local("Roboto");
+  font-weight: 400;
+  size-adjust: 100.7%;
+  ascent-override: 96.3%;
+  descent-override: 24.8%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: "Instrument Sans Ersatz";
+  src: local("Arial"), local("ArialMT"), local("Liberation Sans"), local("Arimo"), local("Roboto");
+  font-weight: 500;
+  size-adjust: 101.8%;
+  ascent-override: 95.3%;
+  descent-override: 24.6%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: "Instrument Sans Ersatz";
+  src: local("Arial Bold"), local("Arial-BoldMT"), local("Liberation Sans Bold"), local("Arimo Bold"), local("Roboto Bold");
+  font-weight: 600;
+  size-adjust: 97.9%;
+  ascent-override: 99%;
+  descent-override: 25.5%;
+  line-gap-override: 0%;
+}
+
 /* ── Grundlagen ── */
 *, *::before, *::after { box-sizing: border-box; }
 [hidden] { display: none !important; }

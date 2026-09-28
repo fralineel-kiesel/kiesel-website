@@ -5,7 +5,8 @@
 // Der Inhalt landet an der Stelle von <slot />.
 //
 //   titel:        Seitentitel im Browser-Tab (" · Kiesel" wird angehängt)
-//   beschreibung: Text für Suchmaschinen und Link-Vorschau
+//   beschreibung: Text für Suchmaschinen und Link-Vorschau (je Seite ein eigener,
+//                 pruefe:ganz meldet Doppelte)
 //   unterleiste:  'k1' | 'pro' zeigt die Unterleiste der Modellseite
 //   noindex:      true = Suchmaschinen sollen die Seite nicht aufnehmen
 //   schublade:    false = ohne Warenkorb-Schublade (nur /warenkorb/, dort steht alles schon da)
@@ -29,6 +30,10 @@ const {
 
 const volltitel = titel ? `${titel} · Kiesel` : 'Kiesel · Passt in jede Hand.';
 const favicon = import.meta.env.BASE_URL + 'favicon.svg';
+// Kanonische Adresse = die eine offizielle Adresse dieser Seite, absolut (site + base aus
+// astro.config.mjs). Suchmaschinen fassen damit z.B. /kaufen/?modell=k1 und /kaufen/ zusammen.
+// Nicht bei noindex-Seiten: "nicht aufnehmen" und "das ist die offizielle Adresse" widersprechen sich.
+const kanonisch = new URL(Astro.url.pathname, Astro.site).href;
 ---
 <!doctype html>
 <html lang="de-CH">
@@ -38,6 +43,14 @@ const favicon = import.meta.env.BASE_URL + 'favicon.svg';
     <title>{volltitel}</title>
     <meta name="description" content={beschreibung} />
     {noindex && <meta name="robots" content="noindex, nofollow" />}
+    {!noindex && <link rel="canonical" href={kanonisch} />}
+    <!-- Link-Vorschau (Open Graph: WhatsApp, Signal, Slack, Mastodon …) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Kiesel" />
+    <meta property="og:locale" content="de_CH" />
+    <meta property="og:title" content={volltitel} />
+    <meta property="og:description" content={beschreibung} />
+    {!noindex && <meta property="og:url" content={kanonisch} />}
     <meta name="color-scheme" content="light dark" />
     <meta name="theme-color" content="#EEF0F1" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#0C1116" media="(prefers-color-scheme: dark)" />

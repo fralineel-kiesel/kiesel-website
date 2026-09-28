@@ -26,13 +26,13 @@ function pruefe(name, ok, info = '') {
 }
 
 // Neue Seite; merkt sich, ob three.js angefordert wurde
-async function oeffne(adresse = '', { kontext = {}, vorher, mit = browser } = {}) {
+async function oeffne(adresse = '', { kontext = {}, vorher, vorherArg, mit = browser } = {}) {
   const ctx = await mit.newContext({ viewport: { width: 1440, height: 900 }, ...kontext });
   const seite = await ctx.newPage();
   const status = { dreiD: false, fehler: [] };
   seite.on('request', (r) => { if (DREI_D.test(new URL(r.url()).pathname)) status.dreiD = true; });
   seite.on('pageerror', (e) => status.fehler.push(e.message));
-  if (vorher) await seite.addInitScript(vorher);
+  if (vorher) await seite.addInitScript(vorher, vorherArg);
   await seite.goto(basis + adresse, { waitUntil: 'load' });
   return { seite, ctx, status };
 }
@@ -49,8 +49,37 @@ const buehne = (seite) => seite.evaluate(() => {
     svgHtml: svg?.outerHTML ?? '', chipSichtbar: chip ? !chip.hidden : false,
   };
 });
+// Achtung: Das HTML startet mit data-modus="2d" (die 2D-Grafik ist sofort da), 3D wird erst
+// danach im Leerlauf geladen. "2d" allein heisst also noch nichts. Entschieden ist 2D erst,
+// wenn auch data-grund gesetzt ist. (Ohne diese Bedingung war der Wächter-Test wackelig:
+// Er war fertig, bevor 3D überhaupt startete, je nachdem, wie beschäftigt der Rechner war.)
 const warteAufModus = (seite, modus, ms = 20000) => seite.waitForFunction(
-  (m) => document.querySelector('[data-buehne3d]').dataset.modus === m, modus, { timeout: ms }).catch(() => {});
+  (m) => {
+    const e = document.querySelector('[data-buehne3d]');
+    return e.dataset.modus === m && (m !== '2d' || !!e.dataset.grund);
+  }, modus, { timeout: ms }).catch(() => {});
+// Wartet, bis die 3D-Leinwand mindestens n weitere Bilder gezeichnet hat (statt fester Zeit,
+// die auf einem beschäftigten Rechner nicht reicht)
+const warteAufBilder = (seite, n, ms = 10000) => seite.waitForFunction(
+  (ziel) => Number(document.querySelector('[data-buehne3d] canvas')?.dataset.bilder ?? 0) >= ziel, n, { timeout: ms }).catch(() => {});
+// Künstliche Bildzeiten: requestAnimationFrame bekommt statt der echten Zeit eine erfundene,
+// die pro echtem Bild um genau `ms` weiterläuft. Der Wächter sieht dann exakt diese Dauer,
+// egal wie schnell oder beschäftigt der Testrechner ist. Alle Rückrufe desselben Bilds
+// bekommen dieselbe Zeit (wie im echten Browser). Nebenbei merkt es sich, wie viele Bilder
+// die 3D-Leinwand gezeichnet hat, auch nachdem der Wächter sie entfernt hat.
+const KUNSTZEIT = (ms) => {
+  const raf = window.requestAnimationFrame.bind(window);
+  let echt = null, kunst = 0;
+  window.__bilder3d = 0;
+  window.requestAnimationFrame = (f) => raf((t) => {
+    if (t !== echt) { kunst = echt === null ? t : kunst + ms; echt = t; }
+    // Leinwand vorher festhalten: Entscheidet der Wächter, entfernt er sie noch in f()
+    const leinwand = document.querySelector('[data-buehne3d] canvas');
+    f(kunst);
+    const n = Number(leinwand?.dataset.bilder ?? 0);
+    if (n > window.__bilder3d) window.__bilder3d = n;
+  });
+};
 // Durchschnittliche Helligkeit (0–255) der 3D-Leinwand, direkt aus ihren Pixeln.
 // Normalerweise löscht WebGL das Bild, sobald es auf dem Bildschirm ist. Das Init-Skript
 // LESBAR schaltet für den Test preserveDrawingBuffer ein, dann bleibt es lesbar.
@@ -80,7 +109,7 @@ try {
   console.log('\n── 2D-Ausweichlösung ──');
   {
     const { seite, ctx, status } = await oeffne('?3d=software', { kontext: { reducedMotion: 'reduce' } });
-    await seite.waitForTimeout(1500);
+    await warteAufModus(seite, '2d');
     const b = await buehne(seite);
     pruefe('prefers-reduced-motion: 2D statt 3D', b.modus === '2d' && b.grund === 'reduced-motion' && !b.leinwand, `modus=${b.modus}, grund=${b.grund}`);
     pruefe('prefers-reduced-motion: 2D-Grafik sichtbar', b.svgSichtbar);
@@ -94,7 +123,7 @@ try {
   }
   {
     const { seite, ctx, status } = await oeffne('?3d=software', { vorher: () => Object.defineProperty(Navigator.prototype, 'hardwareConcurrency', { get: () => 2 }) });
-    await seite.waitForTimeout(1500);
+    await warteAufModus(seite, '2d');
     const b = await buehne(seite);
     pruefe('2 Prozessorkerne: 2D statt 3D', b.modus === '2d' && b.grund === 'schwaches-geraet' && !b.leinwand, `grund=${b.grund}`);
     pruefe('2 Prozessorkerne: three.js wird nicht geladen', !status.dreiD);
@@ -102,7 +131,7 @@ try {
   }
   {
     const { seite, ctx, status } = await oeffne('?3d=software', { vorher: () => Object.defineProperty(Navigator.prototype, 'connection', { get: () => ({ saveData: true }) }) });
-    await seite.waitForTimeout(1500);
+    await warteAufModus(seite, '2d');
     const b = await buehne(seite);
     pruefe('Datensparmodus: 2D statt 3D', b.modus === '2d' && b.grund === 'datensparen' && !status.dreiD, `grund=${b.grund}`);
     await ctx.close();
@@ -114,7 +143,7 @@ try {
     // hier ein eigener Browser.)
     const ohneSchalter = await chromium.launch();
     const { seite, status } = await oeffne('', { mit: ohneSchalter });
-    await seite.waitForTimeout(1500);
+    await warteAufModus(seite, '2d');
     const b = await buehne(seite);
     pruefe('Nur Software-Grafik: 2D statt 3D', b.modus === '2d' && b.grund === 'kein-webgl' && !status.dreiD, `grund=${b.grund}`);
     await ohneSchalter.close();
@@ -123,7 +152,7 @@ try {
     // Chrome mit erzwungener Software-Grafik (wie Lighthouse): Der Kontext klappt, aber der
     // Renderer heisst SwiftShader → trotzdem 2D
     const { seite, ctx, status } = await oeffne('');
-    await seite.waitForTimeout(1500);
+    await warteAufModus(seite, '2d');
     const b = await buehne(seite);
     pruefe('Renderer „SwiftShader“: 2D statt 3D', b.modus === '2d' && b.grund === 'software-grafik' && !status.dreiD, `grund=${b.grund}`);
     await ctx.close();
@@ -140,12 +169,12 @@ try {
     const l = seite.locator('[data-buehne3d] canvas');
     pruefe('3D: Leinwand hat Beschriftung und ist per Tab erreichbar',
       (await l.getAttribute('aria-label'))?.includes('Kiesel 1 Pro in Himmelblau') && (await l.getAttribute('tabindex')) === '0');
-    const b1 = (await buehne(seite)).bilder; await seite.waitForTimeout(1000); const b2 = (await buehne(seite)).bilder;
-    pruefe('3D: dreht sich von selbst (neue Bilder)', b2 > b1 + 10, `${b2 - b1} Bilder in 1 s`);
+    const b1 = (await buehne(seite)).bilder; await warteAufBilder(seite, b1 + 5); const b2 = (await buehne(seite)).bilder;
+    pruefe('3D: dreht sich von selbst (neue Bilder)', b2 >= b1 + 5, `${b2 - b1} neue Bilder`);
 
     const hellBlau = await helligkeit(seite);
     await seite.locator('[data-buehne3d] label[title="Mattschwarz"]').click();
-    await seite.waitForTimeout(400);
+    await warteAufBilder(seite, (await buehne(seite)).bilder + 2);
     const hellSchwarz = await helligkeit(seite);
     pruefe('3D: Farbwähler ändert die Materialfarbe', hellBlau - hellSchwarz > 30, `Helligkeit ${hellBlau.toFixed(1)} → ${hellSchwarz.toFixed(1)}`);
     pruefe('3D: Beschriftung folgt der Farbe', (await l.getAttribute('aria-label'))?.includes('Mattschwarz'));
@@ -156,8 +185,7 @@ try {
     const s1 = (await buehne(seite)).bilder; await seite.waitForTimeout(1000); const s2 = (await buehne(seite)).bilder;
     pruefe('3D: zeichnet nicht, wenn die Bühne nicht zu sehen ist', s2 === s1, `${s2 - s1} Bilder in 1 s`);
     await seite.evaluate(() => window.scrollTo(0, 0));
-    await seite.waitForTimeout(500);
-    const w1 = (await buehne(seite)).bilder; await seite.waitForTimeout(500); const w2 = (await buehne(seite)).bilder;
+    const w1 = (await buehne(seite)).bilder; await warteAufBilder(seite, w1 + 2); const w2 = (await buehne(seite)).bilder;
     pruefe('3D: zeichnet wieder, wenn die Bühne zurück ist', w2 > w1);
 
     // Kontextverlust erzwingen: WEBGL_lose_context simuliert, dass die Grafikkarte weg ist
@@ -182,35 +210,40 @@ try {
     pruefe('Weniger Bewegung während 3D: sofort 2D', b.modus === '2d' && b.grund === 'reduced-motion' && !b.leinwand, `grund=${b.grund}`);
     await ctx.close();
   }
+  // Wächter mit künstlichen Bildzeiten (KUNSTZEIT): prüft, ob der Wächter richtig an der
+  // Zeichenschleife hängt. Die Regeln selbst prüft pruefe:waechter ohne Browser, die echte
+  // Geschwindigkeit misst leistung:startseite (blockiert nichts).
+  const wachtLauf = async (ms, warteAuf) => {
+    const { seite, ctx, status } = await oeffne('?3d=software', { vorher: KUNSTZEIT, vorherArg: ms });
+    await warteAufModus(seite, warteAuf, 30000);
+    const r = { ...(await buehne(seite)), bilder3d: await seite.evaluate(() => window.__bilder3d), fehler: status.fehler };
+    await ctx.close();
+    return r;
+  };
   {
-    // Wächter: jedes Bild künstlich 60 ms blockieren (wie ein überfordertes Gerät)
-    const { seite, ctx } = await oeffne('?3d=software', {
-      vorher: () => {
-        const raf = window.requestAnimationFrame.bind(window);
-        window.requestAnimationFrame = (f) => raf((t) => { const ende = performance.now() + 60; while (performance.now() < ende); f(t); });
-      },
-    });
-    await warteAufModus(seite, '2d', 30000);
+    // Schnelles Gerät: 16 ms pro Bild. Nach 30 Bildern muss 3D noch laufen.
+    const { seite, ctx } = await oeffne('?3d=software', { vorher: KUNSTZEIT, vorherArg: 16 });
+    await warteAufModus(seite, '3d');
+    await warteAufBilder(seite, 30);
     const b = await buehne(seite);
-    pruefe('Zu langsam (unter 25 fps): Wächter schaltet auf 2D', b.modus === '2d' && b.grund === 'zu-langsam' && !b.leinwand, `grund=${b.grund}`);
+    const ms = await seite.evaluate(() => document.querySelector('[data-buehne3d] canvas')?.dataset.msProBild);
+    pruefe('Wächter bei 16 ms pro Bild: 3D bleibt', b.modus === '3d' && b.bilder >= 30, `modus=${b.modus}, ${b.bilder} Bilder`);
+    pruefe('Wächter hält den Median fest (16.0 ms)', ms === '16.0', `data-ms-pro-bild=${ms}`);
     await ctx.close();
   }
   {
-    // Notbremse: jedes Bild 200 ms blockieren → nach 3 Aufwärm- und 3 zähen Bildern 2D,
-    // also nach etwa 1.5 s statt nach 15 Bildern (3 s)
-    const { seite, ctx } = await oeffne('?3d=software', {
-      vorher: () => {
-        const raf = window.requestAnimationFrame.bind(window);
-        window.requestAnimationFrame = (f) => raf((t) => { const ende = performance.now() + 200; while (performance.now() < ende); f(t); });
-      },
-    });
-    await warteAufModus(seite, '3d', 30000);
-    const t0 = Date.now();
-    await warteAufModus(seite, '2d', 30000);
-    const sekunden = (Date.now() - t0) / 1000;
-    const b = await buehne(seite);
-    pruefe('Notbremse (sehr langsam): nach wenigen Bildern 2D', b.grund === 'zu-langsam' && sekunden < 2.5, `${sekunden.toFixed(1)} s nach dem Start`);
-    await ctx.close();
+    // Überfordertes Gerät: 60 ms pro Bild (unter 25 fps) → 2D nach den 15 Wächter-Bildern
+    const r = await wachtLauf(60, '2d');
+    pruefe('Zu langsam (60 ms pro Bild): Wächter schaltet auf 2D', r.modus === '2d' && r.grund === 'zu-langsam' && !r.leinwand, `grund=${r.grund}`);
+    // 1. Bild nach dem Start hat keine Dauer, dann 15 Wächter-Bilder
+    pruefe('Zu langsam: entschieden nach den 15 Wächter-Bildern', r.bilder3d === 16, `${r.bilder3d} Bilder gezeichnet`);
+    pruefe('Zu langsam: keine JavaScript-Fehler', r.fehler.length === 0, r.fehler.join('; '));
+  }
+  {
+    // Notbremse: 200 ms pro Bild → nach 3 Aufwärm- und 3 zähen Bildern 2D, ohne auf 15 zu warten
+    const r = await wachtLauf(200, '2d');
+    pruefe('Notbremse (200 ms pro Bild): 2D', r.modus === '2d' && r.grund === 'zu-langsam' && !r.leinwand, `grund=${r.grund}`);
+    pruefe('Notbremse: entschieden nach 6 Wächter-Bildern', r.bilder3d === 7, `${r.bilder3d} Bilder gezeichnet`);
   }
 
   console.log('\n── FAQ mit Tastatur ──');

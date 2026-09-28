@@ -224,16 +224,41 @@ const p = `wk-${art}`; // Präfix für ids, damit Schublade und Seite sich nicht
 
 <script>
   import { lesen, summen, artikelInfo, setzeAnzahl, entfernen, hinzufuegen, beiAenderung } from '../../scripts/warenkorb.js';
-  import { handy } from '../../lib/kiesel-draw/phone.js';
   import { chfRappen } from '../../lib/format.js';
   import { PREISE, MAX_ANZAHL } from '../../data/preise.js';
+
+  // ── Zeichen-Motor erst bei Bedarf ──
+  // Die Vorschaubilder zeichnet der Zeichen-Motor (phone.js, rund 19 KB). Dieses Skript läuft
+  // auf jeder Seite, der Warenkorb ist aber meistens leer und die Schublade zu. Darum holt
+  // import() den Motor erst, wenn es etwas zu zeichnen gibt: sobald der Warenkorb Artikel
+  // enthält (in der Schublade im Leerlauf, auf /warenkorb/ sofort), beim ersten Öffnen der
+  // Schublade, oder schon vorab, wenn Maus oder Fokus auf den Warenkorb-Knopf kommen.
+  // Bis er da ist, bleiben die Bildfelder leer. Sie haben eine feste Grösse, also springt
+  // nichts, wenn das Bild kommt. Den Zähler in der Kopfzeile betrifft das nicht, der braucht
+  // nur warenkorb.js (WarenkorbKnopf.astro).
+  let handy = null; // die Zeichenfunktion, sobald der Motor geladen ist
+  let motorKommt = null;
+  const wennMotorDa = []; // zeichne() jeder Wurzel, damit die leeren Bildfelder gefüllt werden
+  function ladeMotor() {
+    motorKommt ??= import('../../lib/kiesel-draw/phone.js').then(
+      (m) => { handy = m.handy; wennMotorDa.forEach((f) => f()); },
+      () => { motorKommt = null; }, // z.B. kurz offline: beim nächsten Anlass nochmals versuchen
+    );
+  }
+  const imLeerlauf = window.requestIdleCallback?.bind(window) ?? ((f) => setTimeout(f, 200));
+  document.querySelectorAll('[data-warenkorb-knopf]').forEach((k) => {
+    k.addEventListener('pointerenter', ladeMotor, { once: true });
+    k.addEventListener('focus', ladeMotor, { once: true });
+  });
 
   // Vorschaubild: Rückseite, bei einer Hülle mit Hülle. Unter der Hülle liegt die Farbe eines
   // gleichen Handys aus dem Warenkorb (sonst Hüllenfarbe), so wie es später aussehen würde.
   // Einmal gezeichnet, dann aus dem Zwischenspeicher (ein Handy-SVG ist ein paar kB Text).
+  // null = Motor noch nicht da.
   const bilder = new Map();
   const bildSchluessel = (modell, farbe, huelle) => [modell, farbe, huelle ?? ''].join('|');
   function vorschau(modell, farbe, huelle) {
+    if (!handy) return null;
     const schluessel = bildSchluessel(modell, farbe, huelle);
     if (!bilder.has(schluessel)) bilder.set(schluessel, handy({ ansicht: 'hinten', modell, farbe, huelle, hoehe: null, boden: false, label: ' ' }));
     return bilder.get(schluessel);
@@ -270,7 +295,8 @@ const p = `wk-${art}`; // Präfix für ids, damit Schublade und Seite sich nicht
       const bild = bildFuer(a, alle);
       const ort = li.querySelector('[data-bild]');
       const schluessel = bildSchluessel(...bild);
-      if (ort.dataset.schluessel !== schluessel) { ort.innerHTML = vorschau(...bild); ort.dataset.schluessel = schluessel; }
+      const svg = ort.dataset.schluessel !== schluessel && vorschau(...bild);
+      if (svg) { ort.innerHTML = svg; ort.dataset.schluessel = schluessel; }
     }
 
     function zeichne() {
@@ -309,7 +335,7 @@ const p = `wk-${art}`; // Präfix für ids, damit Schublade und Seite sich nicht
       vorschlagModell = ohne.modell;
       vorschlag.querySelector('[data-vorschlag-modell]').textContent = PREISE[ohne.modell].name;
       vorschlag.querySelector('[data-vorschlag-vh]').textContent = `: Kiesel-Hülle für ${PREISE[ohne.modell].name} in ${farbe}`;
-      vorschlag.querySelector('[data-vorschlag-bild]').innerHTML = vorschau(ohne.modell, ohne.farbe, farbe);
+      vorschlag.querySelector('[data-vorschlag-bild]').innerHTML = vorschau(ohne.modell, ohne.farbe, farbe) ?? '';
     }
     vorschlag.addEventListener('change', () => zeichneVorschlag(lesen()));
     vorschlag.querySelector('[data-vorschlag-dazu]').addEventListener('click', () => {
@@ -352,5 +378,14 @@ const p = `wk-${art}`; // Präfix für ids, damit Schublade und Seite sich nicht
 
     zeichne();
     beiAenderung(zeichne);
+    wennMotorDa.push(zeichne);
+
+    // Motor holen, sobald es Artikel gibt: auf /warenkorb/ sofort (die Bilder sind zu sehen),
+    // in der Schublade im Leerlauf (sie ist ja zu) und spätestens beim Öffnen
+    const sofort = wurzel.dataset.art === 'seite';
+    const wennArtikel = () => { if (lesen().length) (sofort ? ladeMotor() : imLeerlauf(ladeMotor, { timeout: 2000 })); };
+    wennArtikel();
+    beiAenderung(wennArtikel);
+    wurzel.closest('[data-schublade]')?.addEventListener('kiesel:geoeffnet', ladeMotor);
   });
 </script>

@@ -11,6 +11,8 @@
     "fotos:zeichenmotor": "astro build && node scripts/fotografiere-zeichenmotor.mjs",
     "fotos:startseite": "astro build && node scripts/fotografiere-startseite.mjs",
     "pruefe:startseite": "astro build && node scripts/pruefe-startseite.mjs",
+    "pruefe:waechter": "node scripts/pruefe-waechter.mjs",
+    "leistung:startseite": "astro build && node scripts/leistung-startseite.mjs",
     "fotos:modellseiten": "astro build && node scripts/fotografiere-modellseiten.mjs",
     "pruefe:modellseiten": "astro build && node scripts/pruefe-modellseiten.mjs",
     "fotos:kamera": "astro build && node scripts/fotografiere-kamera.mjs",
@@ -24,6 +26,7 @@
     "pruefe:akku-rechner": "astro build && node scripts/pruefe-akku-rechner.mjs",
     "pruefe:faq": "astro build && node scripts/pruefe-faq.mjs",
     "pruefe:ganz": "astro build && node scripts/pruefe-ganz.mjs",
+    "pruefe:laden": "astro build && node scripts/pruefe-laden.mjs",
     "fotos:ganz": "astro build && node scripts/fotografiere-ganz.mjs",
     "lighthouse": "astro build && node scripts/lighthouse.mjs"
   },

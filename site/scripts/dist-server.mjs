@@ -10,7 +10,7 @@ import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 
 const BASISPFAD = '/kiesel-website/v2/';
-const TYPEN = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp' };
+const TYPEN = { '.html': 'text/html; charset=utf-8', '.xml': 'application/xml; charset=utf-8', '.txt': 'text/plain; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp' };
 const dist = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'dist');
 
 // gzip: wie GitHub Pages, damit Ladezeit-Messungen realistisch sind

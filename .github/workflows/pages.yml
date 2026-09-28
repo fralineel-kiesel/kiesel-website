@@ -2,6 +2,12 @@
 #   alte Seite aus Branch main  →  https://fralineel-kiesel.github.io/kiesel-website/
 #   Kiesel 2.0 aus Branch v2    →  https://fralineel-kiesel.github.io/kiesel-website/v2/
 # Voraussetzung: Settings › Pages › Source = "GitHub Actions".
+#
+# Bewusst OHNE Tests: Der Workflow baut nur (npm run build) und veröffentlicht. Stoppen kann
+# ihn also nur ein Fehler beim Bauen. Die Prüfskripte (npm run pruefe:…) laufen lokal vor dem
+# Pull Request; viele brauchen einen Browser und messen Zeit oder Pixel, und so etwas soll nie
+# eine Veröffentlichung blockieren. Wer hier Tests ergänzt: nur deterministische (z.B.
+# pruefe:waechter, pruefe:zeichenmotor), keine Messungen wie leistung:startseite oder lighthouse.
 
 name: GitHub Pages
 

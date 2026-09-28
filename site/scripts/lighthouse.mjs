@@ -1,4 +1,5 @@
-// Lighthouse für jede öffentliche Seite: Leistung und Barrierefreiheit, Handy und Desktop.
+// Lighthouse für jede öffentliche Seite: Leistung, Barrierefreiheit, Bewährte Verfahren und SEO,
+// Handy und Desktop.
 //
 //   npm run lighthouse            (LAEUFE=1 npm run lighthouse für einen schnellen Durchgang,
 //                                  NUR=warenkorb/,faq/ für einzelne Seiten → bericht-teil.md)
@@ -26,7 +27,8 @@ fs.mkdirSync(ziel, { recursive: true });
 const LAEUFE = Number(process.env.LAEUFE || 3);
 const NUR = process.env.NUR ? process.env.NUR.split(',') : null;
 const SEITEN = NUR ? OEFFENTLICH.filter(([a]) => NUR.includes(a)) : OEFFENTLICH;
-const KATEGORIEN = ['performance', 'accessibility'];
+const KATEGORIEN = ['performance', 'accessibility', 'best-practices', 'seo'];
+const KURZ = { performance: 'leistung', accessibility: 'barrierefreiheit', 'best-practices': 'verfahren', seo: 'seo' };
 const name = (adresse) => adresse.replace(/\/$/, '').replace(/\//g, '-') || 'startseite';
 const median = (liste, f) => [...liste].sort((a, b) => f(a) - f(b))[Math.floor(liste.length / 2)];
 
@@ -47,16 +49,20 @@ try {
       fs.writeFileSync(path.join(ziel, `${name(adresse)}-${geraet}.html`), r.report);
       const a = lhr.audits;
       zeile[geraet] = {
-        leistung: Math.round(lhr.categories.performance.score * 100),
-        barrierefreiheit: Math.round(lhr.categories.accessibility.score * 100),
+        ...Object.fromEntries(KATEGORIEN.map((k) => [KURZ[k], Math.round(lhr.categories[k].score * 100)])),
         alleLeistung: laeufe.map((x) => Math.round(x.lhr.categories.performance.score * 100)),
         fcp: a['first-contentful-paint'].numericValue, lcp: a['largest-contentful-paint'].numericValue,
         tbt: a['total-blocking-time'].numericValue, cls: a['cumulative-layout-shift'].numericValue,
         // Barrierefreiheit: was nicht bestanden ist
         a11yFehler: Object.values(lhr.categories.accessibility.auditRefs)
           .map((ref) => a[ref.id]).filter((x) => x && x.score !== null && x.score < 1 && x.scoreDisplayMode === 'binary').map((x) => x.id),
+        // Bewährte Verfahren und SEO: was nicht bestanden ist (mit Erklärung, falls Lighthouse eine hat)
+        andereFehler: ['best-practices', 'seo'].flatMap((k) => lhr.categories[k].auditRefs
+          .map((ref) => a[ref.id]).filter((x) => x && x.score !== null && x.score < 1 && x.scoreDisplayMode !== 'informative' && x.scoreDisplayMode !== 'manual')
+          .map((x) => `${x.id}${x.explanation ? ` (${x.explanation})` : ''}`)),
       };
-      console.log(`${titel.padEnd(24)} ${geraet.padEnd(8)} Leistung ${String(zeile[geraet].leistung).padStart(3)} (${zeile[geraet].alleLeistung.join('/')})  Barrierefreiheit ${zeile[geraet].barrierefreiheit}${zeile[geraet].a11yFehler.length ? '  ✗ ' + zeile[geraet].a11yFehler.join(', ') : ''}`);
+      const z = zeile[geraet], fehlt = [...z.a11yFehler, ...z.andereFehler];
+      console.log(`${titel.padEnd(24)} ${geraet.padEnd(8)} Leistung ${String(z.leistung).padStart(3)} (${z.alleLeistung.join('/')})  Barrierefreiheit ${z.barrierefreiheit}  Verfahren ${z.verfahren}  SEO ${z.seo}${fehlt.length ? '  ✗ ' + fehlt.join(', ') : ''}`);
     }
     ergebnisse.push(zeile);
   }
@@ -67,13 +73,15 @@ try {
 
 // Bericht als Markdown-Tabelle
 const s = (ms) => (ms / 1000).toFixed(1) + ' s';
+// Werte unter 90 fett, damit sie auffallen
+const w = (n) => (n < 90 ? `**${n}**` : String(n));
 const tabelle = [
-  '| Seite | Leistung Handy | Barrierefreiheit Handy | Leistung Desktop | Barrierefreiheit Desktop | LCP Handy | TBT Handy | CLS Handy |',
-  '|---|---:|---:|---:|---:|---:|---:|---:|',
-  ...ergebnisse.map((e) => `| ${e.titel} | ${e.handy.leistung} | ${e.handy.barrierefreiheit} | ${e.desktop.leistung} | ${e.desktop.barrierefreiheit} | ${s(e.handy.lcp)} | ${Math.round(e.handy.tbt)} ms | ${e.handy.cls.toFixed(3)} |`),
+  '| Seite | Handy: Leistung | Barrierefreiheit | Verfahren | SEO | Desktop: Leistung | Barrierefreiheit | Verfahren | SEO | LCP Handy | TBT Handy | CLS Handy |',
+  '|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|',
+  ...ergebnisse.map((e) => `| ${e.titel} | ${['handy', 'desktop'].map((g) => ['leistung', 'barrierefreiheit', 'verfahren', 'seo'].map((k) => w(e[g][k])).join(' | ')).join(' | ')} | ${s(e.handy.lcp)} | ${Math.round(e.handy.tbt)} ms | ${e.handy.cls.toFixed(3)} |`),
 ];
-const fehlerListe = ergebnisse.flatMap((e) => ['handy', 'desktop'].flatMap((g) => e[g].a11yFehler.map((f) => `- ${e.titel} (${g}): ${f}`)));
-const bericht = `# Lighthouse, ${new Date().toISOString().slice(0, 10)}\n\nMedian aus ${LAEUFE} Läufen pro Seite und Gerät (Leistung). Handy: simuliertes Mittelklasse-Handy mit langsamem 4G.\n\n${tabelle.join('\n')}\n\n## Nicht bestandene Barrierefreiheits-Prüfungen\n\n${fehlerListe.join('\n') || 'keine'}\n`;
+const liste = (feld) => ergebnisse.flatMap((e) => ['handy', 'desktop'].flatMap((g) => e[g][feld].map((f) => `- ${e.titel} (${g}): ${f}`)));
+const bericht = `# Lighthouse, ${new Date().toISOString().slice(0, 10)}\n\nMedian aus ${LAEUFE} Läufen pro Seite und Gerät (nach Leistung). Handy: simuliertes Mittelklasse-Handy mit langsamem 4G. Verfahren = Bewährte Verfahren (Best Practices).\n\n${tabelle.join('\n')}\n\n## Nicht bestandene Barrierefreiheits-Prüfungen\n\n${liste('a11yFehler').join('\n') || 'keine'}\n\n## Nicht bestandene Prüfungen: Bewährte Verfahren und SEO\n\n${liste('andereFehler').join('\n') || 'keine'}\n`;
 fs.writeFileSync(path.join(ziel, NUR ? 'bericht-teil.md' : 'bericht.md'), bericht);
 if (!NUR) fs.writeFileSync(path.join(ziel, 'ergebnisse.json'), JSON.stringify(ergebnisse, null, 1));
 console.log('\n' + bericht);

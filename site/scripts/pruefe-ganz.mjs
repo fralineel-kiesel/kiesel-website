@@ -14,6 +14,9 @@
 // 5. Jede Seite: lang, <title>, Beschreibung, genau ein <h1>, keine doppelten IDs (auch nach dem
 //    Öffnen der Menüs), keine Skriptfehler.
 // 6. Menü-Handys: vor dem Öffnen nicht gezeichnet, danach aus dem Zeichen-Motor.
+// 7. Suchmaschinen und Link-Vorschau: Titel und Beschreibung je Seite einmalig, öffentliche
+//    Seiten mit canonical = eigene Adresse, og:title/og:description/og:url passend; noindex-
+//    Seiten ohne canonical. sitemap.xml = genau die öffentlichen Seiten, robots.txt nennt sie.
 // Jeder Fall druckt ✓ oder ✗, bei einem ✗ endet das Skript mit Fehlercode 1.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -53,6 +56,67 @@ const gelistet = SEITEN.map(([a]) => a);
 const fehlt = gebaut.filter((g) => !gelistet.includes(g));
 const zuviel = gelistet.filter((g) => !gebaut.includes(g));
 pruefe(`${gebaut.length} gebaute Seiten = scripts/seiten.mjs`, !fehlt.length && !zuviel.length, [...fehlt.map((f) => `fehlt in seiten.mjs: ${f}`), ...zuviel.map((z) => `nicht gebaut: ${z}`)].join(', '));
+
+// ------------------------------------------------------------------ 7. Suchmaschinen
+// (steht hier vorne, weil es nur die fertigen Dateien liest und keinen Browser braucht)
+console.log('\n── Suchmaschinen und Link-Vorschau ──');
+{
+  const SITE = 'https://fralineel-kiesel.github.io' + BASIS;
+  const entity = (t) => t.replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n))).replace(/&#x([\da-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))
+    .replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+  // Wert eines <meta>/<link>-Attributs aus dem <head>
+  const kopfWert = (html, tag, schluessel, wert, attr) => {
+    const m = [...html.matchAll(new RegExp(`<${tag}\\s[^>]*>`, 'g'))].map((x) => x[0]).find((t) => t.includes(`${schluessel}="${wert}"`));
+    const a = m && new RegExp(`\\s${attr}="([^"]*)"`).exec(m);
+    return a ? entity(a[1]) : null;
+  };
+  const infos = SEITEN.map(([adresse, name, oeffentlich]) => {
+    const datei = path.join(dist, adresse.endsWith('.html') ? adresse : adresse + 'index.html');
+    const html = fs.readFileSync(datei, 'utf8');
+    return {
+      adresse, name, oeffentlich,
+      titel: entity(/<title>([^<]*)<\/title>/.exec(html)?.[1] ?? ''),
+      beschreibung: kopfWert(html, 'meta', 'name', 'description', 'content') ?? '',
+      robots: kopfWert(html, 'meta', 'name', 'robots', 'content'),
+      canonical: kopfWert(html, 'link', 'rel', 'canonical', 'href'),
+      ogTitel: kopfWert(html, 'meta', 'property', 'og:title', 'content'),
+      ogBeschreibung: kopfWert(html, 'meta', 'property', 'og:description', 'content'),
+      ogUrl: kopfWert(html, 'meta', 'property', 'og:url', 'content'),
+    };
+  });
+  const doppelt = (feld) => infos.filter((i, n) => infos.findIndex((j) => j[feld] === i[feld]) !== n).map((i) => `${i.name}: „${i[feld]}“`);
+  pruefe(`${infos.length} Seiten: jeder Titel nur einmal`, doppelt('titel').length === 0, doppelt('titel').join(', '));
+  pruefe(`${infos.length} Seiten: jede Beschreibung nur einmal`, doppelt('beschreibung').length === 0, doppelt('beschreibung').join(', '));
+  // Google kürzt Beschreibungen ab etwa 155–160 Zeichen, unter 50 sagen sie zu wenig
+  const laenge = infos.filter((i) => i.beschreibung.length < 50 || i.beschreibung.length > 170).map((i) => `${i.name}: ${i.beschreibung.length}`);
+  pruefe('Beschreibungen 50–170 Zeichen lang', laenge.length === 0, laenge.join(', '));
+  for (const i of infos) {
+    const probleme = [];
+    const soll = i.adresse === '404.html' ? null : SITE + i.adresse;
+    if (i.oeffentlich) {
+      if (i.robots) probleme.push(`robots=${i.robots}`);
+      if (i.canonical !== soll) probleme.push(`canonical=${i.canonical}`);
+      if (i.ogUrl !== soll) probleme.push(`og:url=${i.ogUrl}`);
+    } else {
+      if (!/noindex/.test(i.robots ?? '')) probleme.push('kein noindex');
+      if (i.canonical) probleme.push(`canonical trotz noindex: ${i.canonical}`);
+    }
+    if (i.ogTitel !== i.titel) probleme.push(`og:title=${i.ogTitel}`);
+    if (i.ogBeschreibung !== i.beschreibung) probleme.push('og:description ≠ Beschreibung');
+    pruefe(`${i.name}: ${i.oeffentlich ? 'canonical + og:url = eigene Adresse' : 'noindex, kein canonical'}, og:title/og:description = Titel/Beschreibung`, probleme.length === 0, probleme.join('; '));
+  }
+  const sitemapDatei = path.join(dist, 'sitemap.xml');
+  const sitemap = fs.existsSync(sitemapDatei) ? fs.readFileSync(sitemapDatei, 'utf8') : '';
+  const locs = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
+  const sollLocs = infos.filter((i) => i.oeffentlich).map((i) => SITE + i.adresse);
+  const nurSitemap = locs.filter((l) => !sollLocs.includes(l)), nurSeiten = sollLocs.filter((l) => !locs.includes(l));
+  pruefe(`sitemap.xml: genau die ${sollLocs.length} öffentlichen Seiten, kein Designsystem, keine Spielwiese, keine 404`,
+    sitemap.startsWith('<?xml') && locs.length === sollLocs.length && !nurSitemap.length && !nurSeiten.length,
+    [...nurSitemap.map((l) => `zu viel: ${l}`), ...nurSeiten.map((l) => `fehlt: ${l}`)].join(', ') || `${locs.length} Einträge`);
+  const robotsDatei = path.join(dist, 'robots.txt');
+  const robots = fs.existsSync(robotsDatei) ? fs.readFileSync(robotsDatei, 'utf8') : '';
+  pruefe('robots.txt: erlaubt alles und nennt die Sitemap', /^User-agent: \*$/m.test(robots) && !/^Disallow: \S/m.test(robots) && robots.includes(`Sitemap: ${SITE}sitemap.xml`), robots.replace(/\n/g, ' ⏎ '));
+}
 
 // ------------------------------------------------------------------ 2. Links (statisch)
 console.log('\n── Links ──');
