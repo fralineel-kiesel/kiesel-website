@@ -129,6 +129,10 @@ try {
       const funk = await oeffne('funktionen/', b, h, thema);
       // Gleicher Blick wie der Teaser (aufs Gipfelkreuz), sonst vergleicht man zwei Ausschnitte
       const blick = await start.seite.evaluate(() => document.querySelector('[data-zoom-bild]').dataset.blick.split(',').map(Number));
+      // Bei 10x schwenken: schwenkeZu() speichert den Blick an den Bildrand geklemmt, bei 1x
+      // wäre das ein anderer Punkt als der des Teasers
+      await kamera(funk.seite, 'setzeZoom', 10);
+      await funk.seite.clock.runFor(100);
       await kamera(funk.seite, 'schwenkeZu', blick);
       await funk.seite.clock.runFor(600);
       const bilder = [];
