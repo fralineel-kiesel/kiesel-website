@@ -22,14 +22,13 @@ import {
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { baueKiesel } from './modell.js';
+import { neuerWaechter } from './waechter.js';
 
 const NEIGUNG = 10;           // Grad, das Handy lehnt leicht nach links (wie drehung -10 in 2D)
 const BLICK_VON_OBEN = 84;    // Grad von der Senkrechten: 90 = genau von vorne, kleiner = von oben
 const SEKUNDEN_PRO_RUNDE = 40;
 const PAUSE_NACH_ANFASSEN = 6000; // ms, danach dreht es sich wieder von selbst
 const MAX_FPS = 60;
-const ZU_LANGSAM_MS = 40;     // typische Zeit pro Bild, ab der wir auf 2D wechseln (= unter 25 fps)
-const NOTBREMSE_MS = 100;     // so lange Bilder, 3 × hintereinander: sofort 2D
 
 // Hauptthread kurz freigeben, damit Klicks und Scrollen zwischendurch drankommen.
 // Sonst wäre der ganze Start (Modell bauen, Licht vorberechnen, Shader übersetzen) eine
@@ -248,26 +247,14 @@ export async function starte3D({ ziel, modell = 'pro', farbe = 'Himmelblau', lab
   // Die Kernzahl war nur eine Schätzung. Hier messen wir echt, und zwar schnell: Ein
   // überfordertes Gerät soll nicht lange heiss laufen. Mit Grafikkarte braucht dieses
   // Modell nur wenige Millisekunden pro Bild, die Grenzen lassen also viel Luft.
-  //   Bilder 1–3:  Aufwärmen, zählen nicht (Texturen werden hochgeladen)
-  //   Bilder 4–15: Liegt der Median über 40 ms (unter 25 fps) → 2D.
-  //                Median = die mittlere Dauer, wenn man alle der Grösse nach ordnet. Ein
-  //                einzelner Hänger (z.B. Speicherbereinigung) verschiebt ihn kaum.
-  //   Notbremse:   3 Bilder hintereinander über 100 ms → sofort 2D.
+  // Die Regeln (Aufwärmen, Median über 40 ms, Notbremse) stehen in waechter.js.
   // Gezählt werden nur Bilder, die direkt aufeinander folgen (Schleife lief durch).
-  const zeiten = [];
-  let gezaehlt = 0, zaeh = 0;
+  const pruefung = neuerWaechter();
   function waechter(dauer) {
-    if (!mitWaechter || gezaehlt >= 15) return;
-    gezaehlt++;
-    if (gezaehlt <= 3) return;
-    zeiten.push(dauer);
-    zaeh = dauer > NOTBREMSE_MS ? zaeh + 1 : 0;
-    if (zaeh >= 3) { abbrechen('zu-langsam'); return; }
-    if (gezaehlt === 15) {
-      const median = zeiten.sort((x, y) => x - y)[Math.floor(zeiten.length / 2)];
-      leinwand.dataset.msProBild = median.toFixed(1);
-      if (median > ZU_LANGSAM_MS) abbrechen('zu-langsam');
-    }
+    if (!mitWaechter) return;
+    const urteil = pruefung.bild(dauer);
+    if (pruefung.median !== null) leinwand.dataset.msProBild = pruefung.median.toFixed(1);
+    if (urteil) abbrechen(urteil);
   }
 
   // ── Los ──────────────────────────────────────────────────────────────────
