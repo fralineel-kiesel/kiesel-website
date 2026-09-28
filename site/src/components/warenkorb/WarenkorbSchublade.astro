@@ -90,7 +90,8 @@ import WarenkorbInhalt from './WarenkorbInhalt.astro';
 
   document.querySelectorAll('[data-schublade]').forEach((dialog) => {
     const knopfOben = () => document.querySelector('[data-warenkorb-knopf]');
-    const m = modal(dialog, { ersatz: knopfOben });
+    // kiesel:geoeffnet: WarenkorbInhalt holt dann spätestens den Zeichen-Motor für die Bilder
+    const m = modal(dialog, { ersatz: knopfOben, beiOeffnen: () => dialog.dispatchEvent(new CustomEvent('kiesel:geoeffnet')) });
 
     // Warenkorb-Knopf in der Kopfzeile (ein <button>, wenn es eine Schublade gibt)
     document.querySelectorAll('button[data-warenkorb-knopf]').forEach((k) => k.addEventListener('click', () => m.oeffnen(k)));
