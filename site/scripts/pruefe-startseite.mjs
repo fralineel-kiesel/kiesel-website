@@ -439,10 +439,26 @@ try {
   }
   {
     // Gespeicherter Kiesel 1: 3D baut nur ihn, der Pro entsteht erst beim Umschalten
-    const { seite, ctx } = await oeffne('?3d=software', { vorher: SPEICHER_SETZEN, vorherArg: 'k1' });
+    // Schriften kommen 400 ms später (wie auf einer langsamen Leitung). baueKiesel() wartet beim
+    // Sperrbildschirm darauf, so bleibt ein sicheres Zeitfenster, um mitten ins Bauen zu klicken.
+    const LANGSAME_SCHRIFT = () => {
+      const laden = document.fonts.load.bind(document.fonts);
+      document.fonts.load = (...a) => new Promise((r) => setTimeout(r, 400)).then(() => laden(...a));
+    };
+    const { seite, ctx } = await oeffne('?3d=software', { vorher: `(${LESBAR})(); (${SPEICHER_SETZEN})('k1'); (${LANGSAME_SCHRIFT})();` });
     await warteAufModus(seite, '3d');
     const z = await wahl(seite);
     pruefe('3D mit gespeichertem Kiesel 1: nur er ist gebaut', z.gebaut === 'k1' && z.modell3d === 'k1', `gebaut=${z.gebaut}`);
+    // Farbe wählen, während der Pro noch gebaut wird: Er muss trotzdem in der neuen Farbe kommen
+    await knopf(seite, 'pro').click();
+    await seite.waitForTimeout(150);
+    const nochAmBauen = await seite.evaluate(() => document.querySelector('.leinwand-3d').dataset.gebaut === 'k1');
+    await seite.locator('[data-buehne3d] label[title="Mattschwarz"]').click();
+    await warteAufWechsel(seite, 'pro');
+    pruefe('3D: Farbklick fiel wirklich ins Bauen (Testaufbau)', nochAmBauen);
+    await warteAufBilder(seite, (await buehne(seite)).bilder + 2);
+    const hell = await helligkeit(seite);
+    pruefe('3D: Farbe während des Bauens gewählt, Pro kommt trotzdem in Mattschwarz', hell < 80, `Helligkeit ${hell.toFixed(1)}`);
     await ctx.close();
   }
   {

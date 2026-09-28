@@ -131,10 +131,12 @@ export async function starte3D({ ziel, modell = 'pro', farbe = 'Himmelblau', lab
 
   // Ein Modell bauen und (unsichtbar) in die Szene hängen
   async function baue(id) {
-    const k = await baueKiesel(bauplan(id), { farbe: farbeJetzt, maxAniso });
+    // Farbe vorher festhalten: Wählt jemand während des Bauens eine andere, holt zeige() das nach
+    const farbeBeimBau = farbeJetzt;
+    const k = await baueKiesel(bauplan(id), { farbe: farbeBeimBau, maxAniso });
     if (beendet) { k.dispose(); return null; }
     aufraeumen.push(() => k.dispose());
-    farbeVon.set(id, farbeJetzt);
+    farbeVon.set(id, farbeBeimBau);
     // Boden knapp unter der tiefsten Ecke des geneigten Handys
     const { H, W } = k.masse, neig = MathUtils.degToRad(neigungGrad);
     k.boden.position.set(0, -(H / 2 * Math.cos(neig) + W / 2 * Math.sin(neig)) - 3, 0);
