@@ -237,12 +237,13 @@ try {
 
     console.log('\n── Zoom-Leiste ──');
     await seite.locator('.zoom-leiste button[data-stufe="10"]').click();
-    await seite.waitForTimeout(300); // der Ausschnitt wechselt im nächsten Animationsbild
+    await seite.waitForTimeout(900); // die Zoomfahrt dauert gut eine halbe Sekunde
     const zoom = await seite.evaluate(() => {
       const f = document.querySelector('[data-zoom-teaser]');
-      return { text: f.querySelector('[data-zoom-text]').textContent, breite: Number(f.querySelector('svg').getAttribute('viewBox').split(' ')[2]) };
+      return { text: f.querySelector('[data-linsen-text]').textContent, breite: Number(f.querySelector('[data-ebene="tele"] svg').getAttribute('viewBox').split(' ')[2]) };
     });
-    pruefe('10x zeigt den engen Ausschnitt (160 breit) und den passenden Text', zoom.breite === 160 && zoom.text.startsWith('10x'), `${zoom.breite}, „${zoom.text}“`);
+    // Gleiche Unschärfe wie die anderen Kamera-Demos prüft pruefe:kamera-stellen
+    pruefe('10x zeigt den engen Ausschnitt (160 breit) und den passenden Text', zoom.breite === 160 && zoom.text === 'Tele · 10x digital', `${zoom.breite}, „${zoom.text}“`);
     await ctx.close();
   }
 
