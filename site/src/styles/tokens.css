@@ -37,8 +37,9 @@
   --glass-on-ink: #0C1116;
 
   /* ── Schriften ── */
-  --display: "Unbounded", "Arial Black", sans-serif;
-  --body:    "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+  /* „… Ersatz“ = Arial auf die Masse der echten Schrift gezogen (global.css), gegen Layoutsprünge */
+  --display: "Unbounded", "Unbounded Ersatz", "Arial Black", sans-serif;
+  --body:    "Instrument Sans", "Instrument Sans Ersatz", "Segoe UI", system-ui, sans-serif;
 
   /* Schriftgrössen: clamp(min, fliessend, max) wächst mit der Fensterbreite
      vom Handy-Wert (390 px) bis zum Desktop-Wert (1440 px). */
