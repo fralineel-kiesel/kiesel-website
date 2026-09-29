@@ -159,7 +159,7 @@ try {
   pruefe('Keine Skriptfehler', status.fehler.length === 0, status.fehler.join(' | '));
 
   // Menü und Footer
-  const alle = [...HANDYS_SPALTEN, ...FOOTER_SPALTEN].flatMap((s) => s.links).filter((l) => l.name === 'Akku-Rechner');
+  const alle = [...HANDYS_SPALTEN, ...FOOTER_SPALTEN].flatMap((s) => s.links).filter((l) => l.text === 'akkuRechner');
   pruefe('navigation.js: „Akku-Rechner“ zeigt überall auf akku-rechner/', alle.length === 2 && alle.every((l) => l.pfad === 'akku-rechner/'));
   const links = await seite.evaluate(() => [...document.querySelectorAll('a')].filter((x) => x.textContent.trim() === 'Akku-Rechner').map((x) => x.getAttribute('href')));
   pruefe('Auf der Seite: alle Links „Akku-Rechner“ zeigen auf /akku-rechner/', links.length >= 2 && links.every((h) => h.endsWith('/akku-rechner/')), links.join(', '));

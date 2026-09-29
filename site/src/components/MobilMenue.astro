@@ -16,28 +16,30 @@ import Knopf from './Knopf.astro';
 import MenueHandy from './MenueHandy.astro';
 import { MODELLE } from '../data/modelle.js';
 import { abPreis } from '../data/preise.js';
-import { HAUPTMENUE } from '../data/navigation.js';
+import { HAUPTMENUE, linkName } from '../data/navigation.js';
 import { pfad, istAktiv } from '../lib/pfad.js';
+import { texte, spracheVon } from '../i18n/index.js';
 
 const aktuell = Astro.url.pathname;
+const t = texte(spracheVon(Astro.url));
 const weitere = HAUPTMENUE.filter((p) => !p.menue);
 ---
-<button type="button" class="burger" aria-label="Menü öffnen" aria-expanded="false" aria-controls="mobil-menue" data-burger>
+<button type="button" class="burger" aria-label={t.geruest.menueOeffnen} aria-expanded="false" aria-controls="mobil-menue" data-burger>
   <Icon name="menu" size={24} />
 </button>
 
-<dialog class="mobil-menue" id="mobil-menue" aria-label="Menü" data-mobil-menue>
+<dialog class="mobil-menue" id="mobil-menue" aria-label={t.geruest.menue} data-mobil-menue>
   <div class="kopf">
-    <a class="marke" href={pfad()} aria-label="Kiesel, zur Startseite">
-      <Logo size={26} /><span>kiesel</span>
+    <a class="marke" href={pfad()} aria-label={t.geruest.zurStartseite}>
+      <Logo size={26} /><span>{t.geruest.wortmarke}</span>
     </a>
-    <button type="button" class="zu" aria-label="Menü schliessen" data-schliessen>
+    <button type="button" class="zu" aria-label={t.geruest.menueSchliessen} data-schliessen>
       <Icon name="close" size={24} />
     </button>
   </div>
 
-  <nav class="inhalt" aria-label="Hauptnavigation">
-    <h2 class="gruppe">Handys</h2>
+  <nav class="inhalt" aria-label={t.geruest.hauptnavigation}>
+    <h2 class="gruppe">{t.geruest.handys}</h2>
     <ul role="list" class="modelle">
       {(['k1', 'pro']).map((id) => {
         const m = MODELLE[id];
@@ -59,13 +61,13 @@ const weitere = HAUPTMENUE.filter((p) => !p.menue);
 
     <ul role="list" class="links">
       {weitere.map((p) => (
-        <li><a href={pfad(p.pfad)} aria-current={istAktiv(aktuell, p.pfad) ? 'page' : undefined}>{p.name}</a></li>
+        <li><a href={pfad(p.pfad)} aria-current={istAktiv(aktuell, p.pfad) ? 'page' : undefined}>{linkName(p, t)}</a></li>
       ))}
-      <li><a href={pfad('warenkorb/')}>Warenkorb</a></li>
+      <li><a href={pfad('warenkorb/')}>{t.geruest.warenkorb}</a></li>
     </ul>
 
     <div class="unten">
-      <Knopf href={pfad('kaufen/')} art="primaer" groesse="l" breit>Kaufen {abPreis('k1')}</Knopf>
+      <Knopf href={pfad('kaufen/')} art="primaer" groesse="l" breit>{t.geruest.kaufenAb(abPreis('k1'))}</Knopf>
     </div>
   </nav>
 </dialog>

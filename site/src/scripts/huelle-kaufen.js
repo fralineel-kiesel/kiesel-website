@@ -5,21 +5,21 @@
 import { hinzufuegen } from './warenkorb.js';
 import { huellenArtikel } from '../data/zubehoer.js';
 import { PREISE, MAX_ANZAHL } from '../data/preise.js';
-import { farben as FARBNAME } from '../i18n/de.js';
+import { farben as FARBNAME, warenkorb as W } from '../i18n/de.js';
 
 export function huelleKaufen(knopf, modell, farbe, ansage) {
   const ergebnis = hinzufuegen(huellenArtikel(modell, farbe));
   if (!ergebnis) return false;
   if (ansage) {
     ansage.textContent = ergebnis.gekappt
-      ? `Von der Kiesel-Hülle für ${PREISE[modell].name} in ${FARBNAME[farbe]} liegen schon ${MAX_ANZAHL} im Warenkorb, mehr geht nicht.`
-      : `Kiesel-Hülle für ${PREISE[modell].name} in ${FARBNAME[farbe]} liegt im Warenkorb.`;
+      ? W.huelleVoll(PREISE[modell].name, FARBNAME[farbe], MAX_ANZAHL)
+      : W.huelleDrin(PREISE[modell].name, FARBNAME[farbe]);
   }
   // Rückmeldung am Knopf: Text kurz tauschen, Breite bleibt (kein Springen)
   const text = knopf.querySelector('[data-knopftext]') ?? knopf;
   clearTimeout(knopf._zurueck);
   text.dataset.alt ??= text.textContent;
-  text.textContent = 'Im Warenkorb ✓';
+  text.textContent = W.imWarenkorb;
   knopf._zurueck = setTimeout(() => { text.textContent = text.dataset.alt; }, 2000);
   return true;
 }

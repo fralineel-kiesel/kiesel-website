@@ -6,17 +6,19 @@
 //              false = ein Link auf /warenkorb/ (auf /warenkorb/ selbst, dort ohne Schublade)
 import Icon from './Icon.astro';
 import { pfad } from '../lib/pfad.js';
+import { texte, spracheVon } from '../i18n/index.js';
 
 const { schublade = true } = Astro.props;
+const t = texte(spracheVon(Astro.url));
 ---
 {schublade
   ? (
-    <button type="button" class="warenkorb-knopf" aria-label="Warenkorb, leer" aria-haspopup="dialog" aria-expanded="false" aria-controls="warenkorb-schublade" data-warenkorb-knopf>
+    <button type="button" class="warenkorb-knopf" aria-label={t.warenkorbKnopf.leer} aria-haspopup="dialog" aria-expanded="false" aria-controls="warenkorb-schublade" data-warenkorb-knopf>
       <Icon name="bag" size={20} class="tasche" />
       <span class="zahl" data-warenkorb-zahl hidden>0</span>
     </button>
   ) : (
-    <a class="warenkorb-knopf" href={pfad('warenkorb/')} aria-label="Warenkorb, leer" aria-current="page" data-warenkorb-knopf>
+    <a class="warenkorb-knopf" href={pfad('warenkorb/')} aria-label={t.warenkorbKnopf.leer} aria-current="page" data-warenkorb-knopf>
       <Icon name="bag" size={20} class="tasche" />
       <span class="zahl" data-warenkorb-zahl hidden>0</span>
     </a>
@@ -78,6 +80,7 @@ const { schublade = true } = Astro.props;
 
 <script>
   import { anzahl, beiAenderung } from '../scripts/warenkorb.js';
+  import { warenkorbKnopf as T } from '../i18n/de.js';
 
   function zeigen() {
     const n = anzahl();
@@ -85,7 +88,7 @@ const { schublade = true } = Astro.props;
       const zahl = knopf.querySelector('[data-warenkorb-zahl]');
       zahl.textContent = n > 99 ? '99+' : String(n);
       zahl.hidden = n === 0;
-      knopf.setAttribute('aria-label', n === 0 ? 'Warenkorb, leer' : `Warenkorb, ${n} Artikel`);
+      knopf.setAttribute('aria-label', n === 0 ? T.leer : T.artikel(n));
     });
   }
   zeigen();

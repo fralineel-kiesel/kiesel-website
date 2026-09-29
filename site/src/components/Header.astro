@@ -12,23 +12,26 @@ import MobilMenue from './MobilMenue.astro';
 import WarenkorbKnopf from './WarenkorbKnopf.astro';
 import { HAUPTMENUE } from '../data/navigation.js';
 import { pfad, istAktiv } from '../lib/pfad.js';
+import { linkName } from '../data/navigation.js';
+import { texte, spracheVon } from '../i18n/index.js';
 
 const { klebt = true, schublade = true } = Astro.props;
 const aktuell = Astro.url.pathname;
+const t = texte(spracheVon(Astro.url));
 ---
 <header class:list={['kopfzeile', { klebt }]}>
   <div class="leiste">
-    <a class="marke" href={pfad()} aria-label="Kiesel, zur Startseite">
-      <Logo size={30} /><span class="wort" aria-hidden="true">kiesel</span>
+    <a class="marke" href={pfad()} aria-label={t.geruest.zurStartseite}>
+      <Logo size={30} /><span class="wort" aria-hidden="true">{t.geruest.wortmarke}</span>
     </a>
 
-    <nav class="hauptmenue" aria-label="Hauptnavigation">
+    <nav class="hauptmenue" aria-label={t.geruest.hauptnavigation}>
       <ul role="list">
         {HAUPTMENUE.map((p) => (
           <li>
             {p.menue
               ? <HandysMenue aktiv={p.bereich.some((b) => istAktiv(aktuell, b, false))} />
-              : <a href={pfad(p.pfad)} aria-current={istAktiv(aktuell, p.pfad) ? 'page' : istAktiv(aktuell, p.pfad, false) ? 'true' : undefined}>{p.name}</a>}
+              : <a href={pfad(p.pfad)} aria-current={istAktiv(aktuell, p.pfad) ? 'page' : istAktiv(aktuell, p.pfad, false) ? 'true' : undefined}>{linkName(p, t)}</a>}
           </li>
         ))}
       </ul>
@@ -36,7 +39,7 @@ const aktuell = Astro.url.pathname;
 
     <div class="aktionen">
       <WarenkorbKnopf schublade={schublade} />
-      <Knopf href={pfad('kaufen/')} art="ink" groesse="s" class="kaufen">Kaufen</Knopf>
+      <Knopf href={pfad('kaufen/')} art="ink" groesse="s" class="kaufen">{t.geruest.kaufen}</Knopf>
       <span class="nur-handy"><MobilMenue /></span>
     </div>
   </div>

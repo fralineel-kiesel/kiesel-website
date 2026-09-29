@@ -15,14 +15,16 @@ import Icon from './Icon.astro';
 import MenueHandy from './MenueHandy.astro';
 import { MODELLE } from '../data/modelle.js';
 import { abPreis } from '../data/preise.js';
-import { HANDYS_SPALTEN } from '../data/navigation.js';
+import { HANDYS_SPALTEN, linkName } from '../data/navigation.js';
 import { pfad } from '../lib/pfad.js';
+import { texte, spracheVon } from '../i18n/index.js';
 
 const { aktiv = false } = Astro.props;
+const t = texte(spracheVon(Astro.url));
 ---
 <div class="handys-menue" data-handys-menue>
   <button type="button" class:list={['ausloeser', { aktiv }]} aria-expanded="false" aria-controls="handys-panel" data-ausloeser>
-    Handys
+    {t.geruest.handys}
     <Icon name="down" size={16} class="pfeil" />
   </button>
 
@@ -37,16 +39,16 @@ const { aktiv = false } = Astro.props;
               <span class="name">{m.name}</span>
               <span class="kurz">{m.kurz}</span>
               <span class="preis">{abPreis(id)}</span>
-              <span class="mehr">Mehr erfahren <Icon name="arrow" size={16} /></span>
+              <span class="mehr">{t.geruest.mehrErfahren} <Icon name="arrow" size={16} /></span>
             </span>
           </a>
         );
       })}
       {HANDYS_SPALTEN.map((spalte, i) => (
         <div class="spalte">
-          <h2 class="spalten-titel" id={`handys-spalte-${i}`}>{spalte.titel}</h2>
+          <h2 class="spalten-titel" id={`handys-spalte-${i}`}>{t.navigation[spalte.titel]}</h2>
           <ul role="list" aria-labelledby={`handys-spalte-${i}`}>
-            {spalte.links.map((l) => <li><a href={pfad(l.pfad)}>{l.name}</a></li>)}
+            {spalte.links.map((l) => <li><a href={pfad(l.pfad)}>{linkName(l, t)}</a></li>)}
           </ul>
         </div>
       ))}

@@ -5,11 +5,15 @@
 // Ohne Schublade: Der Warenkorb-Knopf oben ist hier ein Link auf diese Seite (aria-current).
 import BaseLayout from '../layouts/BaseLayout.astro';
 import WarenkorbInhalt from '../components/warenkorb/WarenkorbInhalt.astro';
+import { texte, spracheVon } from '../i18n/index.js';
+
+const t = texte(spracheVon(Astro.url));
+const W = t.warenkorbSeite;
 ---
-<BaseLayout titel="Warenkorb" beschreibung="Deine Auswahl, bereit für die Kasse, die leider nur ein Konzept ist." schublade={false}>
+<BaseLayout titel={W.titel} beschreibung={W.beschreibung} schublade={false}>
   <div class="container warenkorb">
-    <h1 class="t-1 titel">Warenkorb</h1>
-    <p class="t-lead t-muted einleitung">Deine Auswahl, bereit für die Kasse. Die ist leider nur ein Konzept.</p>
+    <h1 class="t-1 titel">{W.titel}</h1>
+    <p class="t-lead t-muted einleitung">{W.einleitung}</p>
     <WarenkorbInhalt art="seite" />
   </div>
 </BaseLayout>

@@ -7,7 +7,8 @@
 //   … -- --nur-statisch                          ohne Browser-Teil
 //   … -- --ohne-regeln                           Gegenprobe: gleicher Stand muss ohne Regeln gleich sein
 //
-// 1. Statisch: jede Datei in dist/ ausser _astro/ (HTML, sitemap.xml, robots.txt) Byte für Byte.
+// 1. Statisch: jede Datei in dist/ ausser _astro/ (HTML, sitemap.xml, robots.txt) Byte für Byte,
+//    dazu pro Seite der Inhalt aller eingebundenen Stylesheets aus _astro/ (in Reihenfolge).
 // 2. Nach dem Skriptlauf: Beide Stände laufen je auf einem Mini-Server. Jede öffentliche Seite
 //    (dazu ein paar Adressen mit alten Parametern) wird im Browser geladen, mit einem Warenkorb
 //    im ALTEN Format (deutsche Farbnamen, art 'handy'/'huelle'). Verglichen wird das fertige
@@ -189,7 +190,18 @@ function vergleicheStatisch(altDist, neuDist, regeln = REGELN) {
       fehler++;
     }
   }
-  return { fehler, zaehler };
+  // CSS: Die Dateien unter _astro/ haben Hashes im Namen, darum pro Seite den Inhalt aller
+  // eingebundenen Stylesheets (in Reihenfolge) vergleichen
+  const css = (wurzel, html) => [...html.matchAll(/<link rel="stylesheet" href="\/kiesel-website\/v2\/([^"]+)"/g)]
+    .map((m) => fs.readFileSync(path.join(wurzel, m[1]), 'utf8')).join('\n/* ── */\n');
+  let cssFehler = 0;
+  for (const d of alt.filter((d) => d.endsWith('.html') && neu.includes(d))) {
+    const a = ohneHash(css(altDist, fs.readFileSync(path.join(altDist, d), 'utf8')));
+    const b = ohneHash(css(neuDist, fs.readFileSync(path.join(neuDist, d), 'utf8')));
+    if (a !== b) { console.log(`✗ ${d}: CSS anders\n${zeigeUnterschied(a, b)}`); cssFehler++; }
+  }
+  if (!cssFehler) console.log('✓ CSS aller Seiten gleich (eingebundene Stylesheets, in Reihenfolge)');
+  return { fehler: fehler + cssFehler, zaehler };
 }
 
 // ────────────────────────────────────────────────────────────── 2. nach dem Skriptlauf

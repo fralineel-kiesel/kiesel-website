@@ -8,7 +8,10 @@
 import { KIESEL_IDS } from '../data/geraete.js';
 import { MODELLE } from '../data/modelle.js';
 
-const { wert = 'pro', label = 'Modell', class: klasse } = Astro.props;
+import { texte, spracheVon } from '../i18n/index.js';
+
+const t = texte(spracheVon(Astro.url));
+const { wert = 'pro', label = t.bausteine.modell, class: klasse } = Astro.props;
 ---
 <div class:list={['modell-umschalter', klasse]} role="group" aria-label={label} data-modell-umschalter>
   {KIESEL_IDS.map((id) => (
