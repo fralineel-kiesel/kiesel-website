@@ -136,6 +136,26 @@ const MODUL = /<script type="module"(?: src="([^"]*)")?>([\s\S]*?)<\/script>/g;
 const ohneModule = (s) => s.replace(MODUL, '');
 const modulNamen = (s) => [...s.matchAll(MODUL)].map((m) => (m[1] ? ohneHash(m[1]).replace(/.*\/_astro\//, '') : '(eingebettet)')).sort();
 
+// Eingebettete <style>-Blöcke: Astro sammelt die CSS-Regeln der Bausteine in der Reihenfolge,
+// in der Vite die Module fertig hat. Neue Importe (die Textdatei) können sie umstellen. Darum
+// werden die obersten Blöcke eines <style> sortiert verglichen, und wo das nötig war, prüft
+// Teil 2 im Browser, dass jedes Element dieselben berechneten Stile hat (siehe stileGleich).
+function obersteBloecke(css) {
+  const bloecke = [];
+  let tiefe = 0, start = 0;
+  for (let i = 0; i < css.length; i++) {
+    if (css[i] === '{') tiefe++;
+    else if (css[i] === '}' && --tiefe === 0) { bloecke.push(css.slice(start, i + 1).trim()); start = i + 1; }
+  }
+  if (css.slice(start).trim()) bloecke.push(css.slice(start).trim());
+  return bloecke;
+}
+const stileSortiert = (html) => html.replace(/<style>([\s\S]*?)<\/style>/g, (_, css) => `<style>${obersteBloecke(css).sort().join('\n')}</style>`);
+export const CSS_REIHENFOLGE = {
+  name: 'Reihenfolge der eingebetteten CSS-Regeln (nur Designsystem)',
+  grund: 'Neue Importe ändern, in welcher Reihenfolge Astro die Stile der Bausteine einbettet. Gleiche Regeln, andere Reihenfolge; nachgewiesen im Browser: jedes Element hat dieselben berechneten Stile (hell und dunkel).',
+};
+
 function wendeAn(text, regeln, zaehler) {
   for (const r of regeln) {
     text = text.replace(r.alt, (...m) => { zaehler.set(r.name, (zaehler.get(r.name) ?? 0) + 1); return r.neu(...m); });
@@ -179,6 +199,7 @@ const dateien = (wurzel) => fs.readdirSync(wurzel, { recursive: true })
   .sort();
 
 // ────────────────────────────────────────────────────────────── 1. statisch
+const stilSeiten = []; // Seiten, deren CSS nur umgestellt ist: Teil 2 vergleicht dort berechnete Stile
 function vergleicheStatisch(altDist, neuDist, regeln = REGELN) {
   console.log('\n── 1. Statisch: alle Dateien ausser _astro/ ──');
   const zaehler = new Map();
@@ -192,8 +213,13 @@ function vergleicheStatisch(altDist, neuDist, regeln = REGELN) {
       continue;
     }
     const at = a.toString('utf8'), bt = b.toString('utf8');
-    const erwartet = wendeAn(ohneModule(ohneHash(at)), regeln, zaehler);
-    const ist = ohneModule(ohneHash(bt));
+    let erwartet = wendeAn(ohneModule(ohneHash(at)), regeln, zaehler);
+    let ist = ohneModule(ohneHash(bt));
+    if (erwartet !== ist && regeln.length && stileSortiert(erwartet) === stileSortiert(ist)) {
+      erwartet = ist;
+      zaehler.set(CSS_REIHENFOLGE.name, (zaehler.get(CSS_REIHENFOLGE.name) ?? 0) + 1);
+      stilSeiten.push(d);
+    }
     if (erwartet === ist) {
       const ma = modulNamen(at).join(' '), mb = modulNamen(bt).join(' ');
       console.log(`✓ ${d}${ma === mb ? '' : `  (Modul-Skripte: ${modulNamen(at).length} → ${modulNamen(bt).length})`}`);
@@ -283,6 +309,15 @@ function browserGleich(dom) {
   return t.replace(re, (id) => neu.get(id));
 }
 
+async function stile(browser, url, schema) {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce', colorScheme: schema });
+  const s = await ctx.newPage();
+  await s.goto(url, { waitUntil: 'networkidle' });
+  const r = await s.evaluate(() => [...document.querySelectorAll('*')].map((el) => { const c = getComputedStyle(el); return el.tagName + '|' + [...c].sort().map((p) => `${p}:${c.getPropertyValue(p)}`).join(';'); }));
+  await ctx.close();
+  return r;
+}
+
 async function vergleicheLaufzeit(altDist, neuDist, regeln = REGELN, regelnAdresse = REGELN_ADRESSE) {
   console.log('\n── 2. Nach dem Skriptlauf (1440 px, weniger Bewegung, alter Warenkorb) ──');
   const alt = await starteServer({ ordner: altDist });
@@ -308,6 +343,16 @@ async function vergleicheLaufzeit(altDist, neuDist, regeln = REGELN, regelnAdres
     console.log(`${probleme.length ? '✗' : '✓'} /${adresse}${probleme.length ? '\n' + probleme.join('\n') : ''}`);
     fehler += probleme.length ? 1 : 0;
   }
+  // Seiten mit umgestelltem CSS: berechnete Stile aller Elemente, hell und dunkel
+  for (const d of stilSeiten) {
+    const adresse = d.replace(/index\.html$/, '');
+    for (const schema of ['light', 'dark']) {
+      const a = await stile(browser, alt.basis + adresse, schema), b = await stile(browser, neu.basis + adresse, schema);
+      const anders = a.length !== b.length ? Infinity : a.filter((s, i) => s !== b[i]).length;
+      console.log(`${anders ? '✗' : '✓'} /${adresse} (${schema}): ${a.length} Elemente, ${anders === Infinity ? 'andere Anzahl' : `${anders} mit anderen berechneten Stilen`}`);
+      if (anders) fehler++;
+    }
+  }
   await browser.close();
   await alt.schliessen(); await neu.schliessen();
   return { fehler, zaehler };
@@ -326,7 +371,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const laufzeit = hat('--nur-statisch') ? { fehler: 0, zaehler: new Map() } : await vergleicheLaufzeit(basis.dist, neuDist, ohne ? [] : REGELN, ohne ? [] : REGELN_ADRESSE);
 
   console.log('\n── Angewendete Regeln (alt → erwartet neu) ──');
-  for (const r of [...REGELN, ...REGELN_ADRESSE]) {
+  for (const r of [...REGELN, CSS_REIHENFOLGE, ...REGELN_ADRESSE]) {
     const n = (statisch.zaehler.get(r.name) ?? 0) + (laufzeit.zaehler.get(r.name) ?? 0);
     console.log(`${String(n).padStart(5)} × ${r.name}\n        Grund: ${r.grund}`);
   }
