@@ -11,7 +11,10 @@
 // Den Wert (--wert, 0…1) setzt kamera-zoom.js.
 //   max: grösster Zoom   stufen: [[Wert, Text, betont], …]   tele: Zoom mit Strich (oder null)
 //   label: für Screenreader
-const { max, stufen, tele = null, label = 'Zoom' } = Astro.props;
+import { texte, spracheVon } from '../../i18n/index.js';
+
+const K = texte(spracheVon(Astro.url)).kamera;
+const { max, stufen, tele = null, label = K.zoom } = Astro.props;
 const lage = (z) => Math.log(z / 0.5) / Math.log(max / 0.5); // 0 … 1 auf der Spur
 ---
 <div class="zoom-skala" style="--wert: 0" data-zoom-skala>
@@ -21,7 +24,7 @@ const lage = (z) => Math.log(z / 0.5) / Math.log(max / 0.5); // 0 … 1 auf der 
     {tele && <span class="tele" style={`--an: ${lage(tele)}`}></span>}
     <span class="griff"></span>
   </div>
-  <div class="stufen" role="group" aria-label="Zoomstufen">
+  <div class="stufen" role="group" aria-label={K.zoomstufen}>
     {stufen.map(([wert, text, betont], i) => (
       <button
         type="button"

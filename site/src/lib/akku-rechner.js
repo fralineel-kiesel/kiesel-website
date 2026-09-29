@@ -12,6 +12,7 @@
 import { RECHNER } from '../data/akku.js';
 import { GERAETE } from '../data/geraete.js';
 import { zahl, uhrzeit, geschuetzt, prozent } from './format.js';
+import { akkuRechner as DE } from '../i18n/de.js';
 
 export { uhrzeit, geschuetzt };
 
@@ -22,13 +23,13 @@ export const TAETIGKEITEN = Object.keys(R.verbrauch);
 // „3.0 h“ (immer eine Nachkommastelle). uhrzeit() und geschuetzt() stehen in lib/format.js.
 export const stunden = (x, sprache = 'de') => zahl(x, 1, sprache) + ' h';
 
-// Welcher typische Tag passt genau zu diesen Werten? (sonst null)
+// Welcher typische Tag (Kennung) passt genau zu diesen Werten? (sonst null)
 export const welcherTag = (v) => Object.keys(R.tage).find((name) => TAETIGKEITEN.every((k) => R.tage[name][k] === v[k])) ?? null;
 
 // Werte aufräumen: Zahl, im Raster von 0.5, zwischen 0 und Maximum des Reglers
 export function saubere(v = {}) {
   const aus = {};
-  for (const [k, , max] of R.regler) {
+  for (const [k, max] of R.regler) {
     const x = Number(v[k]);
     aus[k] = Number.isFinite(x) ? Math.min(max, Math.max(0, Math.round(x / R.schritt) * R.schritt)) : R.tage[R.vorgabe][k];
   }
@@ -55,17 +56,18 @@ export function linie(r, breite = 620) {
   return r.leer ? `M${X(R.start)} ${Y(100)} L${X(r.leer).toFixed(1)} ${Y(0)} L${X(R.ende)} ${Y(0)}` : `M${X(R.start)} ${Y(100)} L${X(R.ende)} ${Y(r.rest).toFixed(1)}`;
 }
 
-export function rechne(werte) {
+// T = Texte (Abschnitt akkuRechner der Textdatei), sprache = Zahlen- und Uhrzeitformat
+export function rechne(werte, T = DE, sprache = 'de') {
   const v = saubere(werte);
   const summe = TAETIGKEITEN.reduce((a, k) => a + v[k], 0);
   const tag = welcherTag(v);
   const namen = { pro: GERAETE.pro.name, k1: GERAETE.k1.name, se: GERAETE.se.name };
   if (summe > STUNDEN) {
     return {
-      werte: v, summe, tag, fehler: `Zusammen ${zahl(summe)} Stunden aktiv. Ein Tag von 07:00 bis 23:00 hat nur ${STUNDEN}, stell einen Regler tiefer.`,
+      werte: v, summe, tag, fehler: T.zuViel(zahl(summe, undefined, sprache), uhrzeit(R.start, sprache), uhrzeit(R.ende, sprache), STUNDEN),
       schlagzeile: '–',
       balken: ['pro', 'k1', 'se'].map((id) => ({ id, name: namen[id], text: '–', prozent: 0, farbe: 'line', leer: false, tage: '' })),
-      ergebnisse: null, label: 'Keine Berechnung möglich',
+      ergebnisse: null, label: T.keineBerechnung,
     };
   }
   const frei = STUNDEN - summe;
@@ -77,18 +79,19 @@ export function rechne(werte) {
     pro: ergebnis(vP, R.standby * R.proFaktor.idle),
     se: ergebnis(vS, R.standby * R.seFaktor),
   };
-  const text = (r) => (r.leer ? 'leer um ' + uhrzeit(r.leer) : Math.round(r.rest) + ' %');
-  const tageText = (r) => { const d = r.tage.toFixed(1); return 'Reicht bei diesem Alltag für ca. ' + (d === '1.0' ? '1 Tag' : d.replace(/\.0$/, '') + ' Tage'); };
+  const text = (r) => (r.leer ? T.leerUm(uhrzeit(r.leer, sprache)) : prozent(Math.round(r.rest), sprache));
+  // Tage auf eine Stelle, ohne „.0“ (1.8, 2); 1.0 heisst „1 Tag“
+  const tageText = (r) => { const d = Number(r.tage.toFixed(1)); return T.reicht(zahl(d, undefined, sprache), d === 1); };
   // farbe: Name einer CSS-Variable (unter 20 % immer --heat)
   const balken = (id, farbe) => ({ id, name: namen[id], text: text(e[id]), prozent: Number(e[id].rest.toFixed(1)), farbe: e[id].rest < 20 ? 'heat' : farbe, leer: !!e[id].leer, tage: tageText(e[id]) });
   const diff = Math.round(e.pro.rest) - Math.round(e.k1.rest);
   const schlagzeile = e.k1.leer
-    ? `Der ${namen.k1} macht um ${uhrzeit(e.k1.leer)} schlapp, der Pro ${e.pro.leer ? 'um ' + uhrzeit(e.pro.leer) : 'hat noch ' + Math.round(e.pro.rest) + ' %'}.`
-    : `Der Pro hat ${diff} Prozentpunkte mehr übrig.`;
+    ? T.schlapp(namen.k1, uhrzeit(e.k1.leer, sprache), e.pro.leer ? uhrzeit(e.pro.leer, sprache) : null, prozent(Math.round(e.pro.rest), sprache))
+    : T.mehrUebrig(diff);
   return {
     werte: v, summe, tag, fehler: '', schlagzeile, ergebnisse: e, verbrauch: { k1: vK, pro: vP, se: vS },
     balken: [balken('pro', 'accent'), balken('k1', 'ink'), balken('se', 'muted')],
-    label: `Um 23:00: ${namen.pro} ${text(e.pro)}, ${namen.k1} ${text(e.k1)}, iPhone SE ${text(e.se)}`,
+    label: T.label(uhrzeit(R.ende, sprache), [[namen.pro, text(e.pro)], [namen.k1, text(e.k1)], ['iPhone SE', text(e.se)]]),
   };
 }
 

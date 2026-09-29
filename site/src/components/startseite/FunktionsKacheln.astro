@@ -6,13 +6,12 @@ import Knopf from '../Knopf.astro';
 import Icon from '../Icon.astro';
 import { LED_FARBEN } from '../../lib/kiesel-draw/colors.js';
 import { pfad } from '../../lib/pfad.js';
+import { texte, spracheVon } from '../../i18n/index.js';
 
 const blau = LED_FARBEN.call; // derselbe Blauton wie der Blitz beim Anruf
-const KACHELN = [
-  { id: 'rgb', titel: 'RGB-Licht', anker: 'rgb', text: 'Der Blitz neben der Kamera leuchtet farbig bei Anrufen, Nachrichten und beim Laden. Das Display bleibt aus.' },
-  { id: 'zen', titel: 'Zen-Modus', anker: 'zen', text: 'Ein kurzer Druck auf den Action-Button, und das Handy ist still. Nochmal drücken, und alles ist wieder da.' },
-  { id: 'privacy', titel: 'Privacy-Modus', anker: 'privacy', text: 'Zwei Stufen in Hardware: erst Kamera, Mikrofon und GPS, dann auch WLAN, Bluetooth, Mobilfunk und NFC. Ohne Strom kann auch eine gehackte App nichts aufnehmen oder senden.' },
-];
+const t = texte(spracheVon(Astro.url));
+const K = t.startseite.kacheln;
+const KACHELN = ['rgb', 'zen', 'privacy'].map((id) => ({ id, anker: id, ...K[id] }));
 ---
 <ul role="list" class="kacheln">
   {KACHELN.map((k) => (
@@ -37,12 +36,12 @@ const KACHELN = [
           {k.id === 'zen' && (
             <div class="zen">
               <span class="mond"><Icon name="moon" size={38} /></span>
-              <span class="schalter"><span class="spur"><span class="knauf"></span></span>Zen an</span>
+              <span class="schalter"><span class="spur"><span class="knauf"></span></span>{K.zenAn}</span>
             </div>
           )}
           {k.id === 'privacy' && (
             <div class="privacy">
-              {[['Sensoren', 'Stufe 1'], ['Funk', 'Stufe 2']].map(([n, stufe]) => (
+              {K.privacyZeilen.map(([n, stufe]) => (
                 <div class="zeile">
                   <span class="name">{n}<small>{stufe}</small></span>
                   <svg width="84" height="20" viewBox="0 0 84 20" class="trenner">
@@ -52,7 +51,7 @@ const KACHELN = [
                     <circle cx="56" cy="10" r="4" class="kontakt" />
                     <line x1="60" y1="10" x2="84" y2="10" class="leitung tot" />
                   </svg>
-                  <span class="getrennt">getrennt</span>
+                  <span class="getrennt">{K.getrennt}</span>
                 </div>
               ))}
             </div>
@@ -60,7 +59,7 @@ const KACHELN = [
         </div>
         <h3 class="t-3">{k.titel}</h3>
         <p class="t-muted">{k.text}</p>
-        <Knopf art="text" icon="arrow" href={pfad(`funktionen/#${k.anker}`)}>Ausprobieren<span class="vh">: {k.titel}</span></Knopf>
+        <Knopf art="text" icon="arrow" href={pfad(`funktionen/#${k.anker}`)}>{K.ausprobieren}<span class="vh">: {k.titel}</span></Knopf>
       </article>
     </li>
   ))}

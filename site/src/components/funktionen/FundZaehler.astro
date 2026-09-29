@@ -3,10 +3,13 @@
 // Punkte, gefundene weiss). kamera-zoom.js setzt Text und data-an der Punkte.
 import GlasChip from '../GlasChip.astro';
 import { ZOOM_TARGETS } from '../../lib/kiesel-draw/ausschnitt.js';
+import { texte, spracheVon } from '../../i18n/index.js';
+
+const K = texte(spracheVon(Astro.url)).kamera;
 ---
 <GlasChip>
   <span class="punkte" aria-hidden="true">{ZOOM_TARGETS.map(() => <span class="punkt" data-fundpunkt></span>)}</span>
-  <span data-entdeckt>0 von {ZOOM_TARGETS.length} entdeckt</span>
+  <span data-entdeckt>{K.details.zaehler(0, ZOOM_TARGETS.length)}</span>
 </GlasChip>
 
 <style>

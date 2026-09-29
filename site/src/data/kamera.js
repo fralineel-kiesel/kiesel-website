@@ -1,34 +1,41 @@
-// Texte und Eckwerte der Kamera-Demos (Artboard „Funktionen“, gen3.py: Zoom-Skala und
+// Eckwerte der Kamera-Demos (Artboard „Funktionen“, gen3.py: Zoom-Skala und
 // Linsen-Leiste). Gebraucht vom Zoom-Bild (ZoomBild.astro, alle vier Zoom-Stellen) und von
-// der Makro-Demo der Modellseiten. Die Rechnung dazu steht in src/lib/kamera.js.
+// der Makro-Demo der Modellseiten. Die Rechnung dazu steht in src/lib/kamera.js, die Texte in
+// der Textdatei (kamera in src/i18n/de.js). …Fuer(T) baut sie in einer Sprache, STUFEN, LINSEN
+// und MAKRO sind die deutsche Fassung.
+
+import { kamera as DE } from '../i18n/de.js';
 
 // Ab diesem Zoom arbeitet die Tele-Linse (nur Pro); grösster Zoom je Modell.
 // Gleich wie WERTE.tele und WERTE.zoomDigital in technik.js (prüft pruefe:kamera-stellen).
 // Hier als Zahl, damit das Browser-Skript der Kamera nicht alle Gerätedaten mitlädt.
 export const TELE_AB = 3;
 export const MAX_ZOOM = { pro: 10, k1: 5 };
-export const LINSEN_NAME = { haupt: 'Hauptkamera', tele: 'Tele' };
-
 // Zoomstufen unter der Skala: [Wert, Text, betont]
-export const STUFEN = {
-  pro: [['0.5', '0.5x'], ['1', '1x'], ['3', '3x · Tele', true], ['5', '5x'], ['10', '10x']],
-  k1: [['0.5', '0.5x'], ['1', '1x'], ['2', '2x'], ['5', '5x']],
-};
+export const stufenFuer = (T = DE) => ({
+  pro: [['0.5', T.stufe('0.5')], ['1', T.stufe('1')], ['3', T.stufeTele('3'), true], ['5', T.stufe('5')], ['10', T.stufe('10')]],
+  k1: [['0.5', T.stufe('0.5')], ['1', T.stufe('1')], ['2', T.stufe('2')], ['5', T.stufe('5')]],
+});
+export const STUFEN = /* @__PURE__ */ stufenFuer();
 
 // Linsen-Leiste: [ab, Titel, Text, Breite] (Breiten wie im Artboard 1 : 1.2 : 1.6).
 // ab = kleinster angezeigter Zoom (eine Nachkommastelle), ab dem der Abschnitt gilt. 1x ist
 // noch optisch, der Ausschnitt beginnt darum bei 1.1x; die Tele-Linse genau bei 3x.
-export const LINSEN = {
-  pro: [
-    [0.5, '0.5x bis 1x', 'Hauptkamera, optisch', 1],
-    [1.1, '1x bis 3x', 'Ausschnitt aus 50 MP', 1.2],
-    [3, 'ab 3x', 'Tele-Linse, danach Ausschnitt', 1.6],
-  ],
-  k1: [
-    [0.5, '0.5x bis 1x', 'Hauptkamera, optisch', 1],
-    [1.1, '1x bis 5x', 'Ausschnitt aus 50 MP', 1.6],
-  ],
+export const linsenFuer = (T = DE) => {
+  const L = T.leiste;
+  return {
+    pro: [
+      [0.5, L.bereich('0.5', '1'), L.haupt, 1],
+      [1.1, L.bereich('1', '3'), L.ausschnitt, 1.2],
+      [3, L.ab('3'), L.tele, 1.6],
+    ],
+    k1: [
+      [0.5, L.bereich('0.5', '1'), L.haupt, 1],
+      [1.1, L.bereich('1', '5'), L.ausschnitt, 1.6],
+    ],
+  };
 };
+export const LINSEN = /* @__PURE__ */ linsenFuer();
 
 // ── Makro-Demo („Ganz nah dran.“) ──
 // Die Blume besteht aus vier Ebenen: fg = Gras ganz vorne, bee = Biene, fl = Blume,
@@ -45,29 +52,34 @@ export const LINSEN = {
 //
 //   knopf: Beschriftung des Knopfs   chip: Label auf dem Bild   staerke: Unschärfe pro
 //   Tiefe (grosse Zahl = wenig Tiefenschärfe)   skala: Grösse je Ebene (1 = wie gezeichnet)
-export const MAKRO = {
-  pro: {
-    start: 'tele',
-    linsen: {
-      weit: { knopf: 'Makro', chip: 'Ultraweit, ca. 3 cm', staerke: 9, skala: { bg: 1.05, fl: 1.06, bee: 1.15, fg: 1.25 } },
-      tele: { knopf: '3x Tele', chip: '3x Tele, ca. 25 cm', staerke: 24, skala: { bg: 1.9, fl: 1, bee: 1, fg: 1 } },
+export const makroFuer = (T = DE) => {
+  const M = T.makro;
+  return {
+    pro: {
+      start: 'tele',
+      linsen: {
+        weit: { ...M.linsen.weit, staerke: 9, skala: { bg: 1.05, fl: 1.06, bee: 1.15, fg: 1.25 } },
+        tele: { ...M.linsen.tele, staerke: 24, skala: { bg: 1.9, fl: 1, bee: 1, fg: 1 } },
+      },
+      erklaerung: M.erklaerung.pro,
     },
-    erklaerung: 'Die Blume ist in beiden Linsen gleich gross, der Hintergrund nicht: Mit der Tele stehst du weiter weg, die Wiese ist im Verhältnis näher an der Blume. Darum wirkt sie grösser und rückt scheinbar heran. Die lange Brennweite macht sie dazu viel weicher.',
-  },
-  k1: {
-    start: 'weit',
-    linsen: {
-      normal: { knopf: '1x', chip: '1x, ca. 20 cm', staerke: 4, skala: { bg: 1, fl: 0.55, bee: 0.55, fg: 0.8 } },
-      weit: { knopf: 'Makro', chip: 'Ultraweit, ca. 3 cm', staerke: 9, skala: { bg: 1.05, fl: 1, bee: 1, fg: 1 } },
+    k1: {
+      start: 'weit',
+      linsen: {
+        normal: { ...M.linsen.normal, staerke: 4, skala: { bg: 1, fl: 0.55, bee: 0.55, fg: 0.8 } },
+        weit: { ...M.linsen.weit, staerke: 9, skala: { bg: 1.05, fl: 1, bee: 1, fg: 1 } },
+      },
+      erklaerung: M.erklaerung.k1,
     },
-    erklaerung: 'Mit 1x siehst du die ganze Blume in der Wiese. Im Makro gehst du mit der Ultraweit-Einstellung bis 3 cm heran: Die Blüte füllt das Bild, der Hintergrund bleibt klein und erkennbar.',
-  },
+  };
 };
+export const MAKRO = /* @__PURE__ */ makroFuer();
 
 // Mittelpunkt der Skalierung je Ebene im 1200 × 800-Bild. Blume und Biene wachsen vom
 // Stielende aus (sonst schwebt die Blume beim Kiesel 1 in der Luft), das Gras vom unteren
 // Rand, der Hintergrund von der Horizontlinie hinter der Blume.
 export const MAKRO_MITTE = { bg: [600, 430], fl: [600, 800], bee: [600, 800], fg: [600, 800] };
 
-// Welche Ebene an welcher Stelle scharf gestellt wurde (Knöpfe unter dem Bild, für Tastatur)
-export const MAKRO_FOKUS = [['fg', 'Gras'], ['bee', 'Biene'], ['fl', 'Blume'], ['bg', 'Wiese']];
+// Welche Ebene an welcher Stelle scharf gestellt wurde (Knöpfe unter dem Bild, für Tastatur).
+// Namen: kamera.makro.ebenen in der Textdatei
+export const MAKRO_FOKUS = ['fg', 'bee', 'fl', 'bg'];

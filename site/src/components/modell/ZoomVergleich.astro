@@ -17,16 +17,18 @@ import ZoomSkala from './ZoomSkala.astro';
 import LinsenLeiste from './LinsenLeiste.astro';
 import { STUFEN, LINSEN, TELE_AB, MAX_ZOOM } from '../../data/kamera.js';
 import { vergleichTexte } from '../../lib/kamera.js';
+import { texte, spracheVon } from '../../i18n/index.js';
 
 // Anfangs 5x wie im Artboard: crop(756, 246, 5)
 const START = 5;
-const t = vergleichTexte(START);
+const K = texte(spracheVon(Astro.url)).kamera;
+const t = vergleichTexte(START, undefined, false, K);
 ---
 <div class="zoom-vergleich" data-kamera data-zoom-vergleich data-linse="tele">
   <ZoomBild modell="pro" start={START} blick={[756, 246]} vergleich chip={false} bildtext={t.bild}>
     <span class="chip-links"><GlasChip><span class="lang" data-text="k1">{t.lang.k1}</span><span class="kurz" data-kurz="k1">{t.kurz.k1}</span></GlasChip></span>
     <span class="chip-rechts"><GlasChip>
-      <span class="linsen" aria-hidden="true" title="Aktive Linse"><span class="punkt haupt"></span><span class="punkt tele"></span></span>
+      <span class="linsen" aria-hidden="true" title={K.vergleich.aktiveLinse}><span class="punkt haupt"></span><span class="punkt tele"></span></span>
       <span class="lang" data-text="pro">{t.lang.pro}</span><span class="kurz" data-kurz="pro">{t.kurz.pro}</span>
     </GlasChip></span>
     <div class="linie" aria-hidden="true"><span class="griff"><Icon name="swap" size={22} /></span></div>
@@ -37,15 +39,15 @@ const t = vergleichTexte(START);
       max="100"
       step="1"
       value="50"
-      aria-label="Trennlinie: links Kiesel 1, rechts Kiesel 1 Pro"
-      aria-valuetext="Mitte"
+      aria-label={K.vergleich.trennlinie}
+      aria-valuetext={K.vergleich.mitte}
       data-regler
     />
   </ZoomBild>
-  <ZoomSkala max={MAX_ZOOM.pro} stufen={STUFEN.pro} tele={TELE_AB} label="Zoom" />
+  <ZoomSkala max={MAX_ZOOM.pro} stufen={STUFEN.pro} tele={TELE_AB} label={K.zoom} />
   <LinsenLeiste abschnitte={LINSEN.pro} />
   <div class="vergleich-zeile">
-    <Schalter an={true} data-vergleich-schalter>Mit Kiesel 1 vergleichen</Schalter>
+    <Schalter an={true} data-vergleich-schalter>{K.vergleich.schalter}</Schalter>
   </div>
   <p class="vh" aria-live="polite" data-ansage></p>
 </div>
@@ -145,6 +147,9 @@ const t = vergleichTexte(START);
 
 <script>
   import { vergleichTexte } from '../../lib/kamera.js';
+  import { prozent } from '../../lib/format.js';
+  import { kamera as K } from '../../i18n/de.js';
+import { texte, spracheVon } from '../../i18n/index.js';
 
   document.querySelectorAll('[data-zoom-vergleich]').forEach((wurzel) => {
     const fenster = wurzel.querySelector('[data-fenster]');
@@ -170,7 +175,7 @@ const t = vergleichTexte(START);
       regler.value = String(v);
       fenster.style.setProperty('--pos', `${v}%`);
       fenster.style.setProperty('--anteil', String(v / 100));
-      regler.setAttribute('aria-valuetext', v === 50 ? 'Mitte' : `${v} % Kiesel 1, ${100 - v} % Kiesel 1 Pro`);
+      regler.setAttribute('aria-valuetext', v === 50 ? K.vergleich.mitte : K.vergleich.anteil(prozent(v), prozent(100 - v)));
     }
     regler.addEventListener('input', () => setze(+regler.value));
     const ausX = (x) => {

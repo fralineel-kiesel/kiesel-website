@@ -17,14 +17,16 @@ import GlasChip from '../GlasChip.astro';
 import { blumeBild } from '../../lib/kiesel-draw/index.js';
 import { MAKRO, MAKRO_MITTE, MAKRO_FOKUS } from '../../data/kamera.js';
 import { makroTrafo } from '../../lib/kamera.js';
+import { texte, spracheVon } from '../../i18n/index.js';
 
 const { modell = 'pro' } = Astro.props;
+const K = texte(spracheVon(Astro.url)).kamera.makro;
 const m = MAKRO[modell];
 const linse = m.linsen[m.start];
 const FOKUS = 0.5; // anfangs auf der Blume
 // Startzustand direkt im HTML: jede Ebene bekommt ihre Grösse als transform (blumeBild()
 // selbst bleibt Zeichen für Zeichen wie in Python, darum hier nachträglich)
-const bild = blumeBild({ fokus: FOKUS, staerke: linse.staerke, breite: null, hoehe: null, label: 'Blume mit Biene und Wiese. Tippe aufs Bild, um den Fokus zu setzen.' })
+const bild = blumeBild({ fokus: FOKUS, staerke: linse.staerke, breite: null, hoehe: null, label: K.bild })
   .replace(/<g filter="url\(#(\w+?)c-(bg|fl|fg|bee)\)"/g, (g, _, e) => `${g} transform="${makroTrafo(linse.skala[e], MAKRO_MITTE[e])}"`);
 ---
 <div class="makro" data-makro data-modell={modell} data-linse={m.start} data-fokus={FOKUS}>
@@ -32,16 +34,16 @@ const bild = blumeBild({ fokus: FOKUS, staerke: linse.staerke, breite: null, hoe
     <div class="bild" data-bild set:html={bild} />
     <span class="ring" data-ring aria-hidden="true"></span>
     <div class="chip"><GlasChip><span data-makro-text aria-live="polite">{linse.chip}</span></GlasChip></div>
-    <div class="modi" role="group" aria-label="Linse">
+    <div class="modi" role="group" aria-label={K.linse}>
       {Object.entries(m.linsen).map(([id, l]) => (
         <button type="button" aria-pressed={id === m.start ? 'true' : 'false'} data-linse-knopf={id}>{l.knopf}</button>
       ))}
     </div>
   </div>
-  <div class="fokus" role="group" aria-label="Scharf stellen auf">
-    <span class="fokus-titel t-small t-muted" aria-hidden="true">Scharf:</span>
-    {MAKRO_FOKUS.map(([ebene, name]) => (
-      <button type="button" aria-pressed={ebene === 'fl' ? 'true' : 'false'} data-fokus-ebene={ebene}>{name}</button>
+  <div class="fokus" role="group" aria-label={K.scharfStellen}>
+    <span class="fokus-titel t-small t-muted" aria-hidden="true">{K.scharf}</span>
+    {MAKRO_FOKUS.map((ebene) => (
+      <button type="button" aria-pressed={ebene === 'fl' ? 'true' : 'false'} data-fokus-ebene={ebene}>{K.ebenen[ebene]}</button>
     ))}
   </div>
   <p class="erklaerung t-small t-muted">{m.erklaerung}</p>

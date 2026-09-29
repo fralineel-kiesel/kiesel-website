@@ -17,34 +17,35 @@ import KaufBox from './KaufBox.astro';
 import { MODELLE } from '../../data/modelle.js';
 import { akku } from '../../data/geraete.js';
 import { WERTE } from '../../data/technik.js';
+import { texte, spracheVon } from '../../i18n/index.js';
 
 const W = WERTE;
 
 const { modell } = Astro.props;
 const m = MODELLE[modell];
 const pro = modell === 'pro';
-const beschreibung = pro
-  ? `Kiesel 1 Pro: so gross wie das iPhone 13 mini, mit echtem ${WERTE.tele}x-Tele und ${akku('pro')}. Ein Fan-Konzept.`
-  : `Kiesel 1: so gross wie das iPhone SE von 2016, mit ${akku('k1')} für den ganzen Tag. Ein Fan-Konzept.`;
+const t = texte(spracheVon(Astro.url));
+const S = t.modellseite;
+const beschreibung = pro ? S.beschreibung.pro(W.tele, akku('pro', t.geraete)) : S.beschreibung.k1(akku('k1', t.geraete));
 ---
 <BaseLayout titel={m.name} beschreibung={beschreibung} unterleiste={modell}>
   <ModellKopf modell={modell} />
 
-  <section class="abschnitt container" aria-label="Kennzahlen">
+  <section class="abschnitt container" aria-label={t.startseite.kennzahlen}>
     <Kennzahlen zahlen={m.seite.kennzahlen} />
   </section>
 
   <section class="abschnitt container" id="kamera" aria-labelledby="kamera-titel">
     {pro ? (
       <>
-        <h2 class="t-1" id="kamera-titel">{W.tele}x Tele. Echt optisch.</h2>
-        <p class="t-lead t-muted unter">Links der Kiesel 1 bei {W.zoomDigital.k1}x, rein digital. Rechts der Pro, der bei {W.tele}x auf die Tele-Linse wechselt und bei {W.zoomDigital.k1}x noch aus einem scharfen Bild schneidet. Zieh den Regler und schau selbst.</p>
+        <h2 class="t-1" id="kamera-titel">{S.kamera.pro.titel(W.tele)}</h2>
+        <p class="t-lead t-muted unter">{S.kamera.pro.text(W.zoomDigital.k1, W.tele)}</p>
         <div class="demo"><ZoomVergleich /></div>
       </>
     ) : (
       <>
-        <h2 class="t-1" id="kamera-titel">Eine Kamera. Alles drin.</h2>
-        <p class="t-lead t-muted unter">Die variable Linse fährt stufenlos von 0.5x bis 1x, jeweils mit vollen {W.megapixel} MP. Darüber zoomt der Kiesel 1 digital bis {W.zoomDigital.k1}x, dann wird es weicher. Wer echtes Tele will, nimmt den Pro.</p>
+        <h2 class="t-1" id="kamera-titel">{S.kamera.k1.titel}</h2>
+        <p class="t-lead t-muted unter">{S.kamera.k1.text(W.megapixel, W.zoomDigital.k1)}</p>
         <div class="demo"><ZoomDemo /></div>
       </>
     )}
@@ -53,10 +54,8 @@ const beschreibung = pro
   <section class="abschnitt container" aria-labelledby="makro-titel">
     <div class="makro">
       <div class="makro-text">
-        <h2 class="t-1" id="makro-titel">Ganz nah dran.</h2>
-        <p class="t-lead t-muted">{pro
-          ? `Zwei Wege zur Nahaufnahme: Makro mit Ultraweit aus wenigen Zentimetern, oder die Tele-Linse, die schon ab rund ${W.nahfokusCm} cm scharf stellt. Wechsle die Linse und schau auf den Hintergrund. Tipp aufs Bild, um den Fokus zu verschieben.`
-          : 'Die Hauptkamera kann Makro: Blüte, Biene und Tautropfen ganz aus der Nähe. Tipp aufs Bild, um den Fokus zu verschieben.'}</p>
+        <h2 class="t-1" id="makro-titel">{S.makro.titel}</h2>
+        <p class="t-lead t-muted">{pro ? S.makro.pro(W.nahfokusCm) : S.makro.k1}</p>
       </div>
       <MakroDemo modell={modell} />
     </div>
@@ -66,12 +65,12 @@ const beschreibung = pro
     <AkkuStory modell={modell} />
   </div>
 
-  <section class="abschnitt container" aria-label="Akku im Vergleich">
+  <section class="abschnitt container" aria-label={S.akkuVergleich}>
     <AkkuFazit modell={modell} />
   </section>
 
   <section class="abschnitt container" id="farben" aria-labelledby="farben-titel">
-    <h2 class="t-1" id="farben-titel">Fünf Farben.</h2>
+    <h2 class="t-1" id="farben-titel">{S.farbenTitel}</h2>
     <div class="farben"><FarbReihe modell={modell} /></div>
   </section>
 
@@ -79,7 +78,7 @@ const beschreibung = pro
     <Eckdaten modell={modell} />
   </section>
 
-  <section class="abschnitt container" aria-label={`${m.name} kaufen`}>
+  <section class="abschnitt container" aria-label={S.kaufen(m.name)}>
     <KaufBox modell={modell} />
   </section>
 </BaseLayout>

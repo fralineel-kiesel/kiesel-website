@@ -10,16 +10,19 @@ import Knopf from '../Knopf.astro';
 import ZoomLeiste from '../ZoomLeiste.astro';
 import ZoomBild from '../modell/ZoomBild.astro';
 import { pfad } from '../../lib/pfad.js';
+import { texte, spracheVon } from '../../i18n/index.js';
+
+const Z = texte(spracheVon(Astro.url)).startseite.zoom;
 ---
 <div class="zoom" data-kamera data-zoom-teaser>
   <div class="text">
-    <h2 class="t-1">Zoom, der nicht aufgibt.</h2>
-    <p class="t-lead t-muted lang">Der Pro wechselt bei 3x auf eine echte Tele-Linse. Selbst bei 10x siehst du noch das Gipfelkreuz. Im Panorama sind acht Details versteckt: Such sie auf der Funktionen-Seite.</p>
-    <p class="t-lead t-muted kurz">Bei 3x wechselt der Pro auf die Tele-Linse. Acht versteckte Details im Panorama findest du auf der Funktionen-Seite.</p>
-    <div><Knopf art="text" icon="arrow" href={pfad('funktionen/#kamera')}>Zoom ausprobieren</Knopf></div>
+    <h2 class="t-1">{Z.titel}</h2>
+    <p class="t-lead t-muted lang">{Z.text}</p>
+    <p class="t-lead t-muted kurz">{Z.textKurz}</p>
+    <div><Knopf art="text" icon="arrow" href={pfad('funktionen/#kamera')}>{Z.knopf}</Knopf></div>
   </div>
   <ZoomBild modell="pro" start={3} blick={[756, 232]} klein>
-    <div class="leiste"><ZoomLeiste aktiv="3" label="Zoomstufe im Beispielbild" /></div>
+    <div class="leiste"><ZoomLeiste aktiv="3" label={Z.leiste} /></div>
   </ZoomBild>
 </div>
 

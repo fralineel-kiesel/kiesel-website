@@ -13,10 +13,10 @@ const t = texte(spracheVon(Astro.url));
 const farbe = MODELLE[modell].seite.farbe;
 const reihe = [farbe, ...FARB_IDS.filter((n) => n !== farbe)];
 ---
-<ul role="list" class="farben" aria-label="Die fünf Farben">
+<ul role="list" class="farben" aria-label={t.modellseite.fuenfFarben}>
   {reihe.map((n) => (
     <li>
-      <Fragment set:html={handy({ ansicht: 'hinten', modell, farbe: n, hoehe: null, label: `${MODELLE[modell].name} in ${t.farben[n]}, Rückseite` })} />
+      <Fragment set:html={handy({ ansicht: 'hinten', modell, farbe: n, hoehe: null, label: t.modellseite.bildFarbe(MODELLE[modell].name, t.farben[n]) })} />
       <span>{t.farben[n]}</span>
     </li>
   ))}

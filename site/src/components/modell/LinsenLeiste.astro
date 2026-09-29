@@ -3,9 +3,12 @@
 // Zoom arbeitet. Der gerade aktive Abschnitt ist in Akzentfarbe (setzt kamera-zoom.js über
 // data-aktiv: der letzte, dessen „ab“ erreicht ist). Breiten wie im Artboard (1 : 1.2 : 1.6).
 //   abschnitte: [[ab, Titel, Text, Breite], …] (siehe data/kamera.js)
+import { texte, spracheVon } from '../../i18n/index.js';
+
+const K = texte(spracheVon(Astro.url)).kamera;
 const { abschnitte } = Astro.props;
 ---
-<ul class="linsen-leiste" style={`grid-template-columns: ${abschnitte.map((a) => `minmax(0, ${a[3]}fr)`).join(' ')}`} aria-label="Welche Kamera arbeitet">
+<ul class="linsen-leiste" style={`grid-template-columns: ${abschnitte.map((a) => `minmax(0, ${a[3]}fr)`).join(' ')}`} aria-label={K.welcheKamera}>
   {abschnitte.map(([ab, titel, text]) => (
     <li data-linsenabschnitt data-ab={ab}>
       <span class="titel">{titel}</span>

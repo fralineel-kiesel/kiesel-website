@@ -18,6 +18,9 @@ import { starteServer } from './dist-server.mjs';
 import { referenz } from './gen4-referenz.mjs';
 import { rechne, linie, TAETIGKEITEN } from '../src/lib/akku-rechner.js';
 import { RECHNER } from '../src/data/akku.js';
+import { akkuRechner } from '../src/i18n/de.js';
+// Tage haben Kennungen (normal, busy …); die Chips zeigen die Namen aus der Textdatei
+const TAG_ID = Object.fromEntries(Object.entries(akkuRechner.tage).map(([id, name]) => [name, id]));
 import { HANDYS_SPALTEN, FOOTER_SPALTEN } from '../src/data/navigation.js';
 
 let fehler = 0;
@@ -31,9 +34,9 @@ const text = (erg, id) => erg.balken.find((b) => b.id === id).text;
 console.log('── Erwartete Werte ──');
 const tag = (name) => rechne(RECHNER.tage[name]);
 const ERWARTET = [
-  ['Normal', 'k1', '44 %'], ['Normal', 'pro', '55 %'], ['Normal', 'se', 'leer um 22:18'],
-  ['Viel unterwegs', 'k1', 'leer um 21:37'], ['Viel unterwegs', 'pro', '15 %'],
-  ['Ruhiger Tag', 'k1', '72 %'], ['Ruhiger Tag', 'pro', '78 %'],
+  ['normal', 'k1', '44 %'], ['normal', 'pro', '55 %'], ['normal', 'se', 'leer um 22:18'],
+  ['busy', 'k1', 'leer um 21:37'], ['busy', 'pro', '15 %'],
+  ['quiet', 'k1', '72 %'], ['quiet', 'pro', '78 %'],
 ];
 const NAME = { k1: 'Kiesel 1', pro: 'Kiesel 1 Pro', se: 'SE' };
 for (const [t, id, soll] of ERWARTET) pruefe(`${t}: ${NAME[id]} ${soll}`, text(tag(t), id) === soll, text(tag(t), id));
@@ -57,7 +60,8 @@ function vergleiche(v) {
   if (r.lineK !== linien[0] || r.lineP !== linien[1] || r.lineS !== linien[2]) d.push(`Linien ${r.lineK} | ${linien[0]}`);
   if (r.chartAria !== u.label) d.push(`Diagramm-Text „${r.chartAria}“ ≠ „${u.label}“`);
   const gedrueckt = r.presets.find((p) => p.pressed === 'true')?.name ?? null;
-  if (gedrueckt !== u.tag) d.push(`Chip ${gedrueckt} ≠ ${u.tag}`);
+  // Das Artboard kennt den Namen des Tages, rechne() die Kennung
+  if (gedrueckt !== (u.tag && akkuRechner.tage[u.tag])) d.push(`Chip ${gedrueckt} ≠ ${u.tag}`);
   return d;
 }
 const abw = [];
@@ -69,7 +73,7 @@ const zufall = () => (saat = (saat * 16807) % 2147483647) / 2147483647;
 const abw2 = [];
 let ueber16 = 0, leer = 0;
 for (let i = 0; i < 400; i++) {
-  const v = Object.fromEntries(RECHNER.regler.map(([k, , max]) => [k, Math.round(zufall() * max * 2) / 2]));
+  const v = Object.fromEntries(RECHNER.regler.map(([k, max]) => [k, Math.round(zufall() * max * 2) / 2]));
   const s = Object.values(v).reduce((a, b) => a + b, 0);
   if (s > 16) ueber16++;
   if (s <= 16 && rechne(v).ergebnisse.k1.leer) leer++;
@@ -119,7 +123,7 @@ try {
     await seite.getByRole('button', { name, exact: true }).click();
     const a = await anzeige(seite);
     const ok = Object.entries(erwartet).every(([id, t]) => nb(a.texte[id]) === t);
-    pruefe(`Chip „${name}“: ${Object.entries(erwartet).map(([id, t]) => `${NAME[id]} ${t}`).join(', ')}`, ok && a.tag === name && stimmt(a), JSON.stringify(a.texte));
+    pruefe(`Chip „${name}“: ${Object.entries(erwartet).map(([id, t]) => `${NAME[id]} ${t}`).join(', ')}`, ok && a.tag === TAG_ID[name] && stimmt(a), JSON.stringify(a.texte));
   }
 
   // Tastatur: Tab von „Ferientag“ auf den ersten Regler, Pfeiltasten
@@ -135,7 +139,7 @@ try {
   await seite.keyboard.press('ArrowLeft');
   await seite.keyboard.press('ArrowLeft');
   a = await anzeige(seite);
-  pruefe('2 × Pfeil links: zurück auf 3.0 h, Chip „Normal“ wieder gedrückt', a.werte.surf === 3 && a.tag === 'Normal' && stimmt(a));
+  pruefe('2 × Pfeil links: zurück auf 3.0 h, Chip „Normal“ wieder gedrückt', a.werte.surf === 3 && a.tag === 'normal' && stimmt(a));
   await seite.keyboard.press('End');
   a = await anzeige(seite);
   pruefe('Ende: Surfen 10 h, Rechnung stimmt', a.werte.surf === 10 && stimmt(a), nb(a.schlagzeile));

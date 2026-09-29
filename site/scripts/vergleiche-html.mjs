@@ -83,6 +83,18 @@ export const REGELN = [
     neu: (_, attr, n) => `${attr === 'data-name' ? 'data-detail-id' : attr}="${DETAILS[n]}"`,
   },
   {
+    name: 'Startseite, Knopf „Kaufen ab …“: kein Zeilenumbruch mehr vor dem Text',
+    grund: 'Der Text kommt jetzt als Ausdruck aus der Textdatei; vor einem Ausdruck lässt Astro den Leerraum weg. Der Knopf ist inline-flex, Leerraum am Anfang wird nie dargestellt, der Name für Screenreader wird getrimmt: unsichtbar.',
+    alt: /(data-held-kaufen="(?:k1|pro)"[^>]*>)\n\s+(Kaufen ab )/g,
+    neu: (_, a, b) => a + b,
+  },
+  {
+    name: 'Akku-Rechner: typische Tage als Kennung (data-tag)',
+    grund: 'Die Tage heissen intern quiet, normal, busy, holiday; die Chips zeigen weiter „Ruhiger Tag“, „Normal“ …',
+    alt: /\bdata-tag="(Ruhiger Tag|Normal|Viel unterwegs|Ferientag)"/g,
+    neu: (_, n) => `data-tag="${{ 'Ruhiger Tag': 'quiet', Normal: 'normal', 'Viel unterwegs': 'busy', Ferientag: 'holiday' }[n]}"`,
+  },
+  {
     name: 'Blumen-Vorgaben der Spielwiese: Kennung statt Name (data-vorgabe)',
     grund: 'BLUME_FOKUS hat Kennungen (tele, bee, macro, all), die Namen aus gen2.py stehen in der Textdatei.',
     alt: /\bdata-vorgabe="(Blume \(3x Tele\)|Biene|Makro \(alles nah\)|Alles scharf)"/g,
@@ -307,6 +319,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const basis = basisBauen(ref);
   if (!hat('--ohne-build')) { console.log('Jetziger Stand wird gebaut …'); baue(site); }
   const neuDist = path.join(site, 'dist');
+  if (!fs.existsSync(path.join(neuDist, 'index.html'))) { console.log('✗ Kein vollständiger Build in dist/ (Fehler beim Bauen?)'); process.exit(1); }
 
   const ohne = hat('--ohne-regeln');
   const statisch = vergleicheStatisch(basis.dist, neuDist, ohne ? [] : REGELN);
