@@ -2,6 +2,8 @@
 node_modules/
 # Ergebnis von "npm run build", entsteht bei jedem Build neu
 dist/
+# Prüf-Builds mit Pseudo-Sprache (KIESEL_PSEUDO=klammern|lang), nie veröffentlichen
+dist-pseudo-*/
 # Zwischenspeicher von Astro (erzeugte Typen, Cache)
 .astro/
 
