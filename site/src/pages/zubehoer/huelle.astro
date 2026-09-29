@@ -11,39 +11,41 @@ import Knopf from '../../components/Knopf.astro';
 import Farbwaehler from '../../components/Farbwaehler.astro';
 import { handy, backSvg, palette, MODELS, f, uid } from '../../lib/kiesel-draw/index.js';
 import { HUELLE_PREIS } from '../../data/preise.js';
-import { HUELLE, HUELLE_MASSE as HM } from '../../data/zubehoer.js';
+import { huelleFuer, HUELLE_MASSE as HM } from '../../data/zubehoer.js';
 import { GERAETE } from '../../data/geraete.js';
 import { chf } from '../../lib/format.js';
 import { pfad } from '../../lib/pfad.js';
 import { texte, spracheVon } from '../../i18n/index.js';
 
 const t = texte(spracheVon(Astro.url));
+const H = t.huelle;
+const HUELLE = huelleFuer(H, t.farben);
 const S = HUELLE.start;
 const DREHUNG = { hinten: -4, vorne: 3 };
-const bild = handy({ ansicht: 'hinten', modell: S.modell, farbe: S.handy, huelle: S.huelle, hoehe: null, drehung: DREHUNG.hinten, label: `Kiesel 1 Pro in ${t.farben[S.handy]} mit Hülle in ${t.farben[S.huelle]}, Rückseite` });
+const bild = handy({ ansicht: 'hinten', modell: S.modell, farbe: S.handy, huelle: S.huelle, hoehe: null, drehung: DREHUNG.hinten, label: H.bild('Kiesel 1 Pro', t.farben[S.handy], t.farben[S.huelle], H.ansichten.hinten) });
 
 // Ausschnitt einer Rückseite (crop_phone in gen3.py)
 const ausschnitt = (farbe, huelle, vb, label) => `<svg viewBox="${vb}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="${label}" style="display: block">${backSvg('pro', palette(farbe), uid('cp'), null, palette(huelle))}</svg>`;
 const PW = MODELS.pro.W, PH = MODELS.pro.H;
-const milchig = ausschnitt('sky-blue', 'matte-white', `${f(PW / 2 - 260)} ${f(PH * 0.517 - 160)} 520 325`, 'Nahaufnahme: milchige Rückseite mit durchschimmerndem Kiesel und MagSafe-Ring');
-const rand = ausschnitt('titanium-gray', 'pebble-beige', `${f(PW - 230)} 120 320 200`, 'Nahaufnahme: fester Rand mit Tastenabdeckungen');
+const milchig = ausschnitt('sky-blue', 'matte-white', `${f(PW / 2 - 260)} ${f(PH * 0.517 - 160)} 520 325`, H.nahMilchig);
+const rand = ausschnitt('titanium-gray', 'pebble-beige', `${f(PW - 230)} 120 320 200`, H.nahRand);
 
 // Profilschnitt, 1 mm = 18 px (gen3.py). Hülle und Handy in festen Farben, der Rest aus Tokens.
 // Abweichung vom Artboard: „Tisch“ steht links und die Fläche ist 30 breiter, sonst überlappt
 // „Tisch“ mit „0.6 mm Luft …“ und „0.8 mm“ wird am Rand abgeschnitten (so im Artboard).
 const mm = 18, tisch = 214, luft = HM.ueberKamera * mm, boden = HM.boden * mm, dicke = GERAETE.pro.dicke * mm, ueber = HM.ueberDisplay * mm;
 const oben = tisch - luft - boden - dicke; // Oberkante Handy
-const rahmen = `<svg viewBox="-4 0 430 250" role="img" aria-label="Schnitt: Hülle steht ${HM.ueberDisplay} mm über das Display und ${HM.ueberKamera} mm über die Kamera" class="profil">`
+const rahmen = `<svg viewBox="-4 0 430 250" role="img" aria-label="${H.profil.label(HM.ueberDisplay, HM.ueberKamera)}" class="profil">`
   + `<line x1="20" y1="${tisch}" x2="380" y2="${tisch}" class="tisch"/>`
-  + `<text x="20" y="238" class="klein">Tisch</text>`
+  + `<text x="20" y="238" class="klein">${H.profil.tisch}</text>`
   + `<path d="M60 ${f(tisch - luft - boden)} H90 V${f(tisch - luft)} H330 V${f(tisch - luft - boden)} H350 V${f(oben - ueber)} H336 V${f(oben + 4)} H74 V${f(oben - ueber)} H60 Z" style="fill: #DCDBD6; stroke: #A4A29B; stroke-width: 1"/>`
   + `<rect x="74" y="${f(oben)}" width="262" height="${f(dicke)}" rx="10" style="fill: #A7C4DE"/>`
   + `<rect x="74" y="${f(oben)}" width="262" height="8" rx="4" style="fill: #0A0F14"/>`
   + `<rect x="110" y="${f(tisch - luft - boden)}" width="70" height="${f(boden)}" rx="6" style="fill: #55585D"/>`
   + `<line x1="356" y1="${f(oben - ueber)}" x2="356" y2="${f(oben)}" class="mass"/>`
-  + `<text x="364" y="${f(oben - 2)}" class="masstext">${HM.ueberDisplay} mm</text>`
+  + `<text x="364" y="${f(oben - 2)}" class="masstext">${H.profil.mm(HM.ueberDisplay)}</text>`
   + `<line x1="145" y1="${f(tisch - luft)}" x2="145" y2="${tisch}" class="mass"/>`
-  + `<text x="190" y="240" class="masstext">${HM.ueberKamera} mm Luft unter der Kamera</text>`
+  + `<text x="190" y="240" class="masstext">${H.profil.luft(HM.ueberKamera)}</text>`
   + `<text x="205" y="${f(tisch - luft - boden - 4.5 * mm)}" style="font-family: var(--body); font-size: 13px; font-weight: 600; fill: #0C1116; text-anchor: middle">Kiesel 1 Pro</text>`
   + '</svg>';
 
@@ -51,15 +53,15 @@ const E = HUELLE.eigenschaften;
 const kacheln = [[milchig, ...E.milchig], [rand, ...E.rand], [rahmen, ...E.rahmen]];
 const details = HUELLE.details.map(([a, b]) => [a, b ?? chf(HUELLE_PREIS)]);
 ---
-<BaseLayout titel="Kiesel-Hülle" beschreibung={`${HUELLE.text} Für Kiesel 1 und Kiesel 1 Pro, ${chf(HUELLE_PREIS)}`}>
-  <nav class="container brotkrumen" aria-label="Brotkrumen">
-    <a href={pfad('zubehoer/')}>Zubehör</a><span aria-hidden="true">/</span><span aria-current="page">{HUELLE.titel}</span>
+<BaseLayout titel={H.titel} beschreibung={H.beschreibung(HUELLE.text, chf(HUELLE_PREIS))}>
+  <nav class="container brotkrumen" aria-label={H.brotkrumen}>
+    <a href={pfad('zubehoer/')}>{H.zubehoer}</a><span aria-hidden="true">/</span><span aria-current="page">{HUELLE.titel}</span>
   </nav>
 
   <section class="container produkt" data-huelle aria-labelledby="huelle-titel">
     <Buehne class="buehne">
       <div class="handy" data-huelle-handy data-modell={S.modell} set:html={bild} />
-      <div class="ansichten" role="group" aria-label="Ansicht">
+      <div class="ansichten" role="group" aria-label={H.ansicht}>
         {HUELLE.ansichten.map(([wert, text]) => <button type="button" aria-pressed={wert === 'hinten' ? 'true' : 'false'} data-ansicht={wert}>{text}</button>)}
       </div>
     </Buehne>
@@ -210,7 +212,7 @@ const details = HUELLE.details.map(([a, b]) => [a, b ?? chf(HUELLE_PREIS)]);
   import { handy } from '../../lib/kiesel-draw/phone.js';
   import { huelleKaufen } from '../../scripts/huelle-kaufen.js';
   import { farbId } from '../../data/farben.js';
-  import { farben as FARBNAME } from '../../i18n/de.js';
+  import { farben as FARBNAME, huelle as H } from '../../i18n/de.js';
 
   const NAME = { k1: 'Kiesel 1', pro: 'Kiesel 1 Pro' };
   const DREHUNG = { hinten: -4, vorne: 3 };
@@ -224,7 +226,7 @@ const details = HUELLE.details.map(([a, b]) => [a, b ?? chf(HUELLE_PREIS)]);
     function zeichne() {
       ort.dataset.modell = z.modell;
       ort.innerHTML = handy({ ansicht: z.ansicht, modell: z.modell, farbe: z.handy, huelle: z.huelle, hoehe: null, drehung: DREHUNG[z.ansicht],
-        label: `${NAME[z.modell]} in ${FARBNAME[z.handy]} mit Hülle in ${FARBNAME[z.huelle]}, ${z.ansicht === 'hinten' ? 'Rückseite' : 'Vorderseite'}` });
+        label: H.bild(NAME[z.modell], FARBNAME[z.handy], FARBNAME[z.huelle], H.ansichten[z.ansicht]) });
       wurzel.querySelectorAll('[data-modell-wahl]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.modellWahl === z.modell ? 'true' : 'false'));
       wurzel.querySelectorAll('[data-ansicht]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.ansicht === z.ansicht ? 'true' : 'false'));
     }

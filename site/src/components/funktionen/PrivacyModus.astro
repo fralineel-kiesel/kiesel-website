@@ -8,11 +8,14 @@
 // sonst wäre die Schrift bei 350 px Breite nur 7 px gross. Das Skript führt beide nach.
 // Zustände stehen als data-Attribute im SVG (data-zustand, data-aus, data-led auf der Wurzel),
 // die Farben setzt das CSS, also in beiden Themen.
-import { PRIVACY, RGB } from '../../data/funktionen.js';
+import { privacyFuer, RGB } from '../../data/funktionen.js';
 import { privacyZustand } from '../../lib/privacy.js';
+import { texte, spracheVon } from '../../i18n/index.js';
 
 const ORANGE = RGB.ereignisse.privacy.color;
-const z = privacyZustand(0, false);
+const t = texte(spracheVon(Astro.url));
+const PRIVACY = privacyFuer(t.privacy);
+const z = privacyZustand(0, false, t.privacy);
 
 const YS = [92, 164, 236, 380, 452, 524];
 const text = (x, y, inhalt, klasse, extra = '') => `<text x="${x}" y="${y}" class="${klasse}" ${extra}>${inhalt}</text>`;
@@ -52,7 +55,7 @@ function schema(art) {
       + '</g>';
   });
   g += `<rect x="${P.x}" y="${P.y}" width="${P.w}" height="${P.h}" rx="18" class="kasten"/>`;
-  g += text(mx, P.y + 64, 'Platine', 'name mitte');
+  g += text(mx, P.y + 64, PRIVACY.platineName, 'name mitte');
   g += text(mx, P.y + 88, z.platine, 'status mitte', 'data-platine');
   g += `<circle cx="${mx}" cy="${P.y + 132}" r="22" class="led-ring"/>`;
   g += `<circle cx="${mx}" cy="${P.y + 132}" r="11" class="led"/>`;
@@ -289,7 +292,7 @@ function schema(art) {
       const vorher = z;
       z = waehleStufe(z, Number(k.dataset.stufeKnopf));
       if (z.stufe === vorher.stufe) return;
-      zeige(`${z.name}. ${z.text}`);
+      zeige(PRIVACY.ansage(z.name, z.text));
     }));
     $('[data-notruf-knopf]').addEventListener('click', () => {
       if (z.stufe === 0) return; // aria-disabled: bleibt fokussierbar, tut aber nichts

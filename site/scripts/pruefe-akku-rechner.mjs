@@ -80,7 +80,7 @@ for (let i = 0; i < 400; i++) {
   abw2.push(...vergleiche(v).map((x) => `${JSON.stringify(v)}: ${x}`));
 }
 pruefe(`400 zufällige Tage wie im Artboard (${ueber16} davon über 16 h, ${leer} mit leerem Kiesel 1)`, abw2.length === 0 && ueber16 > 20 && leer > 20, abw2.slice(0, 2).join(' | '));
-pruefe('Unsinn wird aufgeräumt (negativ, zu gross, kein Raster, Text)', JSON.stringify(rechne({ surf: -3, video: 99, music: 1.3, cam: 'x', game: 2 }).werte) === JSON.stringify({ surf: 0, video: 6, music: 1.5, cam: RECHNER.tage.Normal.cam, game: 2 }));
+pruefe('Unsinn wird aufgeräumt (negativ, zu gross, kein Raster, Text)', JSON.stringify(rechne({ surf: -3, video: 99, music: 1.3, cam: 'x', game: 2 }).werte) === JSON.stringify({ surf: 0, video: 6, music: 1.5, cam: RECHNER.tage.normal.cam, game: 2 }));
 
 // ------------------------------------------------------------------ 3. Seite
 console.log('\n── Seite /akku-rechner/ ──');
@@ -114,7 +114,7 @@ try {
   {
     const { seite, ctx } = await oeffne('akku-rechner/', { javaScriptEnabled: false });
     const a = await anzeige(seite);
-    pruefe('Ohne Skript: HTML zeigt „Normal“ (Kiesel 1 44 %, Pro 55 %, SE leer um 22:18)', nb(a.texte.k1) === '44 %' && nb(a.texte.pro) === '55 %' && a.texte.se === 'leer um 22:18' && a.tag === 'Normal', JSON.stringify(a.texte));
+    pruefe('Ohne Skript: HTML zeigt „Normal“ (Kiesel 1 44 %, Pro 55 %, SE leer um 22:18)', nb(a.texte.k1) === '44 %' && nb(a.texte.pro) === '55 %' && a.texte.se === 'leer um 22:18' && a.tag === 'normal', JSON.stringify(a.texte));
     await ctx.close();
   }
 

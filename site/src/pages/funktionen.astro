@@ -1,26 +1,32 @@
 ---
 // /funktionen/ nach dem Artboard „Funktionen“ (design/generator/gen3.py): Kopf mit Sprungmarken,
 // dann RGB-Licht, Zen-Modus, Privacy-Modus und „Such das Gipfelkreuz“. Alles echt bedienbar.
-// Texte in src/data/funktionen.js.
+// Texte in src/i18n/de.js (funktionen, rgb, zen, privacy, kamera), Farben und Logik in src/data/funktionen.js.
 import BaseLayout from '../layouts/BaseLayout.astro';
 import RgbLicht from '../components/funktionen/RgbLicht.astro';
 import ZenModus from '../components/funktionen/ZenModus.astro';
 import PrivacyModus from '../components/funktionen/PrivacyModus.astro';
 import KameraSuche from '../components/funktionen/KameraSuche.astro';
-import { KOPF, KAMERA } from '../data/funktionen.js';
+import { kopfFuer, kameraFuer } from '../data/funktionen.js';
+import { texte, spracheVon } from '../i18n/index.js';
+
+const t = texte(spracheVon(Astro.url));
+const F = t.funktionen;
+const KOPF = kopfFuer(F);
+const KAMERA = kameraFuer(F);
 ---
-<BaseLayout titel="Funktionen" beschreibung="RGB-Licht, Zen-Modus, Privacy-Modus und acht versteckte Details im Kamera-Zoom: alles zum Ausprobieren.">
+<BaseLayout titel={F.seitenTitel} beschreibung={F.beschreibung}>
   <section class="kopf container" aria-labelledby="funktionen-titel">
     <h1 class="t-display" id="funktionen-titel">{KOPF.titel}</h1>
     <p class="t-lead t-muted">{KOPF.einleitung}</p>
-    <nav class="anker" aria-label="Auf dieser Seite">
+    <nav class="anker" aria-label={F.sprungmarken}>
       {KOPF.anker.map(([text, id]) => <a href={`#${id}`}>{text}</a>)}
     </nav>
   </section>
 
-  <section class="abschnitt container" id="rgb" aria-label="RGB-Licht"><RgbLicht /></section>
-  <section class="abschnitt container" id="zen" aria-label="Zen-Modus"><ZenModus /></section>
-  <section class="abschnitt container" id="privacy" aria-label="Privacy-Modus"><PrivacyModus /></section>
+  <section class="abschnitt container" id="rgb" aria-label={F.anker.rgb}><RgbLicht /></section>
+  <section class="abschnitt container" id="zen" aria-label={F.anker.zen}><ZenModus /></section>
+  <section class="abschnitt container" id="privacy" aria-label={F.anker.privacy}><PrivacyModus /></section>
   <section class="abschnitt container" id="kamera" aria-labelledby="kamera-titel">
     <h2 class="t-1" id="kamera-titel">{KAMERA.titel}</h2>
     <p class="t-lead t-muted unter">{KAMERA.text}</p>

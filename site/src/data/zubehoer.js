@@ -1,27 +1,24 @@
-// Texte der Seiten /zubehoer/ und /zubehoer/huelle/, 1:1 aus den Artboards „Zubehör“ und
-// „Kiesel-Hülle“ (design/generator/gen3.py). Der Preis steht in preise.js (HUELLE_PREIS).
+// Daten der Seiten /zubehoer/ und /zubehoer/huelle/ (Artboards „Zubehör“ und „Kiesel-Hülle“,
+// design/generator/gen3.py). Der Preis steht in preise.js (HUELLE_PREIS), die Texte in der
+// Textdatei (zubehoer und huelle in src/i18n/de.js). …Fuer(T) baut sie in einer Sprache,
+// ZUBEHOER und HUELLE sind die deutsche Fassung.
 // Platzhalter in eckigen Klammern sind bewusst so: nichts erfinden, bis es feststeht.
 import { FARBEN_TEXT } from './farben.js';
-import { farben as FARBNAME } from '../i18n/de.js';
+import { farben as FARBNAME, zubehoer as DE_Z, huelle as DE_H } from '../i18n/de.js';
 
-export const ZUBEHOER = {
-  titel: 'Zubehör',
-  einleitung: 'Alles, was zum Kiesel passt. Im Moment ist das vor allem eine Hülle, die man gern anfasst.',
-  filter: [['alle', 'Alle'], ['k1', 'für Kiesel 1'], ['pro', 'für Kiesel 1 Pro']],
+export const zubehoerFuer = (T = DE_Z) => ({
+  titel: T.titel,
+  einleitung: T.einleitung,
+  filter: ['alle', 'k1', 'pro'].map((id) => [id, T.filter[id]]),
   // Die zwei Hüllen-Karten: Modell, Handyfarbe der Abbildung, Hüllenfarbe (kommt in den Warenkorb)
   produkte: [
     { modell: 'k1', handy: 'pebble-beige', huelle: 'matte-white' },
     { modell: 'pro', handy: 'sky-blue', huelle: 'matte-black' },
   ],
-  platzhalter: { titel: '[Weiteres Zubehör]', text: 'Platz für ein nächstes Produkt, zum Beispiel ein MagSafe-Ladegerät.' },
-  kombi: {
-    titel: 'Frei kombinieren.',
-    text: 'Handy und Hülle wählst du unabhängig voneinander. Durch die milchige Rückseite schimmert die Handyfarbe immer ein bisschen durch.',
-    handy: 'sky-blue',
-    huelle: 'matte-white',
-    knopf: 'Diese Kombination kaufen',
-  },
-};
+  platzhalter: T.platzhalter,
+  kombi: { titel: T.kombi.titel, text: T.kombi.text, handy: 'sky-blue', huelle: 'matte-white', knopf: T.kombi.knopf },
+});
+export const ZUBEHOER = /* @__PURE__ */ zubehoerFuer();
 
 // Masse der Kiesel-Hülle in mm (gen3.py): Text der technischen Details und Profilschnitt
 export const HUELLE_MASSE = {
@@ -32,34 +29,31 @@ export const HUELLE_MASSE = {
 };
 const HM = HUELLE_MASSE;
 
-export const HUELLE = {
-  titel: 'Kiesel-Hülle',
-  text: 'Hinten milchig, am Rand fest und griffig. Steht ein kleines bisschen über Display und Kamera, damit beides den Tisch nie berührt.',
-  modellFrage: 'Für welches Modell?',
-  modelle: [['k1', 'Kiesel 1', 'SE-Grösse'], ['pro', 'Kiesel 1 Pro', '13-mini-Grösse']],
-  ansichten: [['hinten', 'Rückseite'], ['vorne', 'Vorderseite']],
-  farbeLegende: 'Farbe der Hülle',
-  vorschauLegende: 'Vorschau mit Handyfarbe',
+export const huelleFuer = (T = DE_H, farbname = FARBNAME) => ({
+  titel: T.titel,
+  text: T.text,
+  modellFrage: T.modellFrage,
+  modelle: [['k1', 'Kiesel 1', T.groesse.k1], ['pro', 'Kiesel 1 Pro', T.groesse.pro]],
+  ansichten: [['hinten', T.ansichten.hinten], ['vorne', T.ansichten.vorne]],
+  farbeLegende: T.farbeLegende,
+  vorschauLegende: T.vorschauLegende,
   start: { modell: 'pro', huelle: 'matte-white', handy: 'sky-blue' },
-  knopf: 'In den Warenkorb',
-  hinweis: 'Kostenloser Versand. Die Vorschau-Handyfarbe gehört nicht zur Bestellung.',
-  eigenschaftenTitel: 'Drei Dinge, die sie gut macht.',
-  eigenschaften: {
-    milchig: ['Milchige Rückseite', 'Halbtransparent wie Eis auf einem Bergsee. Handyfarbe, Kiesel und MagSafe-Ring schimmern durch.'],
-    rand: ['Fester Rand', 'Griffig und dämpfend, in Farbe. Die Tasten sind abgedeckt und drücken sich trotzdem sauber.'],
-    rahmen: ['Erhöhter Rahmen', 'Flach auf den Tisch gelegt, berührt nur die Hülle die Oberfläche. Display und Kamera bleiben in der Luft.'],
-  },
-  detailsTitel: 'Technische Details',
+  knopf: T.knopf,
+  hinweis: T.hinweis,
+  eigenschaftenTitel: T.eigenschaftenTitel,
+  eigenschaften: T.eigenschaften,
+  detailsTitel: T.detailsTitel,
   details: [
-    ['Passt auf', 'Kiesel 1 oder Kiesel 1 Pro, je eigene Grösse'],
-    ['Farben', FARBEN_TEXT.map((f) => FARBNAME[f]).join(', ')],
-    ['Rand', `trägt ca. ${HM.rand} mm pro Seite auf`],
-    ['Überstand', `ca. ${HM.ueberDisplay} mm über dem Display, ca. ${HM.ueberKamera} mm über den Kameras`],
-    ['MagSafe', 'kompatibel, Magnetring sichtbar durch die Rückseite'],
-    ['Material', '[Material]'],
-    ['Preis', null], // aus HUELLE_PREIS
+    [T.details.passt, T.details.passtWert],
+    [T.details.farben, FARBEN_TEXT.map((f) => farbname[f]).join(', ')],
+    [T.details.rand, T.details.randWert(HM.rand)],
+    [T.details.ueberstand, T.details.ueberstandWert(HM.ueberDisplay, HM.ueberKamera)],
+    [T.details.magsafe, T.details.magsafeWert],
+    [T.details.material, T.details.materialWert],
+    [T.details.preis, null], // aus HUELLE_PREIS
   ],
-};
+});
+export const HUELLE = /* @__PURE__ */ huelleFuer();
 
 // Eintrag für den Warenkorb: nur Modell und Hüllenfarbe, nie die Vorschau-Handyfarbe.
 // Den Preis rechnet der Warenkorb selbst aus data/preise.js.

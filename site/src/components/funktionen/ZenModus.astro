@@ -8,8 +8,11 @@ import Buehne from '../Buehne.astro';
 import Schalter from '../Schalter.astro';
 import Icon from '../Icon.astro';
 import { handy, MODELS } from '../../lib/kiesel-draw/index.js';
-import { ZEN } from '../../data/funktionen.js';
+import { zenFuer } from '../../data/funktionen.js';
+import { texte, spracheVon } from '../../i18n/index.js';
 
+const t = texte(spracheVon(Astro.url));
+const ZEN = zenFuer(t.zen);
 const W = MODELS.pro.W;
 const r = (a) => Object.entries(a).map(([k, v]) => `${k}="${v}"`).join(' ');
 const mitteilungen = [['#3FB6D3', 0.38, 0.52], ['#35D07F', 0.30, 0.46], ['#F2A33A', 0.42, 0.34]].map(([farbe, t1, t2], i) => {
@@ -22,8 +25,8 @@ const mitteilungen = [['#3FB6D3', 0.38, 0.52], ['#35D07F', 0.30, 0.46], ['#F2A33
     + '</g>';
 }).join('');
 const pille = `<g class="zen-pille"><rect ${r({ x: W / 2 - 160, y: 404, width: 320, height: 64, rx: 32, style: 'fill: #FFFFFF; opacity: 0.16' })}/>`
-  + `<text ${r({ x: W / 2, y: 446, style: 'font-family: var(--body); font-size: 30px; font-weight: 600; fill: #F3F6F8; text-anchor: middle' })}>Zen-Modus</text></g>`;
-const bild = handy({ ansicht: 'vorne', modell: 'pro', farbe: 'titanium-gray', hoehe: null, label: 'Kiesel 1 Pro, Sperrbildschirm mit drei Mitteilungen' })
+  + `<text ${r({ x: W / 2, y: 446, style: 'font-family: var(--body); font-size: 30px; font-weight: 600; fill: #F3F6F8; text-anchor: middle' })}>${ZEN.pille}</text></g>`;
+const bild = handy({ ansicht: 'vorne', modell: 'pro', farbe: 'titanium-gray', hoehe: null, label: ZEN.bild.aus })
   .replace(/<\/svg>$/, mitteilungen + pille + '</svg>');
 ---
 <div class="zen" data-zen="aus" data-zen-modus>
@@ -74,7 +77,8 @@ const bild = handy({ ansicht: 'vorne', modell: 'pro', farbe: 'titanium-gray', ho
 </style>
 
 <script>
-  import { ZEN } from '../../data/funktionen.js';
+  import { zenFuer } from '../../data/funktionen.js';
+import { texte, spracheVon } from '../../i18n/index.js';
 
   document.querySelectorAll('[data-zen-modus]').forEach((wurzel) => {
     const label = wurzel.querySelector('[data-zen-label]');
@@ -84,8 +88,8 @@ const bild = handy({ ansicht: 'vorne', modell: 'pro', farbe: 'titanium-gray', ho
       const an = e.detail.an;
       wurzel.dataset.zen = an ? 'an' : 'aus';
       label.textContent = ZEN.schalter[an ? 1 : 0];
-      svg.setAttribute('aria-label', an ? 'Kiesel 1 Pro, Sperrbildschirm im Zen-Modus, keine Mitteilungen' : 'Kiesel 1 Pro, Sperrbildschirm mit drei Mitteilungen');
-      ansage.textContent = an ? 'Zen-Modus an. Die drei Mitteilungen warten, bis du ihn ausschaltest.' : 'Zen-Modus aus. Die Mitteilungen sind wieder da.';
+      svg.setAttribute('aria-label', an ? ZEN.bild.an : ZEN.bild.aus);
+      ansage.textContent = an ? ZEN.ansage.an : ZEN.ansage.aus;
     });
   });
 </script>
