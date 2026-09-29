@@ -12,7 +12,7 @@ import Chip from '../components/Chip.astro';
 import { RECHNER, rechnerTexte } from '../data/akku.js';
 import { GERAETE } from '../data/geraete.js';
 import { rechne, diagramm, stunden, geschuetzt } from '../lib/akku-rechner.js';
-import { zahl, uhrzeit } from '../lib/format.js';
+import { zahl, uhrzeit, prozent } from '../lib/format.js';
 import { texte, spracheVon } from '../i18n/index.js';
 
 const sprache = spracheVon(Astro.url);
@@ -27,7 +27,7 @@ const ERKLAERUNG = rechnerTexte(t.akku, sprache);
 <BaseLayout titel={A.titel} beschreibung={A.beschreibung}>
   <div class="rechner container" data-akku-rechner>
     <h1 class="t-display">{A.titel}</h1>
-    <p class="t-lead t-muted einleitung">{A.einleitung}</p>
+    <p class="t-lead t-muted einleitung">{A.einleitung(uhrzeit(RECHNER.start, sprache), prozent(100, sprache), uhrzeit(RECHNER.ende, sprache))}</p>
 
     <div class="raster">
       <div class="eingabe">

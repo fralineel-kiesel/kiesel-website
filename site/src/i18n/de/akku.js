@@ -46,7 +46,7 @@ export const akku = {
 export const akkuRechner = {
   titel: 'Akku-Rechner',
   beschreibung: 'Wie viel Akku bleibt am Abend? Stell deinen typischen Tag ein und vergleiche Kiesel 1, Kiesel 1 Pro und das iPhone SE von 2016. Ein Fan-Konzept.',
-  einleitung: 'Stell deinen typischen Tag ein. Der Rechner startet um 07:00 mit 100 % und rechnet bis 23:00. Die restliche Zeit liegt das Handy im Standby.',
+  einleitung: (start, voll, ende) => `Stell deinen typischen Tag ein. Der Rechner startet um ${start} mit ${voll} und rechnet bis ${ende}. Die restliche Zeit liegt das Handy im Standby.`,
   typischerTag: 'Typischer Tag',
   tage: { quiet: 'Ruhiger Tag', normal: 'Normal', busy: 'Viel unterwegs', holiday: 'Ferientag' },
   regler: { surf: 'Surfen und Social Media', video: 'Video', music: 'Musik und Podcasts', cam: 'Kamera und Navigation', game: 'Spielen' },
