@@ -3,6 +3,7 @@
 // Eigener Server statt "astro preview": Davon läuft pro Rechner nur einer, und ein schon
 // laufender würde sonst stören. Port 0 = irgendein freier.
 //   const { basis, schliessen } = await starteServer();
+//   starteServer({ ordner: '…/dist' }) = anderer Build (z.B. der alte Stand für vergleiche-html.mjs)
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -14,7 +15,8 @@ const TYPEN = { '.html': 'text/html; charset=utf-8', '.xml': 'application/xml; c
 const dist = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'dist');
 
 // gzip: wie GitHub Pages, damit Ladezeit-Messungen realistisch sind
-export async function starteServer({ gzip = true } = {}) {
+export async function starteServer({ gzip = true, ordner = dist } = {}) {
+  const dist = ordner;
   if (!fs.existsSync(dist)) throw new Error('Kein Build gefunden: zuerst npm run build');
   const server = http.createServer((req, res) => {
     const p = decodeURIComponent(new URL(req.url, 'http://x').pathname);

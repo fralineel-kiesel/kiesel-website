@@ -30,7 +30,8 @@
     "pruefe:ganz": "astro build && node scripts/pruefe-ganz.mjs",
     "pruefe:laden": "astro build && node scripts/pruefe-laden.mjs",
     "fotos:ganz": "astro build && node scripts/fotografiere-ganz.mjs",
-    "lighthouse": "astro build && node scripts/lighthouse.mjs"
+    "lighthouse": "astro build && node scripts/lighthouse.mjs",
+    "vergleiche:html": "node scripts/vergleiche-html.mjs"
   },
   "dependencies": {
     "astro": "^7.3.5",
