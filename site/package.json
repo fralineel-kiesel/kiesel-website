@@ -30,6 +30,7 @@
     "pruefe:faq": "astro build && node scripts/pruefe-faq.mjs",
     "pruefe:ganz": "astro build && node scripts/pruefe-ganz.mjs",
     "pruefe:texte": "node scripts/pruefe-texte.mjs",
+    "fotos:pseudo": "node scripts/fotografiere-pseudo.mjs",
     "pruefe:laden": "astro build && node scripts/pruefe-laden.mjs",
     "fotos:ganz": "astro build && node scripts/fotografiere-ganz.mjs",
     "lighthouse": "astro build && node scripts/lighthouse.mjs",

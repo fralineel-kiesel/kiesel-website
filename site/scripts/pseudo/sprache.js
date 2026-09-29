@@ -6,8 +6,9 @@
 //   lang:     dazu jedes Wort um rund 30 % länger („Kaufen“ → „⟦Kaufenka⟧“), wie es eine andere
 //             Sprache gern ist. Die Wörter bleiben am Stück, damit Überläufe sichtbar werden.
 //
-// Funktionen (Texte mit Werten) werden umwickelt: Ihr Ergebnis wird verwandelt, die übergebenen
-// Werte (Zahlen, Namen) nicht. HTML-Tags und Entitäten in Texten bleiben unangetastet.
+// Funktionen (Texte mit Werten) werden umwickelt: Ihr ganzes Ergebnis wird verwandelt, bei „lang“
+// also auch eingesetzte Namen und Einheiten („ab CHFc 1’200.–“). Für den Überlauf-Test ist das
+// eher strenger als nötig. HTML-Tags und Entitäten in Texten bleiben unangetastet.
 export const AUF = '⟦';
 export const ZU = '⟧';
 
