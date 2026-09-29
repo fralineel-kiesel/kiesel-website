@@ -56,7 +56,7 @@ export const huelle = {
     label: (display, kamera) => `Cross-section: the case sits ${display} mm above the display and ${kamera} mm above the camera`,
     tisch: 'Table',
     mm: (wert) => `${wert} mm`,
-    luft: (wert) => `${wert} mm of clearance under the camera`,
+    luft: (wert) => `${wert} mm of air under the camera`,
   },
   detailsTitel: 'Tech details',
   details: {
