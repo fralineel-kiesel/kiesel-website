@@ -2,17 +2,16 @@
 // Jede Funktion nimmt die Sprache als letzten Parameter ('de' = Standard). Texte selbst stehen
 // in src/i18n/, hier nur, WIE eine Zahl geschrieben wird.
 //
-// Deutsch (Schweiz), so wie die Seite es immer gemacht hat:
-//   chf(1759)          → CHF 1’759.–      Tausender = typografischer Apostroph (’)
-//   chf(131.8)         → CHF 131.80       ganze Franken enden auf „.–“
-//   chfRappen(13180)   → CHF 131.80       wer in Rappen rechnet (Ganzzahlen, exakt)
-//   zahl(3600)         → 3’600            zahl(123.8) → 123.8, zahl(9, 1) → 9.0
-//   prozent(44)        → 44 %             mit Leerzeichen (Duden), im Akku-Rechner geschützt
-//   uhrzeit(22.307)    → 22:18            Stunden als Kommazahl oder ein Date, 24-Stunden-Zeit
-//   datum(new Date(…)) → Freitag, 25. September
-//
-// Englisch ist vorbereitet (Etappe 9b), aber noch nirgends benutzt. Die Werte in FORMATE.en
-// sind ein Vorschlag, entschieden wird in 9b.
+//                        Deutsch (Schweiz)          Englisch (USA, Preise in Franken)
+//   chf(1759)          → CHF 1’759.–                CHF 1,759
+//   chf(131.8)         → CHF 131.80                 CHF 131.80
+//   chfRappen(13180)   → CHF 131.80                 CHF 131.80   (wer in Rappen rechnet)
+//   zahl(3600)         → 3’600                      3,600        zahl(123.8) → 123.8 in beiden
+//   prozent(44)        → 44 %                       44%
+//   uhrzeit(22.307)    → 22:18                      10:18 PM     (Stunden als Kommazahl oder Date)
+//   uhrzeit(d, s, true)→ 07:32                      7:32         (Sperrbildschirm, ohne AM/PM)
+//   stunde(7)          → 07:00                      7 AM         (Achse des Akku-Rechners)
+//   datum(new Date(…)) → Freitag, 25. September     Friday, September 25
 export const FORMATE = {
   de: {
     locale: 'de-CH',
@@ -24,9 +23,9 @@ export const FORMATE = {
   en: {
     locale: 'en-US',
     tausender: ',',
-    ganzeFranken: '00',     // CHF 1,200.00 (Vorschlag)
+    ganzeFranken: '',       // CHF 1,200 (ganze Franken ohne Nachkommastellen)
     prozent: '%',           // 44%
-    uhr24: false,           // 10:18 PM (Vorschlag)
+    uhr24: false,           // 10:18 PM
   },
 };
 
@@ -51,24 +50,34 @@ export function chfRappen(rappen, sprache = 'de') {
   const r = Math.abs(rappen);
   const franken = String(Math.floor(r / 100)).replace(/\B(?=(\d{3})+(?!\d))/g, f.tausender);
   const rest = r % 100;
-  return `CHF ${minus}${franken}.${rest === 0 ? f.ganzeFranken : String(rest).padStart(2, '0')}`;
+  const nachkomma = rest !== 0 ? `.${String(rest).padStart(2, '0')}` : f.ganzeFranken ? `.${f.ganzeFranken}` : '';
+  return `CHF ${minus}${franken}${nachkomma}`;
 }
 
 // Prozent: prozent(44) → „44 %“. Zahl wird wie bei zahl() geschrieben.
 export const prozent = (wert, sprache = 'de') => zahl(wert, undefined, sprache) + fmt(sprache).prozent;
 
 // Für die Anzeige: „15 %“ nie zwischen Zahl und Prozentzeichen umbrechen (geschütztes Leerzeichen).
-// Nur wo der Text in einem schmalen Kasten steht (Akku-Rechner); im Englischen ohne Leerzeichen.
-export const geschuetzt = (text) => text.replace(/ %/g, ' %');
+// Nur wo der Text in einem schmalen Kasten steht (Akku-Rechner). Im Englischen steht kein
+// Leerzeichen vor „%“; dort schützt es das AM/PM der Uhrzeit (10:18 PM).
+export const geschuetzt = (text) => text.replace(/ (%|AM\b|PM\b)/g, '\u00a0$1');
 
 // Uhrzeit aus Stunden (22.307 → 22:18) oder aus einem Date (Stunden/Minuten in UTC, damit
-// Build und Browser in jeder Zeitzone dasselbe zeigen)
-export function uhrzeit(zeit, sprache = 'de') {
+// Build und Browser in jeder Zeitzone dasselbe zeigen). ohneTageszeit: 12-Stunden-Zeit ohne
+// AM/PM, wie auf dem Sperrbildschirm eines Handys (7:32); im Deutschen ohne Wirkung.
+export function uhrzeit(zeit, sprache = 'de', ohneTageszeit = false) {
   const min = zeit instanceof Date ? zeit.getUTCHours() * 60 + zeit.getUTCMinutes() : Math.round(zeit * 60);
   const H = Math.floor(min / 60) % 24, M = min % 60;
   const mm = String(M).padStart(2, '0');
   if (fmt(sprache).uhr24) return `${String(H).padStart(2, '0')}:${mm}`;
-  return `${H % 12 || 12}:${mm} ${H < 12 ? 'AM' : 'PM'}`;
+  return `${H % 12 || 12}:${mm}` + (ohneTageszeit ? '' : ` ${H < 12 ? 'AM' : 'PM'}`);
+}
+
+// Volle Stunde für eine Achse: Deutsch wie uhrzeit() (07:00), Englisch kurz (7 AM, 11 PM)
+export function stunde(h, sprache = 'de') {
+  if (fmt(sprache).uhr24) return uhrzeit(h, sprache);
+  const H = Math.round(h) % 24;
+  return `${H % 12 || 12} ${H < 12 ? 'AM' : 'PM'}`;
 }
 
 // Datum mit Wochentag und Monat ausgeschrieben, ohne Jahr: „Freitag, 25. September“ /
