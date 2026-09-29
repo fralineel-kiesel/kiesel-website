@@ -161,6 +161,16 @@ function ohneZusatzCss(css, cids, zaehler) {
     return !neu;
   }).join('');
 }
+// CSS-Änderungen, die bewusst auch die deutsche Seite betreffen: wirken auf die ALTE Fassung
+const REGELN_CSS = [
+  {
+    name: 'Akku-Rechner: Ergebnis darf in die nächste Zeile rutschen',
+    grund: 'Auf 390 px quetschte „empty at 10:18 PM“ den Namen „iPhone SE (2016)“ auf drei Zeilen. Jetzt bricht die Zeile um (flex-wrap), das Ergebnis steht dann rechtsbündig darunter. Sichtbar auch auf Deutsch, nur auf schmalen Bildschirmen beim SE: vorher „iPhone SE (2016)“ zweizeilig neben „leer um 22:18“, jetzt der Name einzeilig und das Ergebnis darunter. Wo beides Platz hat (Desktop), bleibt alles wie vorher.',
+    alt: /(\.zeile\[data-astro-cid-bj62t7ws\]\{)justify-content:space-between;align-items:baseline;gap:12px;display:flex\}|(\.ergebnis\[data-astro-cid-bj62t7ws\]\{font-family:var\(--display\);letter-spacing:var\(--ls-3\);white-space:nowrap;)(font-size:22px)/g,
+    neu: (_, zeile, ergebnis, rest) => (zeile ? `${zeile}flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:0 12px;display:flex}` : `${ergebnis}margin-left:auto;${rest}`),
+  },
+];
+
 // data-astro-cid der neuen Bausteine (aus dem neuen HTML)
 // (aus dem ganzen Build: das CSS steckt auch in Seiten, die den Baustein nicht zeigen, z.B. Designsystem)
 let cidsCache = null;
@@ -309,7 +319,8 @@ function vergleicheStatisch(altDist, neuDist, regeln = REGELN) {
     .map((m) => fs.readFileSync(path.join(wurzel, m[1]), 'utf8')).join('\n/* ── */\n');
   let cssFehler = 0;
   for (const d of alt.filter((d) => d.endsWith('.html') && neu.includes(d))) {
-    const a = ohneHash(css(altDist, fs.readFileSync(path.join(altDist, d), 'utf8')));
+    let a = ohneHash(css(altDist, fs.readFileSync(path.join(altDist, d), 'utf8')));
+    if (regeln.length) a = wendeAn(a, REGELN_CSS, zaehler);
     const neuHtml = fs.readFileSync(path.join(neuDist, d), 'utf8');
     let b = ohneHash(css(neuDist, neuHtml));
     if (regeln.length) {
@@ -464,7 +475,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const laufzeit = hat('--nur-statisch') ? { fehler: 0, zaehler: new Map() } : await vergleicheLaufzeit(basis.dist, neuDist, ohne ? [] : REGELN, ohne ? [] : REGELN_ADRESSE);
 
   console.log('\n── Angewendete Regeln (alt → erwartet neu) ──');
-  for (const r of [...REGELN, CSS_REIHENFOLGE, ...REGELN_ADRESSE, ...ZUSAETZE, ZUSATZ_CSS]) {
+  for (const r of [...REGELN, CSS_REIHENFOLGE, ...REGELN_ADRESSE, ...ZUSAETZE, ZUSATZ_CSS, ...REGELN_CSS]) {
     const n = (statisch.zaehler.get(r.name) ?? 0) + (laufzeit.zaehler.get(r.name) ?? 0);
     console.log(`${String(n).padStart(5)} × ${r.name}\n        Grund: ${r.grund}`);
   }

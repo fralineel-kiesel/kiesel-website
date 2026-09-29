@@ -11,7 +11,7 @@ export const zeichnung = {
   blume: 'Flower with dewdrops, a bee and a meadow',
   innenleben: (name) => `Inside ${name}`,
   mah: (wert) => `${wert} mAh`,
-  mahCa: (wert) => `approx. ${wert} mAh`,
+  mahCa: (wert) => `~${wert} mAh`,   // in the drawing: “approx.” would be wider than the battery
   // legend of the teardown (phoneOpen)
   legende: {
     platineA9: 'Logic board with A9 chip',

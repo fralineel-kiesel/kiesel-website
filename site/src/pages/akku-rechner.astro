@@ -107,9 +107,11 @@ const ERKLAERUNG = rechnerTexte(t.akku, sprache);
   .karte { background: var(--surface); border: 1px solid var(--line); border-radius: 28px; padding: var(--space-5) var(--space-5) 12px; }
   .schlagzeile { margin: 4px 0 12px; font-family: var(--display); font-size: var(--fs-2); font-weight: 600; line-height: 1.15; letter-spacing: var(--ls-2); }
   .akkus li { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4) 0; border-top: 1px solid var(--line); }
-  .zeile { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  /* Reicht die Breite nicht für Name und Ergebnis (schmal, „empty at 10:18 PM“), rutscht das
+     Ergebnis rechtsbündig in die nächste Zeile, statt den Namen auf drei Zeilen zu quetschen */
+  .zeile { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 0 12px; }
   .name { font-size: 17px; font-weight: 600; }
-  .ergebnis { font-family: var(--display); font-size: 22px; font-weight: 600; line-height: 1.2; letter-spacing: var(--ls-3); white-space: nowrap; }
+  .ergebnis { margin-left: auto; font-family: var(--display); font-size: 22px; font-weight: 600; line-height: 1.2; letter-spacing: var(--ls-3); white-space: nowrap; }
   .ergebnis.leer { color: var(--heat); }
   /* Akku-Symbol: Rahmen mit Pol rechts, Füllung nach Prozent */
   .batterie {
