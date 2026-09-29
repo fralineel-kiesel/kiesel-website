@@ -3,7 +3,9 @@
 //
 //   npm run lighthouse            (LAEUFE=1 npm run lighthouse für einen schnellen Durchgang,
 //                                  NUR=warenkorb/,faq/ für einzelne Seiten → bericht-teil.md,
-//                                  NUR=startseite für die Startseite)
+//                                  NUR=startseite für die Startseite,
+//                                  SPRACHE=en für die englischen Seiten → bericht-en.md,
+//                                  SPRACHE=alle für beide; NUR geht dann mit en/buy/ usw.)
 //
 // Handy = Lighthouse-Standard: simuliert ein Mittelklasse-Handy mit langsamem 4G und 4-fach
 // gebremster CPU. Desktop = Lighthouse-Desktop-Einstellung (schnelle Leitung, kaum gebremst).
@@ -20,14 +22,18 @@ import desktopConfig from 'lighthouse/core/config/desktop-config.js';
 import * as chromeLauncher from 'chrome-launcher';
 import { chromium } from 'playwright';
 import { starteServer } from './dist-server.mjs';
-import { OEFFENTLICH } from './seiten.mjs';
+import { OEFFENTLICH as DE, OEFFENTLICH_EN, ALLE_OEFFENTLICH } from './seiten.mjs';
 
 const hier = path.dirname(fileURLToPath(import.meta.url));
 const ziel = path.join(hier, 'ausgabe', 'lighthouse');
 fs.mkdirSync(ziel, { recursive: true });
 const LAEUFE = Number(process.env.LAEUFE || 3);
 // NUR=startseite steht für die Startseite (Adresse '')
-const NUR = process.env.NUR ? process.env.NUR.split(',').map((a) => (a === 'startseite' ? '' : a)) : null;
+const SPRACHE = process.env.SPRACHE || 'de';
+const OEFFENTLICH = { de: DE, en: OEFFENTLICH_EN, alle: ALLE_OEFFENTLICH }[SPRACHE];
+if (!OEFFENTLICH) throw new Error(`SPRACHE=${SPRACHE}: erlaubt sind de, en, alle`);
+const NUR = process.env.NUR ? process.env.NUR.split(',').map((a) => (a === 'startseite' ? (SPRACHE === 'en' ? 'en/' : '') : a)) : null;
+const NACHSATZ = SPRACHE === 'de' ? '' : `-${SPRACHE}`;
 const SEITEN = NUR ? OEFFENTLICH.filter(([a]) => NUR.includes(a)) : OEFFENTLICH;
 const KATEGORIEN = ['performance', 'accessibility', 'best-practices', 'seo'];
 const KURZ = { performance: 'leistung', accessibility: 'barrierefreiheit', 'best-practices': 'verfahren', seo: 'seo' };
@@ -84,6 +90,6 @@ const tabelle = [
 ];
 const liste = (feld) => ergebnisse.flatMap((e) => ['handy', 'desktop'].flatMap((g) => e[g][feld].map((f) => `- ${e.titel} (${g}): ${f}`)));
 const bericht = `# Lighthouse, ${new Date().toISOString().slice(0, 10)}\n\nMedian aus ${LAEUFE} Läufen pro Seite und Gerät (nach Leistung). Handy: simuliertes Mittelklasse-Handy mit langsamem 4G. Verfahren = Bewährte Verfahren (Best Practices).\n\n${tabelle.join('\n')}\n\n## Nicht bestandene Barrierefreiheits-Prüfungen\n\n${liste('a11yFehler').join('\n') || 'keine'}\n\n## Nicht bestandene Prüfungen: Bewährte Verfahren und SEO\n\n${liste('andereFehler').join('\n') || 'keine'}\n`;
-fs.writeFileSync(path.join(ziel, NUR ? 'bericht-teil.md' : 'bericht.md'), bericht);
-if (!NUR) fs.writeFileSync(path.join(ziel, 'ergebnisse.json'), JSON.stringify(ergebnisse, null, 1));
+fs.writeFileSync(path.join(ziel, NUR ? `bericht-teil${NACHSATZ}.md` : `bericht${NACHSATZ}.md`), bericht);
+if (!NUR) fs.writeFileSync(path.join(ziel, `ergebnisse${NACHSATZ}.json`), JSON.stringify(ergebnisse, null, 1));
 console.log('\n' + bericht);

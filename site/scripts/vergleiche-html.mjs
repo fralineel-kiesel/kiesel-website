@@ -20,6 +20,12 @@
 // muss alles gleich sein. Nur die Dateinamen mit Hash werden auf beiden Seiten gleichgemacht.
 // Das Skript meldet, wie oft jede Regel gegriffen hat.
 //
+// Etappe 9b (Englisch) ergänzt die deutschen Seiten um Neues (hreflang, Sprachumschalter,
+// Sprach-Hinweis, 404-Tausch, Sitemap mit beiden Sprachen). Das beschreiben die ZUSAETZE: Sie
+// nehmen genau diese Teile aus der NEUEN Fassung heraus (samt ihrem CSS), danach muss der Rest
+// gleich sein wie vorher. Die englischen Seiten unter en/ gibt es nur im neuen Build; sie prüft
+// pruefe:englisch.
+//
 // Der alte Stand wird per "git worktree" in einen Temp-Ordner geholt und dort gebaut
 // (node_modules wird verlinkt). Sein Build bleibt in scripts/ausgabe/html-vergleich/ liegen,
 // der nächste Lauf mit derselben Basis spart sich das Bauen.
@@ -107,6 +113,56 @@ export const REGELN = [
     neu: (_, attr, wert) => `${attr}="${wert.split('|').map((teil) => ({ handy: 'phone', huelle: 'case' })[teil] ?? FARBEN[teil] ?? teil).join('|')}"`,
   },
 ];
+
+// Etappe 9b: Neues auf den deutschen Seiten. Diese Regeln wirken auf die NEUE Fassung und
+// nehmen das Neue heraus (statisches HTML und sitemap.xml).
+const SITEMAP_EINTRAG = /  <url>\n    <loc>([^<]+)<\/loc>(?:\n    <xhtml:link [^\n]*\/>)*\n  <\/url>\n/g;
+export const ZUSAETZE = [
+  {
+    name: 'hreflang-Verweise und og:locale:alternate im <head>',
+    grund: 'Jede öffentliche Seite nennt ihre Fassung in beiden Sprachen (de, en, x-default = Deutsch) und die andere Sprache für die Link-Vorschau.',
+    alt: /<link rel="alternate" hreflang="[^"]+" href="[^"]+">|<meta property="og:locale:alternate" content="[^"]+">/g,
+    neu: () => '',
+  },
+  {
+    name: 'Sprach-Hinweis (<aside data-sprachhinweis>, versteckt bis das Skript ihn zeigt)',
+    grund: '„Also available in English“, wenn der Browser Englisch bevorzugt. Steht versteckt gleich nach „Zum Inhalt“.',
+    alt: /<aside class="sprachhinweis"[^>]*>[\s\S]*?<\/aside>/g,
+    neu: () => '',
+  },
+  {
+    name: 'Sprachumschalter (<nav data-sprachwahl>) im Footer und im Burger-Menü',
+    grund: '„Deutsch · English“ neben dem Thema-Umschalter und unten im Burger-Menü.',
+    alt: /<nav class="sprachwahl[^"]*"[^>]*>[\s\S]*?<\/nav>/g,
+    neu: () => '',
+  },
+  {
+    name: '404: Tausch auf die englische Fassung unter /en/ (Inline-Skript im <head>)',
+    grund: 'GitHub Pages liefert nur eine 404.html. Liegt die Adresse unter /en/, holt sie sich en/404/ und zeigt sich englisch.',
+    alt: /<script>\(function\(\)\{var b=[\s\S]*?<\/script>/g,
+    neu: () => '',
+  },
+  {
+    name: 'sitemap.xml: englische Seiten und xhtml:link-Paare',
+    grund: 'Die Sitemap nennt jetzt beide Sprachen, jeder Eintrag mit seiner Gegenseite. Ohne das: dieselben deutschen Adressen wie vorher.',
+    alt: /(<urlset [^>]*?) xmlns:xhtml="[^"]*">|^  <url>\n[\s\S]*<\/url>\n/gm,
+    neu: (m, kopf) => (kopf ? `${kopf}>` : [...m.matchAll(SITEMAP_EINTRAG)].filter(([, loc]) => !loc.includes('/v2/en/')).map(([, loc]) => `  <url><loc>${loc}</loc></url>\n`).join('')),
+  },
+];
+// CSS der neuen Bausteine (Sprachwahl, SprachHinweis) und ihre Abstände in Footer und Burger-Menü
+const ZUSATZ_CSS = {
+  name: 'CSS von Sprachumschalter und Sprach-Hinweis',
+  grund: 'Eigene Stile der zwei neuen Bausteine (scoped) und ihr Abstand im Footer (.sprachwahl) und im Burger-Menü (.sprache).',
+};
+function ohneZusatzCss(css, cids, zaehler) {
+  return obersteBloecke(css).filter((b) => {
+    const neu = cids.some((c) => b.includes(c)) || /\.sprachwahl\b|\.sprache\b|\.sprachhinweis\b|@keyframes rein\b/.test(b);
+    if (neu) zaehler.set(ZUSATZ_CSS.name, (zaehler.get(ZUSATZ_CSS.name) ?? 0) + 1);
+    return !neu;
+  }).join('');
+}
+// data-astro-cid der neuen Bausteine (aus dem neuen HTML)
+const neueCids = (html) => [...new Set([...html.matchAll(/<(?:aside class="sprachhinweis|nav class="sprachwahl)[^>]*?(data-astro-cid-[a-z0-9]+)/g)].map((m) => m[1]))];
 
 // Nur im Browser-Teil: die Adresse nach dem Laden
 const REGELN_ADRESSE = [
@@ -204,7 +260,8 @@ function vergleicheStatisch(altDist, neuDist, regeln = REGELN) {
   console.log('\n── 1. Statisch: alle Dateien ausser _astro/ ──');
   const zaehler = new Map();
   let fehler = 0;
-  const alt = dateien(altDist), neu = dateien(neuDist);
+  const alt = dateien(altDist), neu = dateien(neuDist).filter((d) => !d.startsWith('en/') && !d.startsWith(`en${path.sep}`));
+  console.log(`  (${dateien(neuDist).length - neu.length} Dateien unter en/: nur im neuen Build, geprüft von pruefe:englisch)`);
   for (const d of new Set([...alt, ...neu])) {
     if (!alt.includes(d) || !neu.includes(d)) { console.log(`✗ ${d}: nur im ${alt.includes(d) ? 'alten' : 'neuen'} Build`); fehler++; continue; }
     const a = fs.readFileSync(path.join(altDist, d)), b = fs.readFileSync(path.join(neuDist, d));
@@ -214,7 +271,7 @@ function vergleicheStatisch(altDist, neuDist, regeln = REGELN) {
     }
     const at = a.toString('utf8'), bt = b.toString('utf8');
     let erwartet = wendeAn(ohneModule(ohneHash(at)), regeln, zaehler);
-    let ist = ohneModule(ohneHash(bt));
+    let ist = regeln.length ? wendeAn(ohneModule(ohneHash(bt)), ZUSAETZE, zaehler) : ohneModule(ohneHash(bt));
     if (erwartet !== ist && regeln.length && stileSortiert(erwartet) === stileSortiert(ist)) {
       erwartet = ist;
       zaehler.set(CSS_REIHENFOLGE.name, (zaehler.get(CSS_REIHENFOLGE.name) ?? 0) + 1);
@@ -235,7 +292,14 @@ function vergleicheStatisch(altDist, neuDist, regeln = REGELN) {
   let cssFehler = 0;
   for (const d of alt.filter((d) => d.endsWith('.html') && neu.includes(d))) {
     const a = ohneHash(css(altDist, fs.readFileSync(path.join(altDist, d), 'utf8')));
-    const b = ohneHash(css(neuDist, fs.readFileSync(path.join(neuDist, d), 'utf8')));
+    const neuHtml = fs.readFileSync(path.join(neuDist, d), 'utf8');
+    let b = ohneHash(css(neuDist, neuHtml));
+    if (regeln.length) {
+      // Zusätze nur herausnehmen, wo sie stehen; der Rest muss auch in der Reihenfolge gleich sein
+      const blockweise = (t) => t.split('\n/* ── */\n').map((x) => obersteBloecke(x).join('')).join('\n/* ── */\n');
+      const ohne = b.split('\n/* ── */\n').map((x) => ohneZusatzCss(x, neueCids(neuHtml), zaehler)).join('\n/* ── */\n');
+      if (blockweise(a) === ohne) b = a;
+    }
     if (a !== b) { console.log(`✗ ${d}: CSS anders\n${zeigeUnterschied(a, b)}`); cssFehler++; }
   }
   if (!cssFehler) console.log('✓ CSS aller Seiten gleich (eingebundene Stylesheets, in Reihenfolge)');
@@ -278,7 +342,9 @@ function domAlsText() {
   return zeilen.join('\n');
 }
 
-async function schnappschuss(kontext, url) {
+// Etappe 9b: im neuen Stand vor dem Schnappschuss herausnehmen (wie ZUSAETZE im statischen Teil)
+const ZUSAETZE_DOM = '[data-sprachhinweis], [data-sprachwahl], link[rel="alternate"][hreflang], meta[property="og:locale:alternate"]';
+async function schnappschuss(kontext, url, ohneZusaetze = false) {
   const seite = await kontext.newPage();
   const fehler = [];
   seite.on('pageerror', (e) => fehler.push(e.message));
@@ -286,6 +352,7 @@ async function schnappschuss(kontext, url) {
   // Leerlauf abwarten (Warenkorb-Vorschau, 2D-Entscheid der Bühne), dann zwei Bilder
   await seite.evaluate(() => new Promise((r) => requestIdleCallback(() => requestAnimationFrame(() => requestAnimationFrame(r)), { timeout: 2000 })));
   await seite.waitForTimeout(300);
+  if (ohneZusaetze) await seite.evaluate((sel) => document.querySelectorAll(sel).forEach((e) => e.remove()), ZUSAETZE_DOM);
   const dom = await seite.evaluate(domAlsText);
   const adresse = new URL(seite.url());
   await seite.close();
@@ -323,7 +390,8 @@ async function vergleicheLaufzeit(altDist, neuDist, regeln = REGELN, regelnAdres
   const alt = await starteServer({ ordner: altDist });
   const neu = await starteServer({ ordner: neuDist });
   const browser = await chromium.launch();
-  const kontext = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce', colorScheme: 'light' });
+  // locale de-CH: ein deutscher Browser (Playwright ist sonst en-US, dann erschiene der Sprach-Hinweis)
+  const kontext = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce', colorScheme: 'light', locale: 'de-CH' });
   await kontext.addInitScript((korb) => { try { localStorage.setItem('kiesel-warenkorb', korb); } catch { /* egal */ } }, ALTER_KORB);
   // Math.random mit festem Startwert: uid() im Browser hängt ein zufälliges Kürzel an die
   // SVG-IDs (svg.js). Auf beiden Seiten dieselbe Folge, sonst wäre jede Seite „anders“.
@@ -332,7 +400,7 @@ async function vergleicheLaufzeit(altDist, neuDist, regeln = REGELN, regelnAdres
   let fehler = 0;
   for (const adresse of [...OEFFENTLICH.map(([a]) => a), ...EXTRA]) {
     const a = await schnappschuss(kontext, alt.basis + adresse);
-    const b = await schnappschuss(kontext, neu.basis + adresse);
+    const b = await schnappschuss(kontext, neu.basis + adresse, regeln.length > 0);
     const erwartet = wendeAn(browserGleich(a.dom), regeln, zaehler);
     const ist = browserGleich(b.dom);
     const adrErwartet = wendeAn(a.adresse, regelnAdresse, zaehler);
@@ -371,7 +439,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const laufzeit = hat('--nur-statisch') ? { fehler: 0, zaehler: new Map() } : await vergleicheLaufzeit(basis.dist, neuDist, ohne ? [] : REGELN, ohne ? [] : REGELN_ADRESSE);
 
   console.log('\n── Angewendete Regeln (alt → erwartet neu) ──');
-  for (const r of [...REGELN, CSS_REIHENFOLGE, ...REGELN_ADRESSE]) {
+  for (const r of [...REGELN, CSS_REIHENFOLGE, ...REGELN_ADRESSE, ...ZUSAETZE, ZUSATZ_CSS]) {
     const n = (statisch.zaehler.get(r.name) ?? 0) + (laufzeit.zaehler.get(r.name) ?? 0);
     console.log(`${String(n).padStart(5)} × ${r.name}\n        Grund: ${r.grund}`);
   }

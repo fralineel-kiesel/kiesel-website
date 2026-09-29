@@ -1,4 +1,4 @@
-// Prüft das Ladeverhalten aller öffentlichen Seiten im echten Browser:
+// Prüft das Ladeverhalten aller öffentlichen Seiten (beide Sprachen) im echten Browser:
 //
 //   npm run pruefe:laden
 //
@@ -15,7 +15,7 @@
 // Jeder Fall druckt ✓ oder ✗, bei einem ✗ endet das Skript mit Fehlercode 1.
 import { chromium } from 'playwright';
 import { starteServer } from './dist-server.mjs';
-import { OEFFENTLICH } from './seiten.mjs';
+import { ALLE_OEFFENTLICH as OEFFENTLICH, kennungVon } from './seiten.mjs';
 
 const CLS_MAX = 0.02;
 const MOTOR = /\/phone\.[\w-]+\.js$/;   // Zeichen-Motor (src/lib/kiesel-draw/phone.js)
@@ -106,7 +106,7 @@ try {
     await seite.waitForTimeout(2500); // Leerlauf abwarten (3D, Warenkorb laden dort nach)
     const motor = anfragen.some((p) => MOTOR.test(p));
     const dreiD = anfragen.some((p) => DREI_D.test(p));
-    const motorSoll = MIT_MOTOR.includes(adresse);
+    const motorSoll = MIT_MOTOR.includes(kennungVon(adresse));
     pruefe(`${name}: Zeichen-Motor ${motorSoll ? 'geladen (die Seite zeichnet selbst)' : 'nicht geladen'}, three.js nie (headless = kein 3D)`,
       motor === motorSoll && !dreiD, `Motor ${motor}, three.js ${dreiD}`);
     await ctx.close();

@@ -41,6 +41,8 @@ export const SEITEN_EN = SEITEN.filter(([, , , en]) => en !== null)
 export const ALLE_SEITEN = [...SEITEN.map(([de, name, o]) => [de, name, o]), ...SEITEN_EN];
 
 export const OEFFENTLICH = SEITEN.filter(([, , o]) => o);
+// Deutsche Adresse (Kennung) zu einer Adresse aus ALLE_SEITEN: 'en/buy/' → 'kaufen/', 'kaufen/' → 'kaufen/'
+export const kennungVon = (adresse) => SEITEN.find(([de, , , en]) => adresse === de || (en !== null && adresse === EN_PRAEFIX + en))?.[0] ?? null;
 export const OEFFENTLICH_EN = SEITEN_EN.filter(([, , o]) => o);
 export const ALLE_OEFFENTLICH = [...OEFFENTLICH.map(([de, name, o]) => [de, name, o]), ...OEFFENTLICH_EN];
 
