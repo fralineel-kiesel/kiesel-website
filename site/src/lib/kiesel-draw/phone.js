@@ -11,6 +11,8 @@
 import { E, esc, stop, f, rr, uid } from './svg.js';
 import { MODELS, DICKE, geo, camrow, KNOPF_HOEHE, LINSE_R, MIKRO_R, BLITZ_R } from './models.js';
 import { palette, led as ledZustand } from './colors.js';
+import { sperrbildschirm } from './sperrbildschirm.js';
+import { zeichnung as DE_Z } from '../../i18n/de.js';
 
 // Kiesel-Logo: die Kieselform und zwei "Adern"
 export const PEB = 'M54 18C79 17 96 31 95 52C94 72 76 84 50 84C24 84 5 73 5 53C5 33 27 19 54 18Z';
@@ -209,8 +211,9 @@ export function caseBack(mk, k, pid, cut, inner) {
 // Kiesel-Hintergrundbild des Sperrbildschirms: [x, y, rx, ry, Drehung, Verlauf]
 export const WALL = [[110, 990, 200, 122, -18, 'p3'], [480, 1070, 220, 132, 12, 'p3'], [300, 830, 156, 96, -6, 'p1'], [520, 770, 92, 60, 20, 'p1'], [80, 730, 72, 44, -25, 'p2'], [370, 660, 46, 30, 8, 'p2']];
 
-// Vorderseite mit Sperrbildschirm (Freitag, 25. September, 07:32)
-export function frontSvg(mk, col, pid, huelle = null) {
+// Vorderseite mit Sperrbildschirm (Freitag, 25. September, 07:32).
+// sperr = { datum, uhrzeit }: Texte auf dem Sperrbildschirm (Standard: Deutsch, sperrbildschirm.js)
+export function frontSvg(mk, col, pid, huelle = null, sperr = sperrbildschirm()) {
   const m = MODELS[mk];
   const [W, H, R, g] = geo(m);
   const defs = commonDefs(pid, col);
@@ -234,8 +237,8 @@ export function frontSvg(mk, col, pid, huelle = null) {
   let wall = E('rect', { x: '16', y: '16', width: f(W - 32), height: f(H - 32), style: `fill: url(#${pid}wb)` });
   const peb = WALL.map(([x, y, rx, ry, a, gid]) => E('ellipse', { cx: f(x), cy: f(y), rx: f(rx), ry: f(ry), transform: `rotate(${a} ${x} ${y})`, style: `fill: url(#${pid}${gid})` })).join('');
   wall += E('g', { transform: `scale(${f(sx)} ${f(sy)})` }, peb);
-  wall += E('text', { x: f(W / 2), y: '204', style: "font-family: 'Instrument Sans', 'Segoe UI', sans-serif; font-size: 34px; font-weight: 500; fill: #C7D3DA; text-anchor: middle" }, 'Freitag, 25. September');
-  wall += E('text', { x: f(W / 2), y: '356', style: "font-family: 'Unbounded', 'Arial Black', sans-serif; font-size: 150px; font-weight: 400; letter-spacing: -4px; fill: #F3F6F8; text-anchor: middle" }, '07:32');
+  wall += E('text', { x: f(W / 2), y: '204', style: "font-family: 'Instrument Sans', 'Segoe UI', sans-serif; font-size: 34px; font-weight: 500; fill: #C7D3DA; text-anchor: middle" }, esc(sperr.datum));
+  wall += E('text', { x: f(W / 2), y: '356', style: "font-family: 'Unbounded', 'Arial Black', sans-serif; font-size: 150px; font-weight: 400; letter-spacing: -4px; fill: #F3F6F8; text-anchor: middle" }, esc(sperr.uhrzeit));
   // Taschenlampe links, Kamera rechts, Home-Balken unten
   for (const bx of [W * 0.2, W * 0.8]) {
     wall += E('circle', { cx: f(bx), cy: f(H - 140), r: '50', style: 'fill: #FFFFFF; opacity: 0.14' });
@@ -331,10 +334,9 @@ export function floor(cx, cy, rx, ry, fid, op = '0.35') {
 //   label:   eigener Text für Screenreader   pid: ID-Präfix (sonst automatisch)
 //   gravur:  Text auf der Rückseite (nur ansicht 'hinten'), wird escaped
 const ANSICHT = { vorne: 'front', hinten: 'back', seite: 'side', front: 'front', back: 'back', side: 'side' };
-const ANSICHT_TEXT = { front: ', Vorderseite', back: ', Rückseite', side: ', Seitenansicht, 9 mm dick' };
 
 export function handy({ ansicht = 'hinten', modell = 'pro', farbe = 'sky-blue', hoehe = 400, drehung = 0,
-  huelle = null, led = null, boden = true, label = null, pid = null, gravur = null } = {}) {
+  huelle = null, led = null, boden = true, label = null, pid = null, gravur = null, texte = DE_Z, sprache = 'de' } = {}) {
   const kind = ANSICHT[ansicht];
   if (!kind) throw new Error(`Unbekannte Ansicht: ${ansicht}`);
   pid = pid ?? uid('q');
@@ -345,14 +347,14 @@ export function handy({ ansicht = 'hinten', modell = 'pro', farbe = 'sky-blue', 
   const pad = 200;
   const vbw = W + 2 * pad, vbh = H + 2 * pad;
   const inner = kind === 'back' ? backSvg(modell, col, pid, ledZustand(led), k, gravur)
-    : kind === 'side' ? sideSvg(modell, col, pid, k) : frontSvg(modell, col, pid, k);
+    : kind === 'side' ? sideSvg(modell, col, pid, k) : frontSvg(modell, col, pid, k, sperrbildschirm(sprache));
   let fl = '';
   if (boden) {
     fl = E('defs', {}, E('filter', { id: pid + 'fl', x: '-50%', y: '-200%', width: '200%', height: '500%' }, E('feGaussianBlur', { stdDeviation: '26' }))) +
       E('ellipse', { cx: f(W / 2), cy: f(H + 80), rx: f(kind === 'side' ? W * 0.8 : W * 0.44), ry: '30', style: 'fill: #000000; opacity: 0.35', filter: `url(#${pid}fl)` });
   }
   const g = drehung ? E('g', { transform: `rotate(${f(drehung)} ${f(W / 2)} ${f(H / 2)})` }, inner) : inner;
-  const lab = label || (modell === 'pro' ? 'Kiesel 1 Pro' : 'Kiesel 1') + ANSICHT_TEXT[kind];
+  const lab = label || (modell === 'pro' ? 'Kiesel 1 Pro' : 'Kiesel 1') + texte.ansicht[kind];
   const groesse = hoehe === null ? {} : { width: f(hoehe * vbw / vbh), height: f(hoehe) };
   return E('svg', { ...groesse, viewBox: `${-pad} ${-pad} ${vbw} ${vbh}`, role: 'img', 'aria-label': esc(lab), style: 'display: block; overflow: visible' }, fl + g);
 }

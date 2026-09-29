@@ -8,6 +8,7 @@
 //   frame = Rahmen, hi/lo = helle/dunkle Kante, back = Rücken,
 //   backHi/backLo = Verlauf auf dem Rücken, logo = eingeprägter Kiesel
 import { FARBEN, FARB_IDS, farbId } from '../../data/farben.js';
+import { zeichnung as DE_Z } from '../../i18n/de.js';
 
 // Schlüssel = Farbkennung ('sky-blue' …). Die Python-Vorlagen kennen die deutschen Namen,
 // palette() nimmt darum auch die an (farbId).
@@ -128,10 +129,8 @@ export const LED_FARBEN = {
   call: '#3D8BFF', msg: '#A77BFF', charge: '#35D07F', full: '#35D07F',
   low: '#FF4B4B', privacy: '#FF9A2E', flash: '#FFFFFF',
 };
-export const LED_NAMEN = {
-  off: 'Aus', call: 'Anruf', msg: 'Nachricht', charge: 'Lädt', full: 'Voll geladen',
-  low: 'Akku unter 10 %', privacy: 'Privacy-Modus', flash: 'Fotoblitz',
-};
+// Namen der Zustände (Spielwiese): Abschnitt zeichnung.led der Textdatei
+export const LED_NAMEN = DE_Z.led;
 
 // Zwei Farben mischen: t = 0 → a, t = 1 → b
 export function mische(a, b, t) {

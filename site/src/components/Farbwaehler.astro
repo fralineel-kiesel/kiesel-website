@@ -15,7 +15,7 @@ import { FARBEN, FARB_IDS } from '../data/farben.js';
 import { texte, spracheVon } from '../i18n/index.js';
 
 const t = texte(spracheVon(Astro.url));
-const { name = 'farbe', wert = 'sky-blue', legende = 'Farbe', zeigeName = true, groesse = 34, zeile = false, class: klasse } = Astro.props;
+const { name = 'farbe', wert = 'sky-blue', legende = t.kaufen.farbe, zeigeName = true, groesse = 34, zeile = false, class: klasse } = Astro.props;
 ---
 <fieldset class:list={['farbwaehler', { 'farbwaehler--zeile': zeile }, klasse]} style={`--punkt: ${groesse}px`} data-farbwaehler>
   {zeile

@@ -10,6 +10,7 @@
 // Rückseite (von hinten gesehen) bzw. der Vorderseite (von vorne gesehen).
 // z = bauplan().zeichnung: { W, H, R } in Zeichen-Einheiten.
 import { PEB, V1, V2, WALL } from '../kiesel-draw/phone.js';
+import { sperrbildschirm } from '../kiesel-draw/sperrbildschirm.js';
 
 function leinwand(b, h) {
   const c = document.createElement('canvas');
@@ -81,7 +82,8 @@ export function zeichneRauheit(c, z) {
 
 // Sperrbildschirm wie in frontSvg(): Hintergrund mit Kieseln, Datum, Uhrzeit, Knöpfe,
 // Dynamic Island. Die Schriften sind dieselben wie auf der Seite (per @font-face geladen).
-export async function zeichneBildschirm(c, z) {
+// sperr = { datum, uhrzeit } (kiesel-draw/sperrbildschirm.js, Standard Deutsch)
+export async function zeichneBildschirm(c, z, sperr = sperrbildschirm()) {
   const { W, H, R } = z;
   try {
     await Promise.all([document.fonts.load("400 150px 'Unbounded'"), document.fonts.load("500 34px 'Instrument Sans'")]);
@@ -130,11 +132,11 @@ export async function zeichneBildschirm(c, z) {
   g.textAlign = 'center';
   g.fillStyle = '#C7D3DA';
   g.font = "500 34px 'Instrument Sans', 'Segoe UI', sans-serif";
-  g.fillText('Freitag, 25. September', W / 2, 204);
+  g.fillText(sperr.datum, W / 2, 204);
   g.fillStyle = '#F3F6F8';
   g.font = "400 150px 'Unbounded', 'Arial Black', sans-serif";
   if ('letterSpacing' in g) g.letterSpacing = '-4px';
-  g.fillText('07:32', W / 2, 356);
+  g.fillText(sperr.uhrzeit, W / 2, 356);
   if ('letterSpacing' in g) g.letterSpacing = '0px';
 
   // Taschenlampe links, Kamera rechts, Home-Balken unten

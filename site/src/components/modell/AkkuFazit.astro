@@ -8,15 +8,18 @@ import { MODELLE } from '../../data/modelle.js';
 import Knopf from '../Knopf.astro';
 import { pfad } from '../../lib/pfad.js';
 import { zahl } from '../../lib/format.js';
+import { texte, spracheVon } from '../../i18n/index.js';
 
 const { modell } = Astro.props;
+const t = texte(spracheVon(Astro.url));
+const S = t.modellseite;
 const daten = AKKU[modell];
-const [, legende] = phoneOpen(modell, 0, 0, 1);
+const [, legende] = phoneOpen(modell, 0, 0, 1, t.zeichnung);
 const max = Math.max(...daten.balken.map(([, w]) => w));
 ---
 <div class="fazit">
   <div class="text">
-    <h2 class="t-1">Mehr Akku.<br />Gleiche Hand.</h2>
+    <h2 class="t-1">{S.fazitTitel[0]}<br />{S.fazitTitel[1]}</h2>
     <p class="t-lead t-muted">{daten.fazit}</p>
     <ul role="list" class="balken">
       {daten.balken.map(([name, wert], i) => {
@@ -24,16 +27,16 @@ const max = Math.max(...daten.balken.map(([, w]) => w));
         return (
           <li class:list={{ kiesel }}>
             <span class="name">{name}</span>
-            <span class="wert t-muted">{kiesel ? 'ca. ' : ''}{zahl(wert)} mAh</span>
+            <span class="wert t-muted">{S.mah(kiesel ? t.geraete.ca : '', zahl(wert))}</span>
             <span class="spur" aria-hidden="true"><span style={`width: ${(wert / max * 100).toFixed(1)}%`}></span></span>
           </li>
         );
       })}
     </ul>
-    <Knopf art="text" icon="arrow" href={pfad('akku-rechner/')}>Rechne deinen Tag durch</Knopf>
+    <Knopf art="text" icon="arrow" href={pfad('akku-rechner/')}>{S.rechnen}</Knopf>
   </div>
   <div class="legende">
-    <h3 class="t-4">Was im {MODELLE[modell].name} steckt</h3>
+    <h3 class="t-4">{S.wasSteckt(MODELLE[modell].name)}</h3>
     <ol role="list">
       {legende.map(([nr, name]) => <li><span class="nr" aria-hidden="true">{nr}</span>{name}</li>)}
     </ol>

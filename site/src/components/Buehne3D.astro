@@ -33,8 +33,9 @@ import { texte, spracheVon } from '../i18n/index.js';
 
 const { modell = 'pro', farbe = 'sky-blue', name = 'buehne-farbe' } = Astro.props;
 const t = texte(spracheVon(Astro.url));
-const legende = (id) => `Farbe des ${MODELLE[id].name}`;
-const zeichne = (id) => handy({ ansicht: 'hinten', modell: id, farbe, drehung: -10, hoehe: null, label: `${MODELLE[id].name} in ${t.farben[farbe]}, Rückseite` });
+const B = t.buehne3d;
+const legende = (id) => B.farbeDes(MODELLE[id].name);
+const zeichne = (id) => handy({ ansicht: 'hinten', modell: id, farbe, drehung: -10, hoehe: null, label: B.bild2d(B.name(MODELLE[id].name, t.farben[farbe])) });
 const bilder = KIESEL_IDS.map((id) => ({ id, svg: zeichne(id) }));
 const vbHoehe = (svg) => Number(svg.match(/viewBox="[^"]*?(\S+)"/)[1]);
 const groesste = Math.max(...bilder.map((b) => vbHoehe(b.svg)));
@@ -47,7 +48,7 @@ const namen = Object.fromEntries(KIESEL_IDS.map((id) => [id, MODELLE[id].name]))
       <div class="bild-2d" data-bild2d={id} data-farbe={farbe} data-nur-modell={id}
         style={`--massstab: ${(vbHoehe(svg) / groesste).toFixed(4)}`} set:html={svg} />
     ))}
-    <ModellUmschalter class="umschalter" wert={modell} label="Modell wählen" />
+    <ModellUmschalter class="umschalter" wert={modell} label={B.modellWaehlen} />
     <script is:inline>
       // Gleich nach dem Umschalter: gedrückten Knopf und Legende auf die Wahl im <head> setzen
       (function () {
@@ -60,7 +61,7 @@ const namen = Object.fromEntries(KIESEL_IDS.map((id) => [id, MODELLE[id].name]))
       })();
     </script>
     <span class="chip drehen" data-nur3d hidden>
-      <GlasChip icon="rotate"><span class="lang">Ziehen zum Drehen</span><span class="kurz">Drehen</span></GlasChip>
+      <GlasChip icon="rotate"><span class="lang">{B.ziehen}</span><span class="kurz">{B.drehen}</span></GlasChip>
     </span>
     <span class="chip modus" data-nur3d hidden aria-hidden="true"><GlasChip>3D</GlasChip></span>
   </Buehne>
@@ -171,6 +172,7 @@ const namen = Object.fromEntries(KIESEL_IDS.map((id) => [id, MODELLE[id].name]))
 <script>
   import { handy } from '../lib/kiesel-draw/phone.js';
   import { grundGegen3D, TESTMODUS } from '../lib/kiesel-3d/pruefen.js';
+  import { buehne3d as B } from '../i18n/de.js';
   import { merkeStartmodell } from '../scripts/startmodell.js';
 
   const WENIGER_BEWEGUNG = matchMedia('(prefers-reduced-motion: reduce)');
@@ -187,8 +189,8 @@ const namen = Object.fromEntries(KIESEL_IDS.map((id) => [id, MODELLE[id].name]))
     const farbName = () => el.querySelector(`input[type="radio"][value="${farbe}"]`)?.closest('label').title ?? farbe;
     let b3d = null;
 
-    const label = () => `${namen[modell]} in ${farbName()}`;
-    const label3d = () => `${label()}, 3D-Modell. Mit Maus, Finger oder Pfeiltasten drehen.`;
+    const label = () => B.name(namen[modell], farbName());
+    const label3d = () => B.bild3d(label());
     const melden = () => el.dispatchEvent(new CustomEvent('kiesel:modell', { bubbles: true, detail: { modell, farbe } }));
 
     // 2D-Grafik des gewählten Modells in der gewählten Farbe (derselbe Zeichen-Motor wie im
@@ -196,7 +198,7 @@ const namen = Object.fromEntries(KIESEL_IDS.map((id) => [id, MODELLE[id].name]))
     function zeichne2D() {
       const b = bild2d(modell);
       if (b.dataset.farbe === farbe) return;
-      b.innerHTML = handy({ ansicht: 'hinten', modell, farbe, drehung: -10, hoehe: null, label: `${label()}, Rückseite` });
+      b.innerHTML = handy({ ansicht: 'hinten', modell, farbe, drehung: -10, hoehe: null, label: B.bild2d(label()) });
       b.dataset.farbe = farbe;
     }
 
