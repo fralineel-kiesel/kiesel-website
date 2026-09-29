@@ -1,0 +1,106 @@
+---
+// Sprach-Hinweis (Etappe 9b): „Also available in English“ auf deutschen Seiten, wenn der Browser
+// Englisch bevorzugt, und „Diese Seite gibt es auch auf Deutsch“ umgekehrt. Nie eine Umleitung.
+// Der Text steht in der Sprache, die er anbietet (lang), der Link führt auf dieselbe Seite in
+// dieser Sprache (samt Parametern und Sprungziel, wie der Sprachumschalter).
+//
+// - Steht im HTML versteckt (hidden), das Skript zeigt ihn. Ohne Skript also nie.
+// - position: fixed unten: er schiebt nichts herum, also kein Layoutsprung.
+// - Gleich nach „Zum Inhalt“ im HTML: Tastatur und Screenreader treffen ihn früh.
+// - Schliessen per Knopf oder Escape (solange der Fokus im Hinweis ist). Wegklicken und
+//   Sprachwahl werden gemerkt (scripts/sprachhinweis.js), gesperrter Speicher gibt keinen Fehler.
+// BaseLayout bindet ihn nur auf Seiten ein, die es in beiden Sprachen gibt.
+import Icon from './Icon.astro';
+import { gegenadresse } from '../lib/pfad.js';
+import { texte, spracheVon, andereSprache } from '../i18n/index.js';
+
+const andere = andereSprache(spracheVon(Astro.url));
+const T = texte(andere).sprachhinweis;
+const lang = texte(andere).sprache.html;
+const ziel = gegenadresse(Astro.url.pathname, andere);
+---
+<aside class="sprachhinweis" lang={lang} aria-label={T.label} data-sprachhinweis={andere} hidden>
+  <p class="text">{T.text}</p>
+  <a class="link" href={ziel} hreflang={texte(andere).sprache.hreflang} data-sprachhinweis-link>{T.link}</a>
+  <button type="button" class="zu" aria-label={T.schliessen} data-sprachhinweis-zu>
+    <Icon name="close" size={18} />
+  </button>
+</aside>
+
+<style>
+  .sprachhinweis {
+    position: fixed;
+    z-index: 40;
+    right: var(--space-4);
+    bottom: var(--space-4);
+    left: var(--space-4);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-4);
+    max-width: 420px;
+    margin-left: auto;
+    padding: var(--space-3) var(--space-3) var(--space-3) var(--space-5);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-m);
+    background: var(--raised);
+    color: var(--ink);
+    box-shadow: 0 12px 32px rgb(0 0 0 / 0.18);
+    animation: rein 0.25s ease-out;
+  }
+  .sprachhinweis[hidden] { display: none; }
+  .text { flex: 1 1 100%; margin: 0; padding-right: 36px; font-size: 15px; font-weight: 600; line-height: 1.4; }
+  .link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--accent);
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .link:focus-visible, .zu:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .zu {
+    position: absolute;
+    top: var(--space-1);
+    right: var(--space-1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-full);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .zu:hover { color: var(--ink); }
+  @keyframes rein { from { opacity: 0; transform: translateY(8px); } }
+  @media (prefers-reduced-motion: reduce) { .sprachhinweis { animation: none; } }
+</style>
+
+<script>
+  import { gegenadresse } from '../lib/pfad.js';
+  import { sprachEntscheidGemerkt, merkeSprachEntscheid, browserSprache } from '../scripts/sprachhinweis.js';
+
+  document.querySelectorAll('[data-sprachhinweis]').forEach((hinweis) => {
+    const angebot = hinweis.dataset.sprachhinweis; // die Sprache, die der Hinweis anbietet
+    if (sprachEntscheidGemerkt() || browserSprache() !== angebot) return;
+    const link = hinweis.querySelector('[data-sprachhinweis-link]');
+    const nachfuehren = () => { const z = gegenadresse(location.pathname + location.search + location.hash, angebot); if (z) link.href = z; };
+    function schliessen() {
+      const hatteFokus = hinweis.contains(document.activeElement);
+      hinweis.hidden = true;
+      merkeSprachEntscheid();
+      // Fokus nicht ins Leere fallen lassen: zum Hauptinhalt
+      if (hatteFokus) document.querySelector('main')?.focus();
+    }
+    link.addEventListener('pointerenter', nachfuehren);
+    link.addEventListener('focus', nachfuehren);
+    link.addEventListener('click', () => { nachfuehren(); merkeSprachEntscheid(); });
+    hinweis.querySelector('[data-sprachhinweis-zu]').addEventListener('click', schliessen);
+    hinweis.addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.preventDefault(); schliessen(); } });
+    hinweis.hidden = false;
+  });
+</script>

@@ -8,9 +8,12 @@ import ZenModus from '../components/funktionen/ZenModus.astro';
 import PrivacyModus from '../components/funktionen/PrivacyModus.astro';
 import KameraSuche from '../components/funktionen/KameraSuche.astro';
 import { kopfFuer, kameraFuer } from '../data/funktionen.js';
+import { anker } from '../lib/pfad.js';
 import { texte, spracheVon } from '../i18n/index.js';
 
-const t = texte(spracheVon(Astro.url));
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
+
 const F = t.funktionen;
 const KOPF = kopfFuer(F);
 const KAMERA = kameraFuer(F);
@@ -20,14 +23,14 @@ const KAMERA = kameraFuer(F);
     <h1 class="t-display" id="funktionen-titel">{KOPF.titel}</h1>
     <p class="t-lead t-muted">{KOPF.einleitung}</p>
     <nav class="anker" aria-label={F.sprungmarken}>
-      {KOPF.anker.map(([text, id]) => <a href={`#${id}`}>{text}</a>)}
+      {KOPF.anker.map(([text, id]) => <a href={`#${anker(id, sprache)}`}>{text}</a>)}
     </nav>
   </section>
 
-  <section class="abschnitt container" id="rgb" aria-label={F.anker.rgb}><RgbLicht /></section>
-  <section class="abschnitt container" id="zen" aria-label={F.anker.zen}><ZenModus /></section>
-  <section class="abschnitt container" id="privacy" aria-label={F.anker.privacy}><PrivacyModus /></section>
-  <section class="abschnitt container" id="kamera" aria-labelledby="kamera-titel">
+  <section class="abschnitt container" id={anker('rgb', sprache)} aria-label={F.anker.rgb}><RgbLicht /></section>
+  <section class="abschnitt container" id={anker('zen', sprache)} aria-label={F.anker.zen}><ZenModus /></section>
+  <section class="abschnitt container" id={anker('privacy', sprache)} aria-label={F.anker.privacy}><PrivacyModus /></section>
+  <section class="abschnitt container" id={anker('kamera', sprache)} aria-labelledby="kamera-titel">
     <h2 class="t-1" id="kamera-titel">{KAMERA.titel}</h2>
     <p class="t-lead t-muted unter">{KAMERA.text}</p>
     <KameraSuche />

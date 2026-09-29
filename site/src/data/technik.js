@@ -40,11 +40,11 @@ const W = WERTE;
 export const hertzText = (T = DE) => T.hertz(...W.hertz);
 
 // Gruppen: { id, titel, zeilen: [[kennung, Merkmal, Kiesel 1, Kiesel 1 Pro], …] }
-function gruppen(T = DE, farbname = FARBNAME, G = GERAETE_T) {
+function gruppen(T = DE, farbname = FARBNAME, G = GERAETE_T, sprache = 'de') {
   const V = T.werte;
   const stufen = (m) => PREISE[m].speicher;
   const speicher = (m) => stufen(m).map((s) => s.name).join(', ');
-  const preisStufe = (s) => V.preisStufe(chf(s.preis), s.name);
+  const preisStufe = (s) => V.preisStufe(chf(s.preis, sprache), s.name);
   const farben = FARBEN_TEXT.map((f) => farbname[f]).join(', ');
   const hertz = hertzText(T);
   const beide = (text) => [text, text];
@@ -52,14 +52,14 @@ function gruppen(T = DE, farbname = FARBNAME, G = GERAETE_T) {
   const g = (id, zeilen) => ({ id, titel: T.gruppen[id], zeilen });
   return [
     g('design', [
-      z('masse', masse('k1', G), masse('pro', G)),
+      z('masse', masse('k1', G, sprache), masse('pro', G, sprache)),
       z('gewicht', gewicht('k1', G), gewicht('pro', G)),
       z('rahmen', ...beide(V.rahmen)),
       z('farben', ...beide(farben)),
       z('wasser', ...beide(W.schutz)),
     ]),
     g('display', [
-      z('groesse', V.display(zoll('k1', G)), V.display(zoll('pro', G))),
+      z('groesse', V.display(zoll('k1', G, sprache)), V.display(zoll('pro', G, sprache))),
       z('bildrate', ...beide(V.bildrate(hertz))),
       z('entsperren', ...beide(V.entsperren)),
     ]),
@@ -106,8 +106,9 @@ function gruppen(T = DE, farbname = FARBNAME, G = GERAETE_T) {
 }
 
 // Tabelle wie SPEC in gen4.py: { titel, zeilen: [[Merkmal, Kiesel 1, Kiesel 1 Pro], …] }
-export const technikTabelle = (T = DE, farbname = FARBNAME) =>
-  gruppen(T, farbname).map((g) => ({ titel: g.titel, zeilen: g.zeilen.map(([, ...rest]) => rest) }));
+// G = Abschnitt geraete der Textdatei („ca.“), sprache fürs Zahlen- und Preisformat
+export const technikTabelle = (T = DE, farbname = FARBNAME, G = GERAETE_T, sprache = 'de') =>
+  gruppen(T, farbname, G, sprache).map((g) => ({ titel: g.titel, zeilen: g.zeilen.map(([, ...rest]) => rest) }));
 export const TECHNIK = technikTabelle();
 
 // Vier Kennzahlen oben auf der Technik-Seite (key_nums in gen4.py)

@@ -1,0 +1,93 @@
+---
+// Sprachumschalter (Etappe 9b): im Footer neben dem Thema und im Burger-Menü.
+//   Deutsch · English: die aktuelle Sprache ist markiert, die andere ein Link auf dieselbe Seite
+//   in der anderen Sprache (nie auf die Startseite). Jede Sprache heisst so, wie sie sich
+//   selbst nennt, mit lang und hreflang.
+// Parameter und Sprungziel zieht das Skript beim Klicken (und schon bei Maus/Fokus, damit die
+// Statuszeile stimmt) aus der aktuellen Adresse nach und übersetzt sie (gegenadresse() in
+// lib/pfad.js): /kaufen/?modell=pro#x → /en/buy/?model=pro#x. /kaufen/ schreibt seine Adresse
+// laufend neu, darum erst beim Klick.
+// Die Wahl wird nicht gespeichert, niemand wird umgeleitet. Sie zählt aber als Entscheid: Der
+// Sprach-Hinweis (SprachHinweis.astro) kommt danach nicht mehr.
+// Seiten nur auf Deutsch (Designsystem, Spielwiese): kein Umschalter. 404: zur Startseite der
+// anderen Sprache (die 404 selbst hat keine Gegenseite, die man anschauen möchte).
+import { pfad, gegenadresse, seitenKennung, gibtEs } from '../lib/pfad.js';
+import { texte, spracheVon, andereSprache } from '../i18n/index.js';
+
+const { class: klasse } = Astro.props;
+const sprache = spracheVon(Astro.url);
+const andere = andereSprache(sprache);
+const kennung = seitenKennung(Astro.url.pathname);
+const ist404 = kennung === '404.html';
+const ziel = ist404 ? pfad('', andere) : gegenadresse(Astro.url.pathname, andere);
+const hier = texte(sprache).sprache;
+const dort = texte(andere).sprache;
+const eintraege = [[sprache, hier], [andere, dort]].sort(([a], [b]) => (a === 'de' ? -1 : b === 'de' ? 1 : 0));
+---
+{gibtEs(kennung, andere) && (
+  <nav class:list={['sprachwahl', klasse]} aria-label={hier.wahl} data-sprachwahl>
+    <span class="titel" aria-hidden="true">{hier.wahl}</span>
+    <ul role="list" class="optionen">
+      {eintraege.map(([id, s]) => (
+        <li>
+          {id === sprache
+            ? <span class="aktiv" lang={s.html} aria-current="true">{s.name}</span>
+            : <a href={ziel} lang={s.html} hreflang={s.hreflang} data-gegenseite={id} data-fest={ist404 ? '' : undefined}>{s.name}</a>}
+        </li>
+      ))}
+    </ul>
+  </nav>
+)}
+
+<style>
+  /* Gleiche Pille wie der Thema-Umschalter */
+  .titel {
+    display: block;
+    margin-bottom: var(--space-2);
+    font-size: 13px;
+    color: var(--muted);
+  }
+  @media (max-width: 899px) {
+    .titel { float: left; margin: 7px var(--space-3) 0 0; }
+  }
+  .optionen {
+    display: inline-flex;
+    gap: 2px;
+    margin: 0;
+    padding: 3px;
+    list-style: none;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-full);
+    background: var(--surface);
+  }
+  .optionen a, .aktiv {
+    display: block;
+    padding: 5px 11px;
+    border-radius: var(--radius-full);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.4;
+    text-decoration: none;
+  }
+  .optionen a { color: var(--muted); }
+  .optionen a:hover { color: var(--ink); }
+  .optionen a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .aktiv { background: var(--ink); color: var(--bg); }
+</style>
+
+<script>
+  import { gegenadresse } from '../lib/pfad.js';
+  import { merkeSprachEntscheid } from '../scripts/sprachhinweis.js';
+
+  document.querySelectorAll('[data-sprachwahl] a[data-gegenseite]').forEach((a) => {
+    // Aktuelle Adresse samt Parametern und Sprungziel in die andere Sprache übersetzen
+    const nachfuehren = () => {
+      if (a.hasAttribute('data-fest')) return;
+      const ziel = gegenadresse(location.pathname + location.search + location.hash, a.dataset.gegenseite);
+      if (ziel) a.href = ziel;
+    };
+    a.addEventListener('pointerenter', nachfuehren);
+    a.addEventListener('focus', nachfuehren);
+    a.addEventListener('click', () => { nachfuehren(); merkeSprachEntscheid(); });
+  });
+</script>

@@ -9,11 +9,13 @@
 import Logo from './Logo.astro';
 import Icon from './Icon.astro';
 import ThemaUmschalter from './ThemaUmschalter.astro';
+import Sprachwahl from './Sprachwahl.astro';
 import { FOOTER_SPALTEN, linkName } from '../data/navigation.js';
 import { pfad } from '../lib/pfad.js';
 import { texte, spracheVon } from '../i18n/index.js';
 
-const t = texte(spracheVon(Astro.url));
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
 ---
 <footer class="footer">
   <div class="container">
@@ -24,6 +26,7 @@ const t = texte(spracheVon(Astro.url));
         </div>
         <p class="satz">{t.geruest.footerSatz}</p>
         <ThemaUmschalter />
+        <Sprachwahl />
       </div>
 
       {FOOTER_SPALTEN.map((s, i) => (
@@ -35,7 +38,7 @@ const t = texte(spracheVon(Astro.url));
             </button>
           </h2>
           <ul role="list" id={`footer-${i}`}>
-            {s.links.map((l) => <li><a href={pfad(l.pfad)}>{linkName(l, t)}</a></li>)}
+            {s.links.map((l) => <li><a href={pfad(l.pfad, sprache)}>{linkName(l, t)}</a></li>)}
           </ul>
         </div>
       ))}
@@ -88,6 +91,7 @@ const t = texte(spracheVon(Astro.url));
   /* Die Marken-Spalte zeigt auf dem Handy nur den Thema-Umschalter, und zwar zuletzt */
   .marke-spalte { order: 1; margin-top: var(--space-5); }
   .marke, .satz { display: none; }
+  .marke-spalte :global(.sprachwahl) { margin-top: var(--space-4); }
 
   .hinweise {
     display: flex;

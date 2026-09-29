@@ -4,6 +4,8 @@
 // laufender würde sonst stören. Port 0 = irgendein freier.
 //   const { basis, schliessen } = await starteServer();
 //   starteServer({ ordner: '…/dist' }) = anderer Build (z.B. der alte Stand für vergleiche-html.mjs)
+//   starteServer({ fehlerseite: true }) = fehlende Adressen bekommen wie bei GitHub Pages die
+//   404.html (Status 404), sonst eine leere Antwort
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -15,7 +17,7 @@ const TYPEN = { '.html': 'text/html; charset=utf-8', '.xml': 'application/xml; c
 const dist = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'dist');
 
 // gzip: wie GitHub Pages, damit Ladezeit-Messungen realistisch sind
-export async function starteServer({ gzip = true, ordner = dist } = {}) {
+export async function starteServer({ gzip = true, ordner = dist, fehlerseite = false } = {}) {
   const dist = ordner;
   if (!fs.existsSync(dist)) throw new Error('Kein Build gefunden: zuerst npm run build');
   const server = http.createServer((req, res) => {
@@ -24,7 +26,11 @@ export async function starteServer({ gzip = true, ordner = dist } = {}) {
     let datei = path.join(dist, p.slice(BASISPFAD.length));
     if (!datei.startsWith(dist)) { res.writeHead(403).end(); return; }
     if (fs.existsSync(datei) && fs.statSync(datei).isDirectory()) datei = path.join(datei, 'index.html');
-    if (!fs.existsSync(datei)) { res.writeHead(404).end(); return; }
+    if (!fs.existsSync(datei)) {
+      const f404 = path.join(dist, '404.html');
+      if (fehlerseite && fs.existsSync(f404)) { res.writeHead(404, { 'content-type': TYPEN['.html'] }); fs.createReadStream(f404).pipe(res); return; }
+      res.writeHead(404).end(); return;
+    }
     const typ = TYPEN[path.extname(datei)] ?? 'application/octet-stream';
     const packen = gzip && /text|javascript|svg/.test(typ) && /gzip/.test(req.headers['accept-encoding'] ?? '');
     res.writeHead(200, { 'content-type': typ, ...(packen ? { 'content-encoding': 'gzip' } : {}) });

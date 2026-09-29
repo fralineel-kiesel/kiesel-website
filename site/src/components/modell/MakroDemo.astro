@@ -15,12 +15,16 @@
 // dem Bild machen dasselbe per Tastatur. Linsenwechsel: 450 ms, bei „weniger Bewegung“ sofort.
 import GlasChip from '../GlasChip.astro';
 import { blumeBild } from '../../lib/kiesel-draw/index.js';
-import { MAKRO, MAKRO_MITTE, MAKRO_FOKUS } from '../../data/kamera.js';
+import { makroFuer, MAKRO_MITTE, MAKRO_FOKUS } from '../../data/kamera.js';
 import { makroTrafo } from '../../lib/kamera.js';
 import { texte, spracheVon } from '../../i18n/index.js';
 
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
+const MAKRO = makroFuer(t.kamera);
+
 const { modell = 'pro' } = Astro.props;
-const K = texte(spracheVon(Astro.url)).kamera.makro;
+const K = texte(sprache).kamera.makro;
 const m = MAKRO[modell];
 const linse = m.linsen[m.start];
 const FOKUS = 0.5; // anfangs auf der Blume
@@ -132,7 +136,11 @@ const bild = blumeBild({ fokus: FOKUS, staerke: linse.staerke, breite: null, hoe
 
 <script>
   import { blumeUnschaerfe, BLUME_TIEFE } from '../../lib/kiesel-draw/scene.js';
-  import { MAKRO, MAKRO_MITTE } from '../../data/kamera.js';
+  import { makroFuer, MAKRO_MITTE } from '../../data/kamera.js';
+  import { kamera as K_DE } from '../../i18n/de.js';
+  import { kamera as K_EN } from '../../i18n/en.js';
+  import { waehle } from '../../scripts/seitensprache.js';
+  const MAKRO = makroFuer(waehle(K_DE, K_EN));
   import { makroTrafo } from '../../lib/kamera.js';
 
   const ruhig = matchMedia('(prefers-reduced-motion: reduce)');

@@ -9,7 +9,8 @@ import { pfad } from '../../lib/pfad.js';
 import { texte, spracheVon } from '../../i18n/index.js';
 
 const blau = LED_FARBEN.call; // derselbe Blauton wie der Blitz beim Anruf
-const t = texte(spracheVon(Astro.url));
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
 const K = t.startseite.kacheln;
 const KACHELN = ['rgb', 'zen', 'privacy'].map((id) => ({ id, anker: id, ...K[id] }));
 ---
@@ -59,7 +60,7 @@ const KACHELN = ['rgb', 'zen', 'privacy'].map((id) => ({ id, anker: id, ...K[id]
         </div>
         <h3 class="t-3">{k.titel}</h3>
         <p class="t-muted">{k.text}</p>
-        <Knopf art="text" icon="arrow" href={pfad(`funktionen/#${k.anker}`)}>{K.ausprobieren}<span class="vh">: {k.titel}</span></Knopf>
+        <Knopf art="text" icon="arrow" href={pfad(`funktionen/#${k.anker}`, sprache)}>{K.ausprobieren}<span class="vh">: {k.titel}</span></Knopf>
       </article>
     </li>
   ))}

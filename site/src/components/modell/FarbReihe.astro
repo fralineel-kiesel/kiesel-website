@@ -4,11 +4,14 @@
 // rastet dabei an jedem Handy ein (scroll-snap).
 import { handy } from '../../lib/kiesel-draw/index.js';
 import { FARB_IDS } from '../../data/farben.js';
-import { MODELLE } from '../../data/modelle.js';
+import { modelleFuer } from '../../data/modelle.js';
 import { texte, spracheVon } from '../../i18n/index.js';
 
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
+const MODELLE = modelleFuer(t, sprache);
+
 const { modell } = Astro.props;
-const t = texte(spracheVon(Astro.url));
 // Reihenfolge wie im Artboard: die Farbe der Modellseite zuerst
 const farbe = MODELLE[modell].seite.farbe;
 const reihe = [farbe, ...FARB_IDS.filter((n) => n !== farbe)];
@@ -16,7 +19,7 @@ const reihe = [farbe, ...FARB_IDS.filter((n) => n !== farbe)];
 <ul role="list" class="farben" aria-label={t.modellseite.fuenfFarben}>
   {reihe.map((n) => (
     <li>
-      <Fragment set:html={handy({ ansicht: 'hinten', modell, farbe: n, hoehe: null, label: t.modellseite.bildFarbe(MODELLE[modell].name, t.farben[n]) })} />
+      <Fragment set:html={handy({ texte: t.zeichnung, sprache, ansicht: 'hinten', modell, farbe: n, hoehe: null, label: t.modellseite.bildFarbe(MODELLE[modell].name, t.farben[n]) })} />
       <span>{t.farben[n]}</span>
     </li>
   ))}

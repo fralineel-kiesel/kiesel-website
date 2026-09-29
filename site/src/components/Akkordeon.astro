@@ -4,7 +4,8 @@
 //   eintraege: [{ id, frage, antwort, thema?, themaName?, link? }]  thema = Kennung (data-thema),
 //              themaName = angezeigter Name   offen: id des anfangs offenen Eintrags (oder null)
 //   ebene:     Überschriften-Ebene der Fragen (3 = <h3>, passend unter einer <h2>)
-//   anker:     true = jeder Eintrag bekommt id={e.id} als Sprungziel (nur auf der FAQ-Seite)
+//   anker:     true = jeder Eintrag bekommt ein Sprungziel (nur auf der FAQ-Seite): id = Kennung,
+//              auf Englisch übersetzt (anker() aus lib/pfad.js, /en/faq/#concept)
 //   thema:     true = Thema klein über der Frage zeigen (FAQ-Seite)
 //   link:      { text, pfad }: steht link.text in der Antwort, wird genau diese Stelle ein Link,
 //              sonst folgt der Link nach der Antwort
@@ -16,9 +17,11 @@
 //   aria-controls verbindet den Button mit seiner Antwort.
 import Icon from './Icon.astro';
 import Knopf from './Knopf.astro';
-import { pfad } from '../lib/pfad.js';
+import { pfad, anker as sprungziel } from '../lib/pfad.js';
+import { spracheVon } from '../i18n/index.js';
 
 const { eintraege, offen = null, ebene = 3, idVorsilbe = 'akk', anker = false, thema = false } = Astro.props;
+const sprache = spracheVon(Astro.url);
 const H = `h${ebene}`;
 // Antwort in [vor, Linktext, nach] teilen, wenn der Linktext darin vorkommt
 const teile = (e) => {
@@ -31,7 +34,7 @@ const teile = (e) => {
     const auf = e.id === offen;
     const t = teile(e);
     return (
-      <div class="eintrag" id={anker ? e.id : undefined} data-eintrag={e.id} data-thema={e.thema}>
+      <div class="eintrag" id={anker ? sprungziel(e.id, sprache) : undefined} data-eintrag={e.id} data-thema={e.thema}>
         <H class="frage">
           <button type="button" class="t-4" id={`${idVorsilbe}-${e.id}-knopf`} aria-expanded={auf ? 'true' : 'false'} aria-controls={`${idVorsilbe}-${e.id}`}>
             <span class="text">
@@ -43,8 +46,8 @@ const teile = (e) => {
           </button>
         </H>
         <div class="antwort" id={`${idVorsilbe}-${e.id}`} role="region" aria-labelledby={`${idVorsilbe}-${e.id}-knopf`} hidden={!auf}>
-          <p>{t ? <>{t[0]}<a href={pfad(e.link.pfad)}>{t[1]}</a>{t[2]}</> : e.antwort}</p>
-          {e.link && !t && <Knopf art="text" icon="arrow" href={pfad(e.link.pfad)}>{e.link.text}</Knopf>}
+          <p>{t ? <>{t[0]}<a href={pfad(e.link.pfad, sprache)}>{t[1]}</a>{t[2]}</> : e.antwort}</p>
+          {e.link && !t && <Knopf art="text" icon="arrow" href={pfad(e.link.pfad, sprache)}>{e.link.text}</Knopf>}
         </div>
       </div>
     );

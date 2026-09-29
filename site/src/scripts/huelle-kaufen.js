@@ -5,7 +5,11 @@
 import { hinzufuegen } from './warenkorb.js';
 import { huellenArtikel } from '../data/zubehoer.js';
 import { PREISE, MAX_ANZAHL } from '../data/preise.js';
-import { farben as FARBNAME, warenkorb as W } from '../i18n/de.js';
+import { farben as FARBNAME_DE, warenkorb as W_DE } from '../i18n/de.js';
+import { farben as FARBNAME_EN, warenkorb as W_EN } from '../i18n/en.js';
+import { waehle } from './seitensprache.js';
+const FARBNAME = waehle(FARBNAME_DE, FARBNAME_EN);
+const W = waehle(W_DE, W_EN);
 
 export function huelleKaufen(knopf, modell, farbe, ansage) {
   const ergebnis = hinzufuegen(huellenArtikel(modell, farbe));

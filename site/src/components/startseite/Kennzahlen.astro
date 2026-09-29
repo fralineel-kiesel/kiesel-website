@@ -4,7 +4,12 @@
 // „Startseite Handy“. Beide Fassungen stehen im HTML, CSS zeigt nur eine
 // (display: none versteckt die andere auch vor Screenreadern, also nichts doppelt).
 //   zahlen: eigene Kennzahlen (Modellseiten), sonst die der Startseite. Beide stehen in data/modelle.js
-import { STARTSEITE_KENNZAHLEN as STARTSEITE } from '../../data/modelle.js';
+import { startseiteKennzahlen } from '../../data/modelle.js';
+import { texte, spracheVon } from '../../i18n/index.js';
+
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
+const STARTSEITE = startseiteKennzahlen(t, sprache);
 const { zahlen: ZAHLEN = STARTSEITE } = Astro.props;
 // [lang, kurz]: gibt es keine Kurzfassung, gilt die lange überall
 const zwei = ([lang, kurz]) => (kurz ? [lang, kurz] : [lang, null]);

@@ -17,6 +17,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { starteServer } from './dist-server.mjs';
 import { OEFFENTLICH } from './seiten.mjs';
+import { miss } from './ueberlauf.mjs';
 
 const hier = path.dirname(fileURLToPath(import.meta.url));
 const site = path.join(hier, '..');
@@ -27,27 +28,6 @@ if (!process.argv.includes('--ohne-build')) {
   console.log('Pseudo-Build „lang“ …');
   execFileSync(process.execPath, [path.join(site, 'node_modules', 'astro', 'bin', 'astro.mjs'), 'build'],
     { cwd: site, stdio: ['ignore', 'ignore', 'inherit'], env: { ...process.env, KIESEL_PSEUDO: 'lang' } });
-}
-
-function miss() {
-  const probleme = [];
-  const b = document.documentElement.scrollWidth, w = innerWidth;
-  if (b > w + 1) probleme.push(`Seite scrollt seitlich: ${b} px breit bei ${w} px Fenster`);
-  const name = (el) => el.tagName.toLowerCase() + (el.id ? `#${el.id}` : '') + (el.classList.length ? '.' + [...el.classList].slice(0, 2).join('.') : '');
-  for (const el of document.querySelectorAll('body *')) {
-    // Nur für Screenreader (.vh: absichtlich 1 px gross) zählt nicht, SVG-Text auch nicht
-    if (!el.checkVisibility?.() || !el.textContent.trim() || el.closest('svg, .vh')) continue;
-    const eigenerText = [...el.childNodes].some((n) => n.nodeType === 3 && n.data.trim());
-    if (!eigenerText) continue;
-    const s = getComputedStyle(el);
-    const text = el.textContent.trim().replace(/\s+/g, ' ').slice(0, 60);
-    if (el.scrollWidth > el.clientWidth + 1 && s.overflowX !== 'visible') probleme.push(`abgeschnitten: ${name(el)} „${text}“ (${el.scrollWidth} statt ${el.clientWidth} px)`);
-    const e = el.getBoundingClientRect(), p = el.parentElement?.getBoundingClientRect();
-    if (p && p.width > 0 && e.right > p.right + 2 && getComputedStyle(el.parentElement).overflowX === 'visible' && e.width < w) {
-      probleme.push(`ragt heraus: ${name(el)} „${text}“ (${Math.round(e.right - p.right)} px über ${name(el.parentElement)})`);
-    }
-  }
-  return [...new Set(probleme)];
 }
 
 const { basis, schliessen } = await starteServer({ ordner: path.join(site, 'dist-pseudo-lang') });

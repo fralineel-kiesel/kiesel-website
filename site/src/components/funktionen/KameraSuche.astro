@@ -10,10 +10,15 @@ import ZoomSkala from '../modell/ZoomSkala.astro';
 import LinsenLeiste from '../modell/LinsenLeiste.astro';
 import KameraFunde from './KameraFunde.astro';
 import { panoramaQuelle } from '../../lib/kiesel-draw/index.js';
-import { STUFEN, LINSEN, TELE_AB, MAX_ZOOM } from '../../data/kamera.js';
+import { stufenFuer, linsenFuer, TELE_AB, MAX_ZOOM } from '../../data/kamera.js';
 import { texte, spracheVon } from '../../i18n/index.js';
 
-const K = texte(spracheVon(Astro.url)).kamera;
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
+const STUFEN = stufenFuer(t.kamera);
+const LINSEN = linsenFuer(t.kamera);
+
+const K = texte(sprache).kamera;
 const quelle = panoramaQuelle(); // auch für die Vorschaubilder
 ---
 <div class="kamera-suche" data-kamera data-kamera-suche>

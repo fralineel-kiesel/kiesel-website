@@ -2,10 +2,25 @@
 // Browser: Warenkorb-Knopf, Schublade und Kasse laufen auf jeder Seite, darum steht hier alles, was sie brauchen.
 // Aufbau und Regeln: siehe src/i18n/de.js.
 
-// ── Sprache der Seite (<html lang>, Link-Vorschau) ──
+// ── Sprache der Seite (<html lang>, Link-Vorschau) und Sprachwahl ──
+//    name/kurz: diese Sprache in sich selbst. Der Umschalter der anderen Sprache zeigt sie so an
+//    (auf /en/ steht „Deutsch“ aus dieser Datei, mit lang="de"). wahl: Beschriftung des Umschalters.
 export const sprache = {
   html: 'de-CH',
   og: 'de_CH',
+  hreflang: 'de',
+  name: 'Deutsch',
+  kurz: 'DE',
+  wahl: 'Sprache',
+};
+
+// ── Sprach-Hinweis: steht auf den englischen Seiten, wenn der Browser Deutsch bevorzugt. Darum
+//    in der Sprache, die er anbietet (mit lang="de"), nicht in der Sprache der Seite ──
+export const sprachhinweis = {
+  label: 'Hinweis zur Sprache',
+  text: 'Diese Seite gibt es auch auf Deutsch.',
+  link: 'Zur deutschen Seite',
+  schliessen: 'Hinweis schliessen',
 };
 
 // ── Titel und Beschreibung (BaseLayout: <title>, <meta description>, og:*) ──

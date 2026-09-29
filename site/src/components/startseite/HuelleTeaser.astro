@@ -10,7 +10,9 @@ import { chf } from '../../lib/format.js';
 import { pfad } from '../../lib/pfad.js';
 import { texte, spracheVon } from '../../i18n/index.js';
 
-const t = texte(spracheVon(Astro.url));
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
+
 const H = t.startseite.huelle;
 
 const svg = handy({
@@ -23,9 +25,9 @@ const svg = handy({
   <div class="text">
     <h2 class="t-1">{H.titel}</h2>
     <p class="t-lead t-muted">{H.text}</p>
-    <p class="preis">{chf(HUELLE_PREIS)}</p>
+    <p class="preis">{chf(HUELLE_PREIS, sprache)}</p>
     <div class="knoepfe">
-      <Knopf art="sekundaer" href={pfad('zubehoer/')}>{H.zumZubehoer}</Knopf>
+      <Knopf art="sekundaer" href={pfad('zubehoer/', sprache)}>{H.zumZubehoer}</Knopf>
       {/* Legt genau die abgebildete Hülle hinein: für den Pro, in Mattweiss */}
       <Knopf art="primaer" data-teaser-huelle data-modell="pro" data-farbe="matte-white"><span data-knopftext>{t.kaufen.inWarenkorb}</span><span class="vh">: {t.warenkorb.huelleFuer('Kiesel 1 Pro', t.farben['matte-white'])}</span></Knopf>
       <p class="vh" aria-live="polite" data-ansage></p>

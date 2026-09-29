@@ -17,12 +17,14 @@ import { chf } from '../../lib/format.js';
 import { pfad } from '../../lib/pfad.js';
 import { texte, spracheVon } from '../../i18n/index.js';
 
-const t = texte(spracheVon(Astro.url));
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
+
 const H = t.huelle;
 const HUELLE = huelleFuer(H, t.farben);
 const S = HUELLE.start;
 const DREHUNG = { hinten: -4, vorne: 3 };
-const bild = handy({ ansicht: 'hinten', modell: S.modell, farbe: S.handy, huelle: S.huelle, hoehe: null, drehung: DREHUNG.hinten, label: H.bild('Kiesel 1 Pro', t.farben[S.handy], t.farben[S.huelle], H.ansichten.hinten) });
+const bild = handy({ texte: t.zeichnung, sprache, ansicht: 'hinten', modell: S.modell, farbe: S.handy, huelle: S.huelle, hoehe: null, drehung: DREHUNG.hinten, label: H.bild('Kiesel 1 Pro', t.farben[S.handy], t.farben[S.huelle], H.ansichten.hinten) });
 
 // Ausschnitt einer Rückseite (crop_phone in gen3.py)
 const ausschnitt = (farbe, huelle, vb, label) => `<svg viewBox="${vb}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="${label}" style="display: block">${backSvg('pro', palette(farbe), uid('cp'), null, palette(huelle))}</svg>`;
@@ -51,11 +53,11 @@ const rahmen = `<svg viewBox="-4 0 430 250" role="img" aria-label="${H.profil.la
 
 const E = HUELLE.eigenschaften;
 const kacheln = [[milchig, ...E.milchig], [rand, ...E.rand], [rahmen, ...E.rahmen]];
-const details = HUELLE.details.map(([a, b]) => [a, b ?? chf(HUELLE_PREIS)]);
+const details = HUELLE.details.map(([a, b]) => [a, b ?? chf(HUELLE_PREIS, sprache)]);
 ---
-<BaseLayout titel={H.titel} beschreibung={H.beschreibung(HUELLE.text, chf(HUELLE_PREIS))}>
+<BaseLayout titel={H.titel} beschreibung={H.beschreibung(HUELLE.text, chf(HUELLE_PREIS, sprache))}>
   <nav class="container brotkrumen" aria-label={H.brotkrumen}>
-    <a href={pfad('zubehoer/')}>{H.zubehoer}</a><span aria-hidden="true">/</span><span aria-current="page">{HUELLE.titel}</span>
+    <a href={pfad('zubehoer/', sprache)}>{H.zubehoer}</a><span aria-hidden="true">/</span><span aria-current="page">{HUELLE.titel}</span>
   </nav>
 
   <section class="container produkt" data-huelle aria-labelledby="huelle-titel">
@@ -67,7 +69,7 @@ const details = HUELLE.details.map(([a, b]) => [a, b ?? chf(HUELLE_PREIS)]);
     </Buehne>
     <div class="wahl">
       <h1 class="titel" id="huelle-titel">{HUELLE.titel}</h1>
-      <p class="preis">{chf(HUELLE_PREIS)}</p>
+      <p class="preis">{chf(HUELLE_PREIS, sprache)}</p>
       <p class="t-muted text">{HUELLE.text}</p>
       <h2 class="frage">{HUELLE.modellFrage}</h2>
       <div class="modelle" role="group" aria-label={HUELLE.modellFrage}>
@@ -212,7 +214,13 @@ const details = HUELLE.details.map(([a, b]) => [a, b ?? chf(HUELLE_PREIS)]);
   import { handy } from '../../lib/kiesel-draw/phone.js';
   import { huelleKaufen } from '../../scripts/huelle-kaufen.js';
   import { farbId } from '../../data/farben.js';
-  import { farben as FARBNAME, huelle as H } from '../../i18n/de.js';
+  import { farben as FARBNAME_DE, huelle as H_DE, zeichnung as Z_DE } from '../../i18n/de.js';
+  import { farben as FARBNAME_EN, huelle as H_EN, zeichnung as Z_EN } from '../../i18n/en.js';
+  import { waehle, SPRACHE } from '../../scripts/seitensprache.js';
+  import { parameter } from '../../lib/pfad.js';
+  const FARBNAME = waehle(FARBNAME_DE, FARBNAME_EN);
+  const H = waehle(H_DE, H_EN);
+  const ZEICHNUNG = waehle(Z_DE, Z_EN);
 
   const NAME = { k1: 'Kiesel 1', pro: 'Kiesel 1 Pro' };
   const DREHUNG = { hinten: -4, vorne: 3 };
@@ -225,7 +233,7 @@ const details = HUELLE.details.map(([a, b]) => [a, b ?? chf(HUELLE_PREIS)]);
 
     function zeichne() {
       ort.dataset.modell = z.modell;
-      ort.innerHTML = handy({ ansicht: z.ansicht, modell: z.modell, farbe: z.handy, huelle: z.huelle, hoehe: null, drehung: DREHUNG[z.ansicht],
+      ort.innerHTML = handy({ texte: ZEICHNUNG, sprache: SPRACHE, ansicht: z.ansicht, modell: z.modell, farbe: z.handy, huelle: z.huelle, hoehe: null, drehung: DREHUNG[z.ansicht],
         label: H.bild(NAME[z.modell], FARBNAME[z.handy], FARBNAME[z.huelle], H.ansichten[z.ansicht]) });
       wurzel.querySelectorAll('[data-modell-wahl]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.modellWahl === z.modell ? 'true' : 'false'));
       wurzel.querySelectorAll('[data-ansicht]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.ansicht === z.ansicht ? 'true' : 'false'));
@@ -249,9 +257,11 @@ const details = HUELLE.details.map(([a, b]) => [a, b ?? chf(HUELLE_PREIS)]);
     // Nur Modell und Hüllenfarbe, nie die Vorschau-Handyfarbe
     wurzel.querySelector('[data-huelle-kaufen]').addEventListener('click', (e) => huelleKaufen(e.currentTarget, z.modell, z.huelle, ansage));
 
-    // Vorwahl aus der Adresse: ?modell=k1&farbe=matte-white (alte Namen wie Mattweiss auch)
+    // Vorwahl aus der Adresse: ?modell=k1&farbe=matte-white (alte Namen wie Mattweiss auch),
+    // auf Englisch ?model=k1&color=matte-white (beide Namen gehen überall)
     const q = new URLSearchParams(location.search);
-    if (NAME[q.get('modell')] && q.get('modell') !== z.modell) { z.modell = q.get('modell'); zeichne(); }
-    if (farbId(q.get('farbe'))) setzeFarbe('huelle-farbe', farbId(q.get('farbe')));
+    const modell = parameter(q, 'modell', SPRACHE), farbe = parameter(q, 'farbe', SPRACHE);
+    if (NAME[modell] && modell !== z.modell) { z.modell = modell; zeichne(); }
+    if (farbId(farbe)) setzeFarbe('huelle-farbe', farbId(farbe));
   });
 </script>

@@ -30,9 +30,11 @@
     "pruefe:faq": "astro build && node scripts/pruefe-faq.mjs",
     "pruefe:ganz": "astro build && node scripts/pruefe-ganz.mjs",
     "pruefe:texte": "node scripts/pruefe-texte.mjs",
+    "pruefe:englisch": "astro build && node scripts/pruefe-englisch.mjs",
     "fotos:pseudo": "node scripts/fotografiere-pseudo.mjs",
     "pruefe:laden": "astro build && node scripts/pruefe-laden.mjs",
     "fotos:ganz": "astro build && node scripts/fotografiere-ganz.mjs",
+    "fotos:englisch": "node scripts/fotografiere-englisch.mjs",
     "lighthouse": "astro build && node scripts/lighthouse.mjs",
     "vergleiche:html": "node scripts/vergleiche-html.mjs"
   },

@@ -11,6 +11,11 @@
 //   noindex:      true = Suchmaschinen sollen die Seite nicht aufnehmen
 //   schublade:    false = ohne Warenkorb-Schublade (nur /warenkorb/, dort steht alles schon da)
 // Zusätzliches im <head> (z.B. strukturierte Daten): <script … slot="kopf" /> in der Seite.
+//
+// Sprache (Etappe 9b): kommt aus der Adresse (spracheVon, /en/… = Englisch). Daraus entstehen
+// lang, og:locale und die hreflang-Verweise auf dieselbe Seite in beiden Sprachen (Adressbuch:
+// data/seiten.js). x-default = Deutsch. Seiten, die es nur auf Deutsch gibt (Designsystem,
+// Spielwiese), und noindex-Seiten bekommen keine hreflang-Verweise.
 import '../styles/global.css';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
@@ -19,9 +24,12 @@ import WarenkorbSchublade from '../components/warenkorb/WarenkorbSchublade.astro
 import KasseDialog from '../components/warenkorb/KasseDialog.astro';
 import unboundedUrl from '../assets/fonts/unbounded.woff2?url';
 import instrumentUrl from '../assets/fonts/instrument-sans.woff2?url';
-import { texte, spracheVon } from '../i18n/index.js';
+import SprachHinweis from '../components/SprachHinweis.astro';
+import { anker, pfad, seitenKennung, gibtEs } from '../lib/pfad.js';
+import { texte, spracheVon, andereSprache, SPRACHEN } from '../i18n/index.js';
 
-const t = texte(spracheVon(Astro.url));
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
 const {
   titel,
   beschreibung = t.meta.beschreibung,
@@ -35,7 +43,26 @@ const favicon = import.meta.env.BASE_URL + 'favicon.svg';
 // Kanonische Adresse = die eine offizielle Adresse dieser Seite, absolut (site + base aus
 // astro.config.mjs). Suchmaschinen fassen damit z.B. /kaufen/?modell=k1 und /kaufen/ zusammen.
 // Nicht bei noindex-Seiten: "nicht aufnehmen" und "das ist die offizielle Adresse" widersprechen sich.
+// Jede Sprache hat ihre eigene kanonische Adresse (/kaufen/ und /en/buy/ sind zwei Seiten).
 const kanonisch = new URL(Astro.url.pathname, Astro.site).href;
+// Dieselbe Seite in allen Sprachen, absolut: [[hreflang, Adresse], …] plus x-default = Deutsch
+const kennung = seitenKennung(Astro.url.pathname);
+const absolut = (adresse) => new URL(adresse, Astro.site).href;
+const paare = !noindex && SPRACHEN.every((s) => gibtEs(kennung, s))
+  ? [...SPRACHEN.map((s) => [texte(s).sprache.hreflang, absolut(pfad(kennung, s))]), ['x-default', absolut(pfad(kennung, 'de'))]]
+  : [];
+// 404: GitHub Pages liefert für jede fehlende Adresse nur die eine (deutsche) 404.html aus.
+// Liegt die Adresse unter /en/, holt sich die Seite die englische Fassung (en/404/) und
+// tauscht sich damit aus, bevor sie sichtbar wird. Die Adresse bleibt stehen. Klappt das nicht
+// (offline), bleibt die deutsche 404 stehen.
+const ist404 = kennung === '404.html';
+const tausch404 = ist404 && sprache === 'de'
+  ? `(function(){var b=${JSON.stringify(import.meta.env.BASE_URL)},h=document.documentElement;`
+    + `if(location.pathname.indexOf(b+'en/')!==0)return;h.style.visibility='hidden';`
+    + `fetch(b+'en/404/').then(function(r){if(!r.ok)throw 0;return r.text();})`
+    + `.then(function(x){document.open();document.write(x);document.close();})`
+    + `.catch(function(){h.style.visibility='';});})();`
+  : null;
 ---
 <!doctype html>
 <html lang={t.sprache.html}>
@@ -50,9 +77,11 @@ const kanonisch = new URL(Astro.url.pathname, Astro.site).href;
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content={t.meta.marke} />
     <meta property="og:locale" content={t.sprache.og} />
+    {paare.length > 0 && <meta property="og:locale:alternate" content={texte(andereSprache(sprache)).sprache.og} />}
     <meta property="og:title" content={volltitel} />
     <meta property="og:description" content={beschreibung} />
     {!noindex && <meta property="og:url" content={kanonisch} />}
+    {paare.map(([hreflang, adresse]) => <link rel="alternate" hreflang={hreflang} href={adresse} />)}
     <meta name="color-scheme" content="light dark" />
     <meta name="theme-color" content="#EEF0F1" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#0C1116" media="(prefers-color-scheme: dark)" />
@@ -68,13 +97,15 @@ const kanonisch = new URL(Astro.url.pathname, Astro.site).href;
         if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
       } catch (e) {}
     </script>
+    {tausch404 && <script is:inline set:html={tausch404} />}
     <slot name="kopf" />
   </head>
   <body>
-    <a class="skip" href="#inhalt">{t.geruest.zumInhalt}</a>
+    <a class="skip" href={`#${anker('inhalt', sprache)}`}>{t.geruest.zumInhalt}</a>
+    {paare.length > 0 && <SprachHinweis />}
     <Header klebt={!unterleiste} schublade={schublade} />
     {unterleiste && <Unterleiste modell={unterleiste} />}
-    <main id="inhalt" tabindex="-1">
+    <main id={anker('inhalt', sprache)} tabindex="-1">
       <slot />
     </main>
     <Footer />

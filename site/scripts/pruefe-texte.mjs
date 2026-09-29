@@ -20,7 +20,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { starteServer } from './dist-server.mjs';
-import { SEITEN } from './seiten.mjs';
+import { ALLE_SEITEN as SEITEN, kennungVon } from './seiten.mjs';
 import { sperrbildschirm } from '../src/lib/kiesel-draw/sperrbildschirm.js';
 
 const hier = path.dirname(fileURLToPath(import.meta.url));
@@ -41,11 +41,13 @@ export const EIGENNAMEN = new Set([
   'GB', 'TB', 'mm', 'mAh', 'CHF', 'MP', 'Hz', 'cm', 'h', 'g', 'W', // Einheiten neben Zahlen aus den Daten
   'IP68', 'iOS',                                        // Werte aus technik.js WERTE
   'A9', 'A20',                                          // Chip-Aufdruck in der Innenleben-Zeichnung
+  'AM', 'PM',                                           // englische Uhrzeit (lib/format.js stunde(): „7 AM“ auf der Achse)
 ]);
 
 // Ganze Texte, die bewusst nicht aus der Textdatei kommen, mit Grund
 export const AUSNAHMEN_TEXT = new Map([
   [sperrbildschirm().datum, 'Datum auf dem Sperrbildschirm: kommt aus Intl.DateTimeFormat (lib/format.js datum()), die Sprache wird übergeben'],
+  [sperrbildschirm('en').datum, 'dasselbe auf Englisch (Friday, September 25)'],
   ['Linos Kiesel', 'Gravur, die der Test selbst eintippt: Eingabe der Person, kein Seitentext'],
 ]);
 
@@ -141,10 +143,10 @@ async function quelltextPruefen() {
 // Bedienschritte je Seite: Texte, die erst durch JavaScript entstehen (Ansagen, Fehlermeldungen,
 // Kasse, Vergleichssatz …). Nach jedem Schritt wird erneut gesammelt. Alles mit „weniger
 // Bewegung“, also ohne Wartezeiten für Animationen.
-const klick = (sel) => async (s) => { await s.locator(sel).first().click({ force: true }); };
-const tippe = (sel, text) => async (s) => { await s.locator(sel).first().fill(text); };
-const taste = (sel, key) => async (s) => { await s.locator(sel).first().focus(); await s.keyboard.press(key); };
-const BEDIENUNG = {
+export const klick = (sel) => async (s) => { await s.locator(sel).first().click({ force: true }); };
+export const tippe = (sel, text) => async (s) => { await s.locator(sel).first().fill(text); };
+export const taste = (sel, key) => async (s) => { await s.locator(sel).first().focus(); await s.keyboard.press(key); };
+export const BEDIENUNG = {
   '': [klick('[data-modell-wahl="k1"]'), klick('[data-buehne3d] label[title] >> nth=1'), klick('[data-teaser-huelle]'),
     klick('[data-warenkorb-knopf]'), klick('[data-schublade] [data-plus]'), klick('[data-schublade] [data-zur-kasse]')],
   'kaufen/': [klick('input[name="modell"][value="k1"]'), klick('[data-huelle-schalter]'), tippe('#gravur', 'Hallo @Welt'),
@@ -184,7 +186,7 @@ function distSauber() {
 }
 
 // ────────────────────────────────────────────────────────────── 2. Pseudo-Sprache im Browser
-function sammleTexte() {
+export function sammleTexte() {
   const aus = [];
   const ATTR = ['aria-label', 'aria-valuetext', 'aria-roledescription', 'alt', 'title', 'placeholder', 'label'];
   const pfadVon = (el) => { const t = []; for (let e = el; e && e !== document.documentElement && t.length < 4; e = e.parentElement) t.unshift(e.tagName.toLowerCase() + (e.id ? `#${e.id}` : e.classList[0] ? `.${e.classList[0]}` : '')); return t.join(' › '); };
@@ -242,7 +244,7 @@ async function pseudoPruefen() {
     await seite.goto(basis + adresse, { waitUntil: 'networkidle' });
     await seite.evaluate(() => new Promise((r) => requestIdleCallback(() => requestAnimationFrame(() => r()), { timeout: 2000 })));
     const texte = await seite.evaluate(sammleTexte);
-    for (const schritt of BEDIENUNG[adresse] ?? []) {
+    for (const schritt of BEDIENUNG[kennungVon(adresse)] ?? []) {
       try { await schritt(seite); } catch (e) { console.log(`  (Bedienschritt auf /${adresse} ging nicht: ${e.message.split('\n')[0]})`); }
       await seite.waitForTimeout(80);
       texte.push(...(await seite.evaluate(sammleTexte)).map(([t, wo]) => [t, `${wo} (nach Bedienung)`]));
@@ -261,7 +263,7 @@ async function pseudoPruefen() {
   await schliessen();
   const liste = [...alle.values()];
   pruefe('Keine Skriptfehler beim Laden und Bedienen', fehler.length === 0, fehler.join('\n    '));
-  pruefe(`Alle Texte kommen aus der Textdatei (${SEITEN.length - 2} Seiten, nach dem Skriptlauf)`, liste.length === 0,
+  pruefe(`Alle Texte kommen aus der Textdatei (${SEITEN.filter(([a]) => !a.startsWith('designsystem')).length} Seiten beider Sprachen, nach dem Skriptlauf)`, liste.length === 0,
     liste.slice(0, 400).map((e) => `${[...e.seiten].slice(0, 3).join(' ')}${e.seiten.size > 3 ? ` (+${e.seiten.size - 3})` : ''}  ${e.wo}\n      „${e.text.slice(0, 140)}“  → ${e.r.join(' ')}`).join('\n    '));
   return liste;
 }

@@ -2,6 +2,7 @@
 //
 //   npm run pruefe:ganz
 //
+// Seit Etappe 9b in beiden Sprachen (ALLE_SEITEN: deutsche und englische Seiten).
 // 1. Seitenliste: Jede gebaute Seite steht in scripts/seiten.mjs (und umgekehrt).
 // 2. Links: Jeder interne Link und jede eingebundene Datei im fertigen dist/ zeigt auf etwas,
 //    das es gibt, inklusive #Sprungziel. Zusätzlich im Browser: auch Links, die erst ein Skript
@@ -17,14 +18,15 @@
 // 6. Menü-Handys: vor dem Öffnen nicht gezeichnet, danach aus dem Zeichen-Motor.
 // 7. Suchmaschinen und Link-Vorschau: Titel und Beschreibung je Seite einmalig, öffentliche
 //    Seiten mit canonical = eigene Adresse, og:title/og:description/og:url passend; noindex-
-//    Seiten ohne canonical. sitemap.xml = genau die öffentlichen Seiten, robots.txt nennt sie.
+//    Seiten ohne canonical. sitemap.xml = genau die öffentlichen Seiten (beide Sprachen), robots.txt
+//    nennt sie. Titel und Beschreibungen einmalig je Sprache (hreflang: pruefe:englisch).
 // Jeder Fall druckt ✓ oder ✗, bei einem ✗ endet das Skript mit Fehlercode 1.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { starteServer } from './dist-server.mjs';
-import { SEITEN } from './seiten.mjs';
+import { ALLE_SEITEN as SEITEN } from './seiten.mjs';
 import { PREISE, HUELLE_PREIS } from '../src/data/preise.js';
 import { GERAETE } from '../src/data/geraete.js';
 import { PRIVACY, RGB } from '../src/data/funktionen.js';
@@ -88,15 +90,17 @@ console.log('\n── Suchmaschinen und Link-Vorschau ──');
       ogUrl: kopfWert(html, 'meta', 'property', 'og:url', 'content'),
     };
   });
-  const doppelt = (feld) => infos.filter((i, n) => infos.findIndex((j) => j[feld] === i[feld]) !== n).map((i) => `${i.name}: „${i[feld]}“`);
-  pruefe(`${infos.length} Seiten: jeder Titel nur einmal`, doppelt('titel').length === 0, doppelt('titel').join(', '));
-  pruefe(`${infos.length} Seiten: jede Beschreibung nur einmal`, doppelt('beschreibung').length === 0, doppelt('beschreibung').join(', '));
+  // je Sprache: „Kiesel 1 · Kiesel“ darf auf /kiesel-1/ und /en/kiesel-1/ gleich heissen
+  const sprache = (i) => (i.adresse.startsWith('en/') ? 'en' : 'de');
+  const doppelt = (feld) => infos.filter((i, n) => infos.findIndex((j) => j[feld] === i[feld] && sprache(j) === sprache(i)) !== n).map((i) => `${i.name}: „${i[feld]}“`);
+  pruefe(`${infos.length} Seiten: jeder Titel nur einmal (je Sprache)`, doppelt('titel').length === 0, doppelt('titel').join(', '));
+  pruefe(`${infos.length} Seiten: jede Beschreibung nur einmal (je Sprache)`, doppelt('beschreibung').length === 0, doppelt('beschreibung').join(', '));
   // Google kürzt Beschreibungen ab etwa 155–160 Zeichen, unter 50 sagen sie zu wenig
   const laenge = infos.filter((i) => i.beschreibung.length < 50 || i.beschreibung.length > 170).map((i) => `${i.name}: ${i.beschreibung.length}`);
   pruefe('Beschreibungen 50–170 Zeichen lang', laenge.length === 0, laenge.join(', '));
   for (const i of infos) {
     const probleme = [];
-    const soll = i.adresse === '404.html' ? null : SITE + i.adresse;
+    const soll = /^(en\/)?404/.test(i.adresse) ? null : SITE + i.adresse;
     if (i.oeffentlich) {
       if (i.robots) probleme.push(`robots=${i.robots}`);
       if (i.canonical !== soll) probleme.push(`canonical=${i.canonical}`);
@@ -114,7 +118,7 @@ console.log('\n── Suchmaschinen und Link-Vorschau ──');
   const locs = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
   const sollLocs = infos.filter((i) => i.oeffentlich).map((i) => SITE + i.adresse);
   const nurSitemap = locs.filter((l) => !sollLocs.includes(l)), nurSeiten = sollLocs.filter((l) => !locs.includes(l));
-  pruefe(`sitemap.xml: genau die ${sollLocs.length} öffentlichen Seiten, kein Designsystem, keine Spielwiese, keine 404`,
+  pruefe(`sitemap.xml: genau die ${sollLocs.length} öffentlichen Seiten (beide Sprachen), kein Designsystem, keine Spielwiese, keine 404`,
     sitemap.startsWith('<?xml') && locs.length === sollLocs.length && !nurSitemap.length && !nurSeiten.length,
     [...nurSitemap.map((l) => `zu viel: ${l}`), ...nurSeiten.map((l) => `fehlt: ${l}`)].join(', ') || `${locs.length} Einträge`);
   const robotsDatei = path.join(dist, 'robots.txt');
@@ -146,7 +150,9 @@ const kaputt = [];
 let intern = 0;
 function pruefeLink(roh, seitenUrl, quelle) {
   if (!roh || /^(mailto:|tel:|javascript:|data:|blob:)/.test(roh)) return;
-  const url = new URL(roh.replace(/&amp;/g, '&'), seitenUrl);
+  let url = new URL(roh.replace(/&amp;/g, '&'), seitenUrl);
+  // Absolute Adressen der eigenen Seite (canonical, og:url, hreflang) wie interne prüfen
+  if (url.origin === 'https://fralineel-kiesel.github.io' && url.pathname.startsWith(BASIS)) url = new URL(url.pathname + url.search + url.hash, 'http://kiesel.test');
   if (url.origin !== 'http://kiesel.test') { extern.add(url.origin + url.pathname); return; }
   intern++;
   const datei = zielDatei(url.pathname);
@@ -308,7 +314,7 @@ try {
           links: [...document.links].map((a) => a.getAttribute('href')),
         };
       });
-      const ok = info.lang === 'de-CH' && (info.titel.endsWith('· Kiesel') || info.titel.startsWith('Kiesel'));
+      const ok = info.lang === (adresse.startsWith('en/') ? 'en-US' : 'de-CH') && (info.titel.endsWith('· Kiesel') || info.titel.startsWith('Kiesel'));
       const probleme = [];
       if (!ok) probleme.push(`lang/titel: ${info.lang} ${info.titel}`);
       if (info.beschreibung.length < 50) probleme.push('Beschreibung fehlt/zu kurz');

@@ -11,7 +11,9 @@ import { MWST_PROZENT } from '../../data/preise.js';
 import { prozent } from '../../lib/format.js';
 import { texte, spracheVon } from '../../i18n/index.js';
 
-const t = texte(spracheVon(Astro.url));
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
+
 const K = t.kasse;
 ---
 <dialog class="kasse" role="dialog" aria-modal="true" aria-labelledby="kasse-titel" aria-describedby="kasse-text" data-kasse>
@@ -22,7 +24,7 @@ const K = t.kasse;
   <h3 class="unter">{K.bestellung}</h3>
   <ul role="list" class="liste" data-kasse-liste></ul>
   <dl class="summen">
-    <div><dt>{t.warenkorb.mwst(prozent(MWST_PROZENT))}</dt><dd data-kasse-mwst></dd></div>
+    <div><dt>{t.warenkorb.mwst(prozent(MWST_PROZENT, sprache))}</dt><dd data-kasse-mwst></dd></div>
     <div class="total"><dt>{t.warenkorb.total}</dt><dd data-kasse-total></dd></div>
   </dl>
 
@@ -74,7 +76,11 @@ const K = t.kasse;
   import { modal } from '../../scripts/modal.js';
   import { lesen, summen, artikelInfo, leeren, speicherOrt } from '../../scripts/warenkorb.js';
   import { chfRappen } from '../../lib/format.js';
-  import { kasse as K, warenkorb as W } from '../../i18n/de.js';
+  import { kasse as K_DE, warenkorb as W_DE } from '../../i18n/de.js';
+  import { kasse as K_EN, warenkorb as W_EN } from '../../i18n/en.js';
+  import { waehle, SPRACHE } from '../../scripts/seitensprache.js';
+  const K = waehle(K_DE, K_EN);
+  const W = waehle(W_DE, W_EN);
 
   document.querySelectorAll('[data-kasse]').forEach((dialog) => {
     // Nach „Warenkorb leeren“ gibt es „Zur Kasse“ nicht mehr: Fokus auf den Knopf im leeren
@@ -99,13 +105,13 @@ const K = t.kasse;
         was.append(name, details);
         const betrag = document.createElement('span');
         betrag.className = 'betrag';
-        betrag.textContent = chfRappen(info.stueck * a.anzahl);
+        betrag.textContent = chfRappen(info.stueck * a.anzahl, SPRACHE);
         li.append(was, betrag);
         return li;
       }));
       const s = summen(liste);
-      dialog.querySelector('[data-kasse-mwst]').textContent = chfRappen(s.mwst);
-      dialog.querySelector('[data-kasse-total]').textContent = chfRappen(s.total);
+      dialog.querySelector('[data-kasse-mwst]').textContent = chfRappen(s.mwst, SPRACHE);
+      dialog.querySelector('[data-kasse-total]').textContent = chfRappen(s.total, SPRACHE);
       dialog.querySelector('[data-kasse-speicher]').textContent = K.speicher[speicherOrt()];
     }
 

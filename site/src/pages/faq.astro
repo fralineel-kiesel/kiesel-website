@@ -16,6 +16,7 @@ import { texte, spracheVon } from '../i18n/index.js';
 
 const sprache = spracheVon(Astro.url);
 const t = texte(sprache);
+
 const F = t.faqSeite;
 const FAQ = faqFuer(t.faqFragen, sprache);
 const jsonLd = {
@@ -106,7 +107,13 @@ const ld = JSON.stringify(jsonLd).replace(/</g, '\\u003c');
 </style>
 
 <script>
-  import { faqSeite as F } from '../i18n/de.js';
+  import { faqSeite as F_DE } from '../i18n/de.js';
+
+  import { faqSeite as F_EN } from '../i18n/en.js';
+
+  import { waehle } from '../scripts/seitensprache.js';
+
+  const F = waehle(F_DE, F_EN);
 
   document.querySelectorAll('[data-faq]').forEach((wurzel) => {
     const suche = wurzel.querySelector('[data-suche]');

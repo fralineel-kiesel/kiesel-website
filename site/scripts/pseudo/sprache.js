@@ -1,4 +1,4 @@
-// Pseudo-Sprache: verwandelt alle Texte aus src/i18n/de.js, damit man sieht, was NICHT aus der
+// Pseudo-Sprache: verwandelt alle Texte aus src/i18n/de.js und en.js, damit man sieht, was NICHT aus der
 // Textdatei kommt (und was bei längeren Texten überläuft). Nur für Prüf-Builds, siehe plugin.mjs.
 //
 //   klammern: „Kaufen“ → „⟦Kaufen⟧“. Jeder Text, der im fertigen Build ohne ⟦…⟧ dasteht, ist

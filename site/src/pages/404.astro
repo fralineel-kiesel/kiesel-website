@@ -7,7 +7,9 @@ import Knopf from '../components/Knopf.astro';
 import { pfad } from '../lib/pfad.js';
 import { texte, spracheVon } from '../i18n/index.js';
 
-const t = texte(spracheVon(Astro.url));
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
+
 const F = t.fehler404;
 ---
 <BaseLayout titel={F.titel} noindex beschreibung={F.beschreibung}>
@@ -16,8 +18,8 @@ const F = t.fehler404;
     <h1 class="t-1">{F.ueberschrift}</h1>
     <p class="t-lead t-muted">{F.text}</p>
     <div class="knoepfe">
-      <Knopf href={pfad()} art="primaer" groesse="l">{F.zurStartseite}</Knopf>
-      <Knopf href={pfad('kiesel-1-pro/')} art="sekundaer" groesse="l">{F.proAnsehen}</Knopf>
+      <Knopf href={pfad('', sprache)} art="primaer" groesse="l">{F.zurStartseite}</Knopf>
+      <Knopf href={pfad('kiesel-1-pro/', sprache)} art="sekundaer" groesse="l">{F.proAnsehen}</Knopf>
     </div>
   </section>
 </BaseLayout>

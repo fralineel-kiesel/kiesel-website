@@ -1,13 +1,16 @@
 // Häufige Fragen: die 13 Fragen aus design/generator/gen4.py (Artboard „FAQ“), seit Etappe 8b
 // mit Privacy-Modus in zwei Stufen und der neuen Frage zum Notruf (Abweichungen von gen4.py
-// stehen in scripts/abweichungen.mjs). Die FAQ-Seite zeigt alle, die Startseite die mit
-// startseite: true. Fragen und Antworten stehen in der Textdatei (faqFragen in src/i18n/de.js),
-// hier nur Kennung, Thema, Link-Ziel und die Werte, die in die Texte eingesetzt werden.
+// stehen in scripts/abweichungen.mjs). Auf Englisch kommt seit Etappe 9b eine 15. dazu
+// (pebble). Die FAQ-Seite zeigt alle, die Startseite die mit startseite: true. Fragen und
+// Antworten stehen in der Textdatei (faqFragen in src/i18n/de.js), hier nur Kennung, Thema,
+// Link-Ziel und die Werte, die in die Texte eingesetzt werden.
 //
 // Zahlen kommen aus den Datendateien (Preis aus preise.js, Werte aus technik.js/geraete.js),
 // damit eine Änderung dort auch hier ankommt.
 //   id:     Anker auf der FAQ-Seite (faq/#privacy öffnet diese Frage)
 //   thema:  Kennung eines der THEMEN (Filter-Chips)
+//   nur:    Frage gibt es nur in dieser Sprache (pebble: „Why is it called Kiesel?“ erklärt
+//           Englischsprachigen den Namen; auf Deutsch braucht es sie nicht)
 //   link:   Verweis auf eine andere Seite. Kommt link.text in der Antwort vor, wird genau diese
 //           Stelle zum Link, sonst steht der Link nach der Antwort.
 import { HUELLE_PREIS, PREISE } from './preise.js';
@@ -27,6 +30,7 @@ export const THEMEN = ['concept', 'phones', 'battery', 'features', 'buying'];
 const FRAGEN = [
   { id: 'kaufen', thema: 'concept', startseite: true },
   { id: 'konzept', thema: 'concept' },
+  { id: 'pebble', thema: 'concept', nur: 'en' },
   { id: 'unterschied', thema: 'phones', link: 'vergleichen/?kiesel=pro&gegen=k1' },
   { id: 'dicke', thema: 'phones', startseite: true },
   { id: 'klinke', thema: 'phones' },
@@ -59,7 +63,7 @@ const werte = (sprache) => ({
 export function faqFuer(T = DE, sprache = 'de') {
   const v = werte(sprache);
   const text = (x) => (typeof x === 'function' ? x(v) : x);
-  return FRAGEN.map(({ id, link, ...rest }) => ({
+  return FRAGEN.filter((f) => !f.nur || f.nur === sprache).map(({ id, link, nur, ...rest }) => ({
     id, ...rest,
     frage: text(T[id].frage),
     antwort: text(T[id].antwort),

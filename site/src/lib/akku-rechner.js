@@ -11,7 +11,7 @@
 //   Tage = 100 / (Tagesverbrauch + 8 Nachtstunden Standby)
 import { RECHNER } from '../data/akku.js';
 import { GERAETE } from '../data/geraete.js';
-import { zahl, uhrzeit, geschuetzt, prozent } from './format.js';
+import { zahl, uhrzeit, stunde, geschuetzt, prozent } from './format.js';
 import { akkuRechner as DE } from '../i18n/de.js';
 
 export { uhrzeit, geschuetzt };
@@ -103,7 +103,7 @@ export function diagramm(erg, breite = 620, sprache = 'de') {
     s += `<line class="gitter" x1="50" y1="${20 + i * 60}" x2="${breite - 30}" y2="${20 + i * 60}"></line>`;
     s += `<text class="achse" x="40" y="${24 + i * 60}" text-anchor="end">${prozent(100 - i * 25, sprache)}</text>`;
   }
-  for (const h of [7, 11, 15, 19, 23]) s += `<text class="achse" x="${X(h)}" y="286" text-anchor="middle">${uhrzeit(h, sprache)}</text>`;
+  for (const h of [7, 11, 15, 19, 23]) s += `<text class="achse" x="${X(h)}" y="286" text-anchor="middle">${stunde(h, sprache)}</text>`;
   if (erg.ergebnisse) {
     s += `<path class="linie se" d="${linie(erg.ergebnisse.se, breite)}"></path>`;
     s += `<path class="linie k1" d="${linie(erg.ergebnisse.k1, breite)}"></path>`;
