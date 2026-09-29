@@ -24,6 +24,7 @@ import WarenkorbSchublade from '../components/warenkorb/WarenkorbSchublade.astro
 import KasseDialog from '../components/warenkorb/KasseDialog.astro';
 import unboundedUrl from '../assets/fonts/unbounded.woff2?url';
 import instrumentUrl from '../assets/fonts/instrument-sans.woff2?url';
+import SprachHinweis from '../components/SprachHinweis.astro';
 import { anker, pfad, seitenKennung, gibtEs } from '../lib/pfad.js';
 import { texte, spracheVon, andereSprache, SPRACHEN } from '../i18n/index.js';
 
@@ -101,6 +102,7 @@ const tausch404 = ist404 && sprache === 'de'
   </head>
   <body>
     <a class="skip" href={`#${anker('inhalt', sprache)}`}>{t.geruest.zumInhalt}</a>
+    {paare.length > 0 && <SprachHinweis />}
     <Header klebt={!unterleiste} schublade={schublade} />
     {unterleiste && <Unterleiste modell={unterleiste} />}
     <main id={anker('inhalt', sprache)} tabindex="-1">
