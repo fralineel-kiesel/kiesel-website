@@ -17,7 +17,7 @@
 // schneidet dieses Rechteck aus der ganzen Zeichnung aus, darum stimmen die Zahlen
 // darin mit phoneOpen() überein.
 import { E, f } from './svg.js';
-import { chip, speaker } from './scene.js';
+import { chip, speaker, PRIVACY_REIHEN } from './scene.js';
 
 // Aussenmasse in mm wie in phoneOpen(): Breite, Höhe, Eckradius
 export const INNEN_MASSE = { se: [58.6, 123.8, 8.6], k1: [58.6, 123.8, 8.6], pro: [64.2, 131.5, 10.6] };
@@ -85,11 +85,15 @@ export function innenteile(kind, ox, oy, s) {
     T.push(teil('platine', X(4), Y(4.5), (W - 8) * s, 34 * s,
       E('rect', { x: f(X(4)), y: f(Y(4.5)), width: f((W - 8) * s), height: f(34 * s), rx: '6', style: 'fill: #1E3A2F; stroke: #2F5646; stroke-width: 1' }) +
       chip(X(W / 2 - 7), Y(12), 14 * s, 14 * s, '#0E7490', 'A20') + chip(X(W / 2 + 9), Y(12), 9 * s, 9 * s, '#3A424B') + chip(X(6.5), Y(27), 10 * s, 7 * s, '#3A424B')));
+    // Privacy-Schalter: zwei Reihen à drei (Stufe 1 unten, Stufe 2 darüber), wie phoneOpen()
     let schalter = '';
-    for (let i = 0; i < 3; i++) {
-      schalter += E('rect', { x: f(X(W - 16 + i * 3.4)), y: f(Y(30)), width: f(2.4 * s), height: f(4 * s), rx: '1.5', style: 'fill: #FF9A2E' });
+    for (const y of PRIVACY_REIHEN) {
+      for (let i = 0; i < 3; i++) {
+        schalter += E('rect', { x: f(X(W - 16 + i * 3.4)), y: f(Y(y)), width: f(2.4 * s), height: f(4 * s), rx: '1.5', style: 'fill: #FF9A2E' });
+      }
     }
-    T.push(teil('privacy', X(W - 16), Y(30), (2 * 3.4 + 2.4) * s, 4 * s, schalter));
+    const oben = Math.min(...PRIVACY_REIHEN), unten = Math.max(...PRIVACY_REIHEN) + 4;
+    T.push(teil('privacy', X(W - 16), Y(oben), (2 * 3.4 + 2.4) * s, (unten - oben) * s, schalter));
     if (pro) {
       T.push(teil('vapor', X(W / 2 - 12), Y(8), 24 * s, 24 * s,
         E('rect', { x: f(X(W / 2 - 12)), y: f(Y(8)), width: f(24 * s), height: f(24 * s), rx: '8', style: 'fill: #CF8E5F; opacity: 0.35; stroke: #CF8E5F; stroke-width: 2; stroke-dasharray: 6 4' })));
