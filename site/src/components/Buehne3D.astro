@@ -29,10 +29,12 @@ import ModellUmschalter from './ModellUmschalter.astro';
 import { handy } from '../lib/kiesel-draw/phone.js';
 import { MODELLE } from '../data/modelle.js';
 import { KIESEL_IDS } from '../data/geraete.js';
+import { texte, spracheVon } from '../i18n/index.js';
 
-const { modell = 'pro', farbe = 'Himmelblau', name = 'buehne-farbe' } = Astro.props;
+const { modell = 'pro', farbe = 'sky-blue', name = 'buehne-farbe' } = Astro.props;
+const t = texte(spracheVon(Astro.url));
 const legende = (id) => `Farbe des ${MODELLE[id].name}`;
-const zeichne = (id) => handy({ ansicht: 'hinten', modell: id, farbe, drehung: -10, hoehe: null, label: `${MODELLE[id].name} in ${farbe}, Rückseite` });
+const zeichne = (id) => handy({ ansicht: 'hinten', modell: id, farbe, drehung: -10, hoehe: null, label: `${MODELLE[id].name} in ${t.farben[farbe]}, Rückseite` });
 const bilder = KIESEL_IDS.map((id) => ({ id, svg: zeichne(id) }));
 const vbHoehe = (svg) => Number(svg.match(/viewBox="[^"]*?(\S+)"/)[1]);
 const groesste = Math.max(...bilder.map((b) => vbHoehe(b.svg)));
@@ -180,10 +182,12 @@ const namen = Object.fromEntries(KIESEL_IDS.map((id) => [id, MODELLE[id].name]))
     const bild2d = (m) => el.querySelector(`[data-bild2d="${m}"]`);
     // Das Skript vor dem ersten Bild hat die gespeicherte Wahl schon auf <html> gesetzt
     let modell = namen[document.documentElement.dataset.heldModell] ? document.documentElement.dataset.heldModell : el.dataset.modell;
-    let farbe = el.querySelector('input[type="radio"]:checked')?.value ?? 'Himmelblau';
+    let farbe = el.querySelector('input[type="radio"]:checked')?.value ?? 'sky-blue';
+    // Name der Farbe in der Sprache der Seite: steht im title des Farbwähler-Labels
+    const farbName = () => el.querySelector(`input[type="radio"][value="${farbe}"]`)?.closest('label').title ?? farbe;
     let b3d = null;
 
-    const label = () => `${namen[modell]} in ${farbe}`;
+    const label = () => `${namen[modell]} in ${farbName()}`;
     const label3d = () => `${label()}, 3D-Modell. Mit Maus, Finger oder Pfeiltasten drehen.`;
     const melden = () => el.dispatchEvent(new CustomEvent('kiesel:modell', { bubbles: true, detail: { modell, farbe } }));
 

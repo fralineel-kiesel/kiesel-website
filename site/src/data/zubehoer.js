@@ -2,6 +2,7 @@
 // „Kiesel-Hülle“ (design/generator/gen3.py). Der Preis steht in preise.js (HUELLE_PREIS).
 // Platzhalter in eckigen Klammern sind bewusst so: nichts erfinden, bis es feststeht.
 import { FARBEN_TEXT } from './farben.js';
+import { farben as FARBNAME } from '../i18n/de.js';
 
 export const ZUBEHOER = {
   titel: 'Zubehör',
@@ -9,15 +10,15 @@ export const ZUBEHOER = {
   filter: [['alle', 'Alle'], ['k1', 'für Kiesel 1'], ['pro', 'für Kiesel 1 Pro']],
   // Die zwei Hüllen-Karten: Modell, Handyfarbe der Abbildung, Hüllenfarbe (kommt in den Warenkorb)
   produkte: [
-    { modell: 'k1', handy: 'Kieselbeige', huelle: 'Mattweiss' },
-    { modell: 'pro', handy: 'Himmelblau', huelle: 'Mattschwarz' },
+    { modell: 'k1', handy: 'pebble-beige', huelle: 'matte-white' },
+    { modell: 'pro', handy: 'sky-blue', huelle: 'matte-black' },
   ],
   platzhalter: { titel: '[Weiteres Zubehör]', text: 'Platz für ein nächstes Produkt, zum Beispiel ein MagSafe-Ladegerät.' },
   kombi: {
     titel: 'Frei kombinieren.',
     text: 'Handy und Hülle wählst du unabhängig voneinander. Durch die milchige Rückseite schimmert die Handyfarbe immer ein bisschen durch.',
-    handy: 'Himmelblau',
-    huelle: 'Mattweiss',
+    handy: 'sky-blue',
+    huelle: 'matte-white',
     knopf: 'Diese Kombination kaufen',
   },
 };
@@ -39,7 +40,7 @@ export const HUELLE = {
   ansichten: [['hinten', 'Rückseite'], ['vorne', 'Vorderseite']],
   farbeLegende: 'Farbe der Hülle',
   vorschauLegende: 'Vorschau mit Handyfarbe',
-  start: { modell: 'pro', huelle: 'Mattweiss', handy: 'Himmelblau' },
+  start: { modell: 'pro', huelle: 'matte-white', handy: 'sky-blue' },
   knopf: 'In den Warenkorb',
   hinweis: 'Kostenloser Versand. Die Vorschau-Handyfarbe gehört nicht zur Bestellung.',
   eigenschaftenTitel: 'Drei Dinge, die sie gut macht.',
@@ -51,7 +52,7 @@ export const HUELLE = {
   detailsTitel: 'Technische Details',
   details: [
     ['Passt auf', 'Kiesel 1 oder Kiesel 1 Pro, je eigene Grösse'],
-    ['Farben', FARBEN_TEXT.join(', ')],
+    ['Farben', FARBEN_TEXT.map((f) => FARBNAME[f]).join(', ')],
     ['Rand', `trägt ca. ${HM.rand} mm pro Seite auf`],
     ['Überstand', `ca. ${HM.ueberDisplay} mm über dem Display, ca. ${HM.ueberKamera} mm über den Kameras`],
     ['MagSafe', 'kompatibel, Magnetring sichtbar durch die Rückseite'],
@@ -63,5 +64,5 @@ export const HUELLE = {
 // Eintrag für den Warenkorb: nur Modell und Hüllenfarbe, nie die Vorschau-Handyfarbe.
 // Den Preis rechnet der Warenkorb selbst aus data/preise.js.
 export function huellenArtikel(modell, farbe) {
-  return { art: 'huelle', modell, farbe };
+  return { art: 'case', modell, farbe };
 }

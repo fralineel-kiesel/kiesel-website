@@ -11,6 +11,7 @@
 import { E, stop, f, py, pts, uid } from './svg.js';
 import { PyRandom } from './zufall.js';
 import { crop, begrenze, ZOOM_TARGETS } from './ausschnitt.js';
+import { panoramaDetails as DETAIL_NAMEN } from '../../i18n/de.js';
 
 // ------------------------------------------------------------------
 // ALPENPANORAMA 1600 × 1000
@@ -199,9 +200,11 @@ export { crop, begrenze };
 
 // Die Markierungen der Zoom-Ziele (Kreis + Name), wie im Artboard „Alpenpanorama“.
 // massstab verkleinert sie beim Reinzoomen (1 = wie in gen2.py).
-export function zoomPunkte(massstab = 1) {
+// namen: Kennung → Name (Standard: Deutsch aus der Textdatei)
+export function zoomPunkte(massstab = 1, namen = DETAIL_NAMEN) {
   let s = '';
-  for (const [name, x, y] of ZOOM_TARGETS) {
+  for (const [id, x, y] of ZOOM_TARGETS) {
+    const name = namen[id];
     s += E('circle', { cx: f(x), cy: f(y), r: f(22 * massstab), style: `fill: none; stroke: #FF8A5E; stroke-width: ${f(2.5 * massstab)}` });
     s += E('text', { x: f(x + 28 * massstab), y: f(y + 5 * massstab), style: `font-family: 'Instrument Sans', sans-serif; font-size: ${f(16 * massstab)}px; font-weight: 600; fill: #FFFFFF; paint-order: stroke; stroke: #0C1116; stroke-width: ${f(4 * massstab)}` }, name);
   }
@@ -250,12 +253,14 @@ export function panoramaAnsicht(quelle, { zoom = 1, cx = 800, cy = 500, ratio = 
 // Tiefenschärfe heisst: Nur was in der Schärfeebene liegt, bleibt scharf.
 export const BLUR = { b0: 0.01, b1: 2, b2: 5, b3: 10, b4: 18 };
 
-// Die vier Vorgaben aus dem Artboard „Blume“ (gen2.py)
+// Die vier Vorgaben aus dem Artboard „Blume“ (gen2.py). Kennungen statt der Namen aus gen2.py
+// („Blume (3x Tele)“, „Biene“, „Makro (alles nah)“, „Alles scharf“, die stehen in der
+// Textdatei: blumeFokus in src/i18n/de.js).
 export const BLUME_FOKUS = {
-  'Blume (3x Tele)': { bg: 'b3', fl: 'b0', fg: 'b4', bee: 'b2' },
-  'Biene': { bg: 'b4', fl: 'b2', fg: 'b4', bee: 'b0' },
-  'Makro (alles nah)': { bg: 'b1', fl: 'b0', fg: 'b2', bee: 'b1' },
-  'Alles scharf': { bg: 'b0', fl: 'b0', fg: 'b0', bee: 'b0' },
+  tele: { bg: 'b3', fl: 'b0', fg: 'b4', bee: 'b2' },
+  bee: { bg: 'b4', fl: 'b2', fg: 'b4', bee: 'b0' },
+  macro: { bg: 'b1', fl: 'b0', fg: 'b2', bee: 'b1' },
+  all: { bg: 'b0', fl: 'b0', fg: 'b0', bee: 'b0' },
 };
 
 export function blume(p, bgf, flf, fgf, bef) {
@@ -351,9 +356,9 @@ export function blumeUnschaerfe(fokus, staerke = 24) {
 }
 
 // Fertiges <svg> der Blume.
-//   fokus: Name einer Vorgabe (BLUME_FOKUS) oder Zahl 0…1 (stufenlos, siehe oben)
+//   fokus: Kennung einer Vorgabe (BLUME_FOKUS) oder Zahl 0…1 (stufenlos, siehe oben)
 //   staerke: nur bei Zahl: wie schnell die Unschärfe zunimmt (grosse Blende = viel)
-export function blumeBild({ fokus = 'Blume (3x Tele)', staerke = 24, breite = 600, hoehe = 400,
+export function blumeBild({ fokus = 'tele', staerke = 24, breite = 600, hoehe = 400,
   label = 'Blume mit Tautropfen, Biene und Wiese', pid = null } = {}) {
   pid = pid ?? uid('bl');
   const groesse = breite && hoehe ? { width: f(breite), height: f(hoehe) } : {};

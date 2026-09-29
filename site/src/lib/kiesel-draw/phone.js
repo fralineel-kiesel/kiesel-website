@@ -322,7 +322,7 @@ export function floor(cx, cy, rx, ry, fid, op = '0.35') {
 // Liefert ein fertiges <svg> mit 200 Einheiten Rand rundherum (Platz für Schatten,
 // Drehung und Hülle), optionalem Bodenschatten und einem aria-label.
 //   ansicht: 'vorne' | 'hinten' | 'seite' modell: 'k1' | 'pro'
-//   farbe:   Name ('Himmelblau'), Hex ('#C0392B') oder fertige Palette
+//   farbe:   Kennung ('sky-blue', auch alter Name 'Himmelblau'), Hex ('#C0392B') oder fertige Palette
 //   hoehe:   Höhe in px inkl. Rand (wie in gen2.py); null = ohne width/height, dann
 //            bestimmt CSS die Grösse (z.B. width: 100%)
 //   drehung: Grad um die Mitte     huelle: null oder Farbe der Hülle
@@ -333,7 +333,7 @@ export function floor(cx, cy, rx, ry, fid, op = '0.35') {
 const ANSICHT = { vorne: 'front', hinten: 'back', seite: 'side', front: 'front', back: 'back', side: 'side' };
 const ANSICHT_TEXT = { front: ', Vorderseite', back: ', Rückseite', side: ', Seitenansicht, 9 mm dick' };
 
-export function handy({ ansicht = 'hinten', modell = 'pro', farbe = 'Himmelblau', hoehe = 400, drehung = 0,
+export function handy({ ansicht = 'hinten', modell = 'pro', farbe = 'sky-blue', hoehe = 400, drehung = 0,
   huelle = null, led = null, boden = true, label = null, pid = null, gravur = null } = {}) {
   const kind = ANSICHT[ansicht];
   if (!kind) throw new Error(`Unbekannte Ansicht: ${ansicht}`);

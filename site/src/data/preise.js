@@ -4,10 +4,7 @@
 //
 // Preise in ganzen Franken. Gerechnet wird im Warenkorb in Rappen (siehe summen() in
 // scripts/warenkorb.js), weil Kommazahlen im Computer nicht exakt sind: 0.1 + 0.2 = 0.30000000000000004.
-import { FARBNAMEN } from './farben.js';
 import { chf } from '../lib/format.js';
-
-export { FARBNAMEN };
 
 // Speicherstufen: id (für Adresse und Warenkorb), Anzeigename, Preis
 export const PREISE = {

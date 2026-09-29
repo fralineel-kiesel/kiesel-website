@@ -18,11 +18,13 @@ import { MODELLE } from '../../data/modelle.js';
 import { TECHNIK, TECHNIK_KENNZAHLEN } from '../../data/technik.js';
 import { abPreis } from '../../data/preise.js';
 import { handy, MODELS } from '../../lib/kiesel-draw/index.js';
+import { texte, spracheVon } from '../../i18n/index.js';
 import { pfad } from '../../lib/pfad.js';
 
 const { modell } = Astro.props;
 const anderes = modell === 'pro' ? 'k1' : 'pro';
 const reihe = [modell, anderes];
+const t = texte(spracheVon(Astro.url));
 const spalte = { k1: 1, pro: 2 };
 const m = MODELLE[modell];
 const o = MODELLE[anderes];
@@ -33,7 +35,7 @@ const kopf = reihe.map((id) => {
   const hoch = id === 'pro' ? 170 : 160;
   const H = MODELS[id].H;
   const rand = Math.round(hoch * 200 / H);
-  const svg = handy({ ansicht: 'vorne', modell: id, farbe: MODELLE[id].seite.farbe, hoehe: hoch + 2 * rand, boden: false, label: `${MODELLE[id].name}, Vorderseite in ${MODELLE[id].seite.farbe}` });
+  const svg = handy({ ansicht: 'vorne', modell: id, farbe: MODELLE[id].seite.farbe, hoehe: hoch + 2 * rand, boden: false, label: `${MODELLE[id].name}, Vorderseite in ${t.farben[MODELLE[id].seite.farbe]}` });
   return { id, svg, rand, name: MODELLE[id].name, preis: abPreis(id), kaufen: pfad(`kaufen/?modell=${id}&farbe=${MODELLE[id].seite.farbe}`) };
 });
 

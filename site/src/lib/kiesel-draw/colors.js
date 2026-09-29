@@ -7,10 +7,12 @@
 // Jede Farbe hat sieben Töne:
 //   frame = Rahmen, hi/lo = helle/dunkle Kante, back = Rücken,
 //   backHi/backLo = Verlauf auf dem Rücken, logo = eingeprägter Kiesel
-import { FARBEN, FARBNAMEN } from '../../data/farben.js';
+import { FARBEN, FARB_IDS, farbId } from '../../data/farben.js';
 
+// Schlüssel = Farbkennung ('sky-blue' …). Die Python-Vorlagen kennen die deutschen Namen,
+// palette() nimmt darum auch die an (farbId).
 export const PAL = FARBEN;
-export const FARBNAMEN_PAL = FARBNAMEN;
+export const FARBNAMEN_PAL = FARB_IDS;
 export const TOENE = ['frame', 'hi', 'lo', 'back', 'backHi', 'backLo', 'logo'];
 
 // ---------------------------------------------------------------------------
@@ -67,7 +69,7 @@ function lchZuHex([L, C, h]) {
 }
 
 // Einmal ausrechnen: Abstände jedes Tons zum Rahmen, pro PAL-Farbe
-const VORLAGEN = FARBNAMEN.map((name) => {
+const VORLAGEN = FARB_IDS.map((name) => {
   const p = PAL[name];
   const lab = hexZuLab(p.frame);
   const [L, C] = zuLch(lab);
@@ -82,9 +84,10 @@ const VORLAGEN = FARBNAMEN.map((name) => {
 export function palette(farbe) {
   // Name einer Produktfarbe oder schon eine fertige Palette? Dann direkt zurück.
   if (typeof farbe === 'object') return farbe;
-  if (PAL[farbe]) return PAL[farbe];
+  const id = farbId(farbe);
+  if (id) return PAL[id];
   const hex = normHex(farbe);
-  const genau = FARBNAMEN.find((n) => PAL[n].frame.toUpperCase() === hex);
+  const genau = FARB_IDS.find((n) => PAL[n].frame.toUpperCase() === hex);
   if (genau) return { ...PAL[genau] };
 
   const lab = hexZuLab(hex);

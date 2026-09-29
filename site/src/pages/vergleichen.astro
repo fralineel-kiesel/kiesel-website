@@ -14,7 +14,7 @@ import { vergleich, BUEHNE, GEGNER } from '../lib/vergleich.js';
 import { frontSvg, palette, uid } from '../lib/kiesel-draw/index.js';
 
 const v = vergleich({ kiesel: 'k1', gegen: 'pmax', modus: 'side' });
-const kiesel = KIESEL_IDS.map((id) => ({ id, svg: frontSvg(id, palette('Himmelblau'), uid('v')) }));
+const kiesel = KIESEL_IDS.map((id) => ({ id, svg: frontSvg(id, palette('sky-blue'), uid('v')) }));
 const gegner = [...GEGNER, 'anderer'];
 const gegnerName = (id) => GERAETE[id === 'anderer' ? v.anderer : id].name;
 const pt = (x) => String(x);
@@ -218,7 +218,8 @@ const pt = (x) => String(x);
     const zustand = {
       kiesel: gueltig(q.get('kiesel')?.toLowerCase(), KIESEL_IDS) ?? 'k1',
       gegen: gueltig(q.get('gegen')?.toLowerCase(), Object.keys(GERAETE)) ?? 'pmax',
-      modus: q.get('ansicht') === 'uebereinander' ? 'over' : 'side',
+      // Kennung 'overlay'; bis Etappe 8 hiess sie 'uebereinander' (alte Links gehen weiter)
+      modus: ['overlay', 'uebereinander'].includes(q.get('ansicht')?.toLowerCase()) ? 'over' : 'side',
       karte: q.get('karte') === '1',
     };
 
@@ -273,7 +274,7 @@ const pt = (x) => String(x);
       // Adresse nachführen (teilbar, Zurück-Knopf bleibt unberührt)
       const p = new URLSearchParams(location.search);
       p.set('kiesel', v.kiesel); p.set('gegen', v.gegen);
-      if (v.ueber) p.set('ansicht', 'uebereinander'); else p.delete('ansicht');
+      if (v.ueber) p.set('ansicht', 'overlay'); else p.delete('ansicht');
       if (zustand.karte) p.set('karte', '1'); else p.delete('karte');
       history.replaceState(history.state, '', `${location.pathname}?${p}${location.hash}`);
     }

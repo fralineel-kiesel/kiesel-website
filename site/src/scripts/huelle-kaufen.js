@@ -5,14 +5,15 @@
 import { hinzufuegen } from './warenkorb.js';
 import { huellenArtikel } from '../data/zubehoer.js';
 import { PREISE, MAX_ANZAHL } from '../data/preise.js';
+import { farben as FARBNAME } from '../i18n/de.js';
 
 export function huelleKaufen(knopf, modell, farbe, ansage) {
   const ergebnis = hinzufuegen(huellenArtikel(modell, farbe));
   if (!ergebnis) return false;
   if (ansage) {
     ansage.textContent = ergebnis.gekappt
-      ? `Von der Kiesel-Hülle für ${PREISE[modell].name} in ${farbe} liegen schon ${MAX_ANZAHL} im Warenkorb, mehr geht nicht.`
-      : `Kiesel-Hülle für ${PREISE[modell].name} in ${farbe} liegt im Warenkorb.`;
+      ? `Von der Kiesel-Hülle für ${PREISE[modell].name} in ${FARBNAME[farbe]} liegen schon ${MAX_ANZAHL} im Warenkorb, mehr geht nicht.`
+      : `Kiesel-Hülle für ${PREISE[modell].name} in ${FARBNAME[farbe]} liegt im Warenkorb.`;
   }
   // Rückmeldung am Knopf: Text kurz tauschen, Breite bleibt (kein Springen)
   const text = knopf.querySelector('[data-knopftext]') ?? knopf;

@@ -24,17 +24,17 @@ export const MODELLE = {
     name: 'Kiesel 1',
     pfad: 'kiesel-1/',
     kurz: 'SE-Grösse, Akku für den ganzen Tag',
-    farbe: 'Himmelblau',          // Farbe im Menü
+    farbe: 'sky-blue',            // Farbe im Menü
     // Modellkarte auf der Startseite (Artboard „Startseite Desktop“, model_card() in gen2.py)
     karte: {
-      farbe: 'Kieselbeige',
+      farbe: 'pebble-beige',
       unter: 'So gross wie das iPhone SE von 2016.',
       eckdaten: [`${zoll('k1')} OLED, ${W.hertz}`, `Eine Kamera, 0.5x bis 1x, digital bis ${W.zoomDigital.k1}x`, akku('k1'), speicherBereich('k1')],
     },
     // Modellseite /kiesel-1/ (sinngemäss nach Artboard „Modellseite Kiesel 1 Pro“)
     seite: {
       unterzeile: 'Die Grösse von 2016. Der Akku von heute.',
-      farbe: 'Kieselbeige',
+      farbe: 'pebble-beige',
       speicherText: speicherBereich('k1'),
       // Kennzahlen: Text als [lang, kurz fürs Handy] oder nur ein Text
       kennzahlen: [
@@ -60,16 +60,16 @@ export const MODELLE = {
     name: 'Kiesel 1 Pro',
     pfad: 'kiesel-1-pro/',
     kurz: '13-mini-Grösse mit 3x-Tele',
-    farbe: 'Titangrau',
+    farbe: 'titanium-gray',
     karte: {
-      farbe: 'Himmelblau',
+      farbe: 'sky-blue',
       unter: 'So gross wie das iPhone 13 mini.',
       eckdaten: [`${zoll('pro')} OLED, ${W.hertz}`, `0.5x bis 1x plus ${W.tele}x-Tele mit OIS`, `${akku('pro')}, Mini-Vapor-Chamber`, speicherBereich('pro')],
     },
     // Modellseite /kiesel-1-pro/ (Artboard „Modellseite Kiesel 1 Pro“, gen2.py Abschnitt 4)
     seite: {
       unterzeile: 'Zwei Kameras. Eine Hand.',
-      farbe: 'Himmelblau',
+      farbe: 'sky-blue',
       speicherText: speicherBereich('pro'),
       kennzahlen: [
         { zahl: `${zahl(g.pro.display)}″`, titel: ['OLED-Display'], text: [`LTPO von ${W.hertz}`, W.hertz] },

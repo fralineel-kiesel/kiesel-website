@@ -4,7 +4,7 @@
 // drei Eigenschafts-Kacheln (Ausschnitte wie crop_phone() und der Profilschnitt, feste Farben
 // wie im Artboard) und die technischen Details („[Material]“ ist ein bewusster Platzhalter).
 // In den Warenkorb kommen nur Modell und Hüllenfarbe, nie die Vorschau-Handyfarbe.
-// ?modell=k1&farbe=Mattweiss (von /zubehoer/ „Ansehen“) wählt vor.
+// ?modell=k1&farbe=matte-white (von /zubehoer/ „Ansehen“) wählt vor, alte Farbnamen (Mattweiss) auch.
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Buehne from '../../components/Buehne.astro';
 import Knopf from '../../components/Knopf.astro';
@@ -15,16 +15,18 @@ import { HUELLE, HUELLE_MASSE as HM } from '../../data/zubehoer.js';
 import { GERAETE } from '../../data/geraete.js';
 import { chf } from '../../lib/format.js';
 import { pfad } from '../../lib/pfad.js';
+import { texte, spracheVon } from '../../i18n/index.js';
 
+const t = texte(spracheVon(Astro.url));
 const S = HUELLE.start;
 const DREHUNG = { hinten: -4, vorne: 3 };
-const bild = handy({ ansicht: 'hinten', modell: S.modell, farbe: S.handy, huelle: S.huelle, hoehe: null, drehung: DREHUNG.hinten, label: `Kiesel 1 Pro in ${S.handy} mit Hülle in ${S.huelle}, Rückseite` });
+const bild = handy({ ansicht: 'hinten', modell: S.modell, farbe: S.handy, huelle: S.huelle, hoehe: null, drehung: DREHUNG.hinten, label: `Kiesel 1 Pro in ${t.farben[S.handy]} mit Hülle in ${t.farben[S.huelle]}, Rückseite` });
 
 // Ausschnitt einer Rückseite (crop_phone in gen3.py)
 const ausschnitt = (farbe, huelle, vb, label) => `<svg viewBox="${vb}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="${label}" style="display: block">${backSvg('pro', palette(farbe), uid('cp'), null, palette(huelle))}</svg>`;
 const PW = MODELS.pro.W, PH = MODELS.pro.H;
-const milchig = ausschnitt('Himmelblau', 'Mattweiss', `${f(PW / 2 - 260)} ${f(PH * 0.517 - 160)} 520 325`, 'Nahaufnahme: milchige Rückseite mit durchschimmerndem Kiesel und MagSafe-Ring');
-const rand = ausschnitt('Titangrau', 'Kieselbeige', `${f(PW - 230)} 120 320 200`, 'Nahaufnahme: fester Rand mit Tastenabdeckungen');
+const milchig = ausschnitt('sky-blue', 'matte-white', `${f(PW / 2 - 260)} ${f(PH * 0.517 - 160)} 520 325`, 'Nahaufnahme: milchige Rückseite mit durchschimmerndem Kiesel und MagSafe-Ring');
+const rand = ausschnitt('titanium-gray', 'pebble-beige', `${f(PW - 230)} 120 320 200`, 'Nahaufnahme: fester Rand mit Tastenabdeckungen');
 
 // Profilschnitt, 1 mm = 18 px (gen3.py). Hülle und Handy in festen Farben, der Rest aus Tokens.
 // Abweichung vom Artboard: „Tisch“ steht links und die Fläche ist 30 breiter, sonst überlappt
@@ -207,7 +209,8 @@ const details = HUELLE.details.map(([a, b]) => [a, b ?? chf(HUELLE_PREIS)]);
 <script>
   import { handy } from '../../lib/kiesel-draw/phone.js';
   import { huelleKaufen } from '../../scripts/huelle-kaufen.js';
-  import { FARBNAMEN } from '../../data/farben.js';
+  import { farbId } from '../../data/farben.js';
+  import { farben as FARBNAME } from '../../i18n/de.js';
 
   const NAME = { k1: 'Kiesel 1', pro: 'Kiesel 1 Pro' };
   const DREHUNG = { hinten: -4, vorne: 3 };
@@ -221,7 +224,7 @@ const details = HUELLE.details.map(([a, b]) => [a, b ?? chf(HUELLE_PREIS)]);
     function zeichne() {
       ort.dataset.modell = z.modell;
       ort.innerHTML = handy({ ansicht: z.ansicht, modell: z.modell, farbe: z.handy, huelle: z.huelle, hoehe: null, drehung: DREHUNG[z.ansicht],
-        label: `${NAME[z.modell]} in ${z.handy} mit Hülle in ${z.huelle}, ${z.ansicht === 'hinten' ? 'Rückseite' : 'Vorderseite'}` });
+        label: `${NAME[z.modell]} in ${FARBNAME[z.handy]} mit Hülle in ${FARBNAME[z.huelle]}, ${z.ansicht === 'hinten' ? 'Rückseite' : 'Vorderseite'}` });
       wurzel.querySelectorAll('[data-modell-wahl]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.modellWahl === z.modell ? 'true' : 'false'));
       wurzel.querySelectorAll('[data-ansicht]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.ansicht === z.ansicht ? 'true' : 'false'));
     }
@@ -244,9 +247,9 @@ const details = HUELLE.details.map(([a, b]) => [a, b ?? chf(HUELLE_PREIS)]);
     // Nur Modell und Hüllenfarbe, nie die Vorschau-Handyfarbe
     wurzel.querySelector('[data-huelle-kaufen]').addEventListener('click', (e) => huelleKaufen(e.currentTarget, z.modell, z.huelle, ansage));
 
-    // Vorwahl aus der Adresse: ?modell=k1&farbe=Mattweiss
+    // Vorwahl aus der Adresse: ?modell=k1&farbe=matte-white (alte Namen wie Mattweiss auch)
     const q = new URLSearchParams(location.search);
     if (NAME[q.get('modell')] && q.get('modell') !== z.modell) { z.modell = q.get('modell'); zeichne(); }
-    if (FARBNAMEN.includes(q.get('farbe'))) setzeFarbe('huelle-farbe', q.get('farbe'));
+    if (farbId(q.get('farbe'))) setzeFarbe('huelle-farbe', farbId(q.get('farbe')));
   });
 </script>

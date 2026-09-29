@@ -8,6 +8,7 @@
 import { masse, gewicht, akku, zoll } from './geraete.js';
 import { PREISE } from './preise.js';
 import { FARBEN_TEXT } from './farben.js';
+import { farben as FARBNAME } from '../i18n/de.js';
 import { chf } from '../lib/format.js';
 
 export const WERTE = {
@@ -31,7 +32,7 @@ const stufen = (m) => PREISE[m].speicher;
 const speicher = (m) => stufen(m).map((s) => s.name).join(', ');
 const ab = (m) => { const s = stufen(m)[0]; return `${chf(s.preis)} (${s.name})`; };
 const bis = (m) => { const s = stufen(m).at(-1); return `${chf(s.preis)} (${s.name})`; };
-const farben = FARBEN_TEXT.join(', ');
+const farben = FARBEN_TEXT.map((f) => FARBNAME[f]).join(', ');
 const beide = (text) => [text, text];
 
 // Gruppen: { titel, zeilen: [[Merkmal, Kiesel 1, Kiesel 1 Pro], …] }

@@ -42,6 +42,7 @@
 // schwenkt dorthin, mit der Maus ziehen verschiebt, mit dem Finger waagrecht ziehen auch
 // (senkrecht scrollt die Seite).
 import { crop, begrenze, ZOOM_TARGETS } from '../lib/kiesel-draw/ausschnitt.js';
+import { panoramaDetails as DETAIL_NAMEN } from '../i18n/de.js';
 import { bildZoom, kameraZoom, rund, zahl, UNSCHAERFE, linseBei, linsenText, schaerfeText } from '../lib/kamera.js';
 import { MAX_ZOOM } from '../data/kamera.js';
 
@@ -267,7 +268,8 @@ export function starteKamera(fenster) {
   // Flug zu einem Detail: kurz rauszoomen, falls das Ziel weit weg ist, schwenken, rein
   function fliegeZu(i) {
     bedient = true;
-    const [name, tx, ty] = ZOOM_TARGETS[i];
+    const [id, tx, ty] = ZOOM_TARGETS[i];
+    const name = DETAIL_NAMEN[id];
     const Z0 = bildZoom(z), Z1 = bildZoom(ZIEL_ZOOM);
     const [x0, y0] = begrenze(blick[0], blick[1], Z0);
     const abstand = Math.hypot(tx - x0, ty - y0);
@@ -330,18 +332,18 @@ export function starteKamera(fenster) {
     fokus.style.opacity = Math.min(1, (Z - RING_AB) / (FUND_AB - RING_AB)).toFixed(3);
     if (fokus.dataset.detail !== String(ring.i)) {
       fokus.dataset.detail = String(ring.i);
-      fokustext.textContent = `${ZOOM_TARGETS[ring.i][0]} entdeckt`;
+      fokustext.textContent = `${DETAIL_NAMEN[ZOOM_TARGETS[ring.i][0]]} entdeckt`;
     }
   }
 
   function entdecke(i, angeflogen = false) {
     if (entdeckt.has(i)) {
-      if (angeflogen) sage(`${ZOOM_TARGETS[i][0]}, ${zahl(z)}-fach`);
+      if (angeflogen) sage(`${DETAIL_NAMEN[ZOOM_TARGETS[i][0]]}, ${zahl(z)}-fach`);
       return;
     }
     entdeckt.add(i);
     neuster = i;
-    const name = ZOOM_TARGETS[i][0];
+    const name = DETAIL_NAMEN[ZOOM_TARGETS[i][0]];
     kacheln.filter((k) => k.dataset.detail === String(i)).forEach((k) => {
       k.setAttribute('data-gefunden', '');
       k.setAttribute('aria-label', `${name}: hinzoomen`);

@@ -44,7 +44,7 @@ const git = (...a) => execFileSync('git', a, { cwd: repo, encoding: 'utf8' }).tr
 // absichtlich noch einmal ausgeschrieben: Der Test soll nicht dem Code glauben, den er prüft)
 const FARBEN = { Mattschwarz: 'matte-black', Titangrau: 'titanium-gray', Himmelblau: 'sky-blue', Mattweiss: 'matte-white', Kieselbeige: 'pebble-beige' };
 const FARB_RE = Object.keys(FARBEN).join('|');
-const FAQ_THEMEN = { Konzept: 'concept', Handys: 'phones', 'Akku und Laden': 'battery', Funktionen: 'features', Kaufen: 'buying' };
+const FAQ_THEMEN = { Alle: 'alle', Konzept: 'concept', Handys: 'phones', 'Akku und Laden': 'battery', Funktionen: 'features', Kaufen: 'buying' };
 const DETAILS = {
   Gipfelkreuz: 'summit-cross', 'Seilschaft auf dem Grat': 'rope-team', Steinbock: 'ibex', 'SAC-Hütte mit Fahne': 'mountain-hut',
   Gondelbahn: 'gondola', Gleitschirm: 'paraglider', Segelboot: 'sailboat', 'Dorf mit Kirche': 'village',
@@ -54,7 +54,7 @@ export const REGELN = [
   {
     name: 'Farbkennung in Formularwerten und Datenattributen',
     grund: 'Farben heissen intern jetzt sprachneutral (sky-blue …), damit eine englische Seite dieselben Werte schickt. Sichtbar (Text, title, aria-label) bleibt der deutsche Name.',
-    alt: new RegExp(`\\b(value|data-farbe)="(${FARB_RE})"`, 'g'),
+    alt: new RegExp(`(\\bvalue|\\bdata-farbe|:wert)="(${FARB_RE})"`, 'g'),
     neu: (_, attr, f) => `${attr}="${FARBEN[f]}"`,
   },
   {
@@ -66,7 +66,7 @@ export const REGELN = [
   {
     name: 'Farbkennung im Startzustand von /kaufen/ (data-start)',
     grund: 'Der Startzustand ist JSON mit Kennungen, dieselben wie im Formular.',
-    alt: new RegExp(`(&quot;(?:farbe|huelleFarbe)&quot;:&quot;)(${FARB_RE})(&quot;)`, 'g'),
+    alt: new RegExp(`((?:&quot;|\\\\")(?:farbe|huelleFarbe)(?:&quot;|\\\\"):(?:&quot;|\\\\"))(${FARB_RE})(&quot;|\\\\")`, 'g'),
     neu: (_, a, f, b) => `${a}${FARBEN[f]}${b}`,
   },
   {
@@ -76,20 +76,33 @@ export const REGELN = [
     neu: (_, attr, t) => `${attr}="${FAQ_THEMEN[t]}"`,
   },
   {
-    name: 'Versteckte Details: Kennung statt Name (data-name → data-detail-id)',
-    grund: 'Die acht Details im Panorama haben eine sprachneutrale Kennung; ihr Name kommt aus der Textdatei.',
-    alt: new RegExp(`\\bdata-name="(${Object.keys(DETAILS).join('|')})"`, 'g'),
-    neu: (_, n) => `data-detail-id="${DETAILS[n]}"`,
+    name: 'Versteckte Details: Kennung statt Name (data-name → data-detail-id, Spielwiese data-ziel)',
+    grund: 'Die acht Details im Panorama haben eine sprachneutrale Kennung; ihr Name kommt aus der Textdatei. data-name las kein Skript.',
+    alt: new RegExp(`\\b(data-name|data-ziel)="(${Object.keys(DETAILS).join('|')})"`, 'g'),
+    neu: (_, attr, n) => `${attr === 'data-name' ? 'data-detail-id' : attr}="${DETAILS[n]}"`,
+  },
+  {
+    name: 'Blumen-Vorgaben der Spielwiese: Kennung statt Name (data-vorgabe)',
+    grund: 'BLUME_FOKUS hat Kennungen (tele, bee, macro, all), die Namen aus gen2.py stehen in der Textdatei.',
+    alt: /\bdata-vorgabe="(Blume \(3x Tele\)|Biene|Makro \(alles nah\)|Alles scharf)"/g,
+    neu: (_, n) => `data-vorgabe="${{ 'Blume (3x Tele)': 'tele', Biene: 'bee', 'Makro (alles nah)': 'macro', 'Alles scharf': 'all' }[n]}"`,
+  },
+  {
+    name: 'Warenkorb-Zeilen: Kennungen in data-id und data-schluessel',
+    grund: 'Die Artikel-ID entsteht aus der gespeicherten Wahl (Art|Modell|Farbe|…). Art und Farbe sind jetzt Kennungen: handy → phone, huelle → case, Titangrau → titanium-gray.',
+    alt: new RegExp(`\\b(data-id|data-schluessel)="([^"]*)"`, 'g'),
+    neu: (_, attr, wert) => `${attr}="${wert.split('|').map((teil) => ({ handy: 'phone', huelle: 'case' })[teil] ?? FARBEN[teil] ?? teil).join('|')}"`,
   },
 ];
 
 // Nur im Browser-Teil: die Adresse nach dem Laden
 const REGELN_ADRESSE = [
   {
-    name: 'Adresse: alte Parameter werden auf Kennungen umgeschrieben',
-    grund: 'Die Seiten schreiben die Adresse nach (replaceState). Aus ?farbe=Titangrau wird ?farbe=titanium-gray, aus ?ansicht=uebereinander wird ?ansicht=overlay.',
-    alt: new RegExp(`([?&])(farbe|huelle)=(${FARB_RE})\\b`, 'gi'),
-    neu: (_, vor, p, f) => `${vor}${p}=${FARBEN[Object.keys(FARBEN).find((k) => k.toLowerCase() === f.toLowerCase())]}`,
+    name: 'Adresse von /kaufen/: alte Farbnamen werden zu Kennungen',
+    grund: '/kaufen/ schreibt die Adresse nach (replaceState), jetzt mit Kennungen: aus ?farbe=Titangrau wird ?farbe=titanium-gray. /zubehoer/huelle/ schreibt die Adresse wie bisher nicht nach.',
+    alt: /^kaufen\/\?[^#]*/g,
+    neu: (m) => m.replace(new RegExp(`([?&])(farbe|huelle)=(${FARB_RE})\\b`, 'gi'),
+      (_, vor, p, f) => `${vor}${p}=${FARBEN[Object.keys(FARBEN).find((k) => k.toLowerCase() === f.toLowerCase())]}`),
   },
   {
     name: 'Adresse: ?ansicht=uebereinander → ?ansicht=overlay',
@@ -204,7 +217,8 @@ function domAlsText() {
     if (n.nodeType !== 1) return;
     const tag = n.tagName.toLowerCase();
     if (tag === 'style' || (tag === 'script' && n.type !== 'application/ld+json')) return;
-    const attr = [...n.attributes].map((a) => `${a.name}=${JSON.stringify(a.value)}`).sort();
+    // Reihenfolge wie im HTML (Astro schreibt sie wie im Quelltext, also in beiden Ständen gleich)
+    const attr = [...n.attributes].map((a) => `${a.name}=${JSON.stringify(a.value)}`);
     if (tag === 'input' || tag === 'textarea' || tag === 'select') attr.push(`:wert=${JSON.stringify(n.value)}`, `:an=${n.checked ?? ''}`);
     if (tag === 'dialog') attr.push(`:offen=${n.open}`);
     zeilen.push(`${ein}<${tag} ${attr.join(' ')}>`);

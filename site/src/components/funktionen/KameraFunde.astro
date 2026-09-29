@@ -11,9 +11,9 @@ import { panoramaAnsicht } from '../../lib/kiesel-draw/scene.js';
 const { quelle } = Astro.props;
 ---
 <ul class="funde" aria-label="Versteckte Details">
-  {ZOOM_TARGETS.map(([name, x, y], i) => (
+  {ZOOM_TARGETS.map(([id, x, y], i) => (
     <li>
-      <button type="button" class="fund" data-detail={i} data-name={name} aria-label={`Noch versteckt, Detail ${i + 1} von ${ZOOM_TARGETS.length}: hinzoomen`}>
+      <button type="button" class="fund" data-detail={i} data-detail-id={id} aria-label={`Noch versteckt, Detail ${i + 1} von ${ZOOM_TARGETS.length}: hinzoomen`}>
         <span class="bild">
           <span class="vorschau" set:html={panoramaAnsicht(quelle, { zoom: 8, cx: x, cy: y })} />
           <span class="frage" aria-hidden="true">?</span>

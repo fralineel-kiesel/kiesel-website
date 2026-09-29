@@ -10,13 +10,15 @@ import { GERAETE, akku } from '../../data/geraete.js';
 //   2. Im Browser (<script> unten): Bei jeder Reglerbewegung neu zeichnen (Werkbank oben).
 //
 // Alle Einstellungen stehen auch in der Adresse, z.B.
-//   /designsystem/spielwiese/?modell=k1&farbe=Mattschwarz&ansicht=hinten&huelle=Mattweiss&led=call
+//   /designsystem/spielwiese/?modell=k1&farbe=matte-black&ansicht=hinten&huelle=matte-white&led=call
+//   (Farben als Kennung, alte Namen wie Mattschwarz gehen auch)
 // So lässt sich eine Kombination als Link weitergeben oder automatisch fotografieren.
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { pfad } from '../../lib/pfad.js';
 import Chip from '../../components/Chip.astro';
 import Farbwaehler from '../../components/Farbwaehler.astro';
 import Schalter from '../../components/Schalter.astro';
+import { farben as FARBNAME, panoramaDetails as DETAIL_NAMEN, blumeFokus as BLUME_NAMEN } from '../../i18n/de.js';
 import { handy, innenleben, FARBNAMEN_PAL, LED_NAMEN, LED_FARBEN, ZOOM_TARGETS, BLUME_FOKUS } from '../../lib/kiesel-draw/index.js';
 
 const MODELLE = [['k1', 'Kiesel 1'], ['pro', 'Kiesel 1 Pro']];
@@ -32,10 +34,10 @@ const galerie = MODELLE.map(([mk, name]) => ({
 }));
 const huellen = FARBNAMEN_PAL.map((farbe) => ({
   farbe,
-  hinten: handy({ ansicht: 'hinten', modell: 'pro', farbe: 'Titangrau', huelle: farbe, hoehe: 190, boden: false }),
-  vorne: handy({ ansicht: 'vorne', modell: 'k1', farbe: 'Titangrau', huelle: farbe, hoehe: 190, boden: false }),
+  hinten: handy({ ansicht: 'hinten', modell: 'pro', farbe: 'titanium-gray', huelle: farbe, hoehe: 190, boden: false }),
+  vorne: handy({ ansicht: 'vorne', modell: 'k1', farbe: 'titanium-gray', huelle: farbe, hoehe: 190, boden: false }),
 }));
-const leds = Object.keys(LED_NAMEN).map((z) => ({ z, name: LED_NAMEN[z], svg: handy({ ansicht: 'hinten', modell: 'pro', farbe: 'Mattschwarz', led: z, hoehe: 190, boden: false }) }));
+const leds = Object.keys(LED_NAMEN).map((z) => ({ z, name: LED_NAMEN[z], svg: handy({ ansicht: 'hinten', modell: 'pro', farbe: 'matte-black', led: z, hoehe: 190, boden: false }) }));
 const innen = [['se', GERAETE.se.name, akku('se')], ['k1', GERAETE.k1.name, akku('k1')], ['pro', GERAETE.pro.name, akku('pro')]]
   .map(([mk, titel, akku]) => ({ titel, akku, ...innenleben({ modell: mk }) }));
 ---
@@ -64,7 +66,7 @@ const innen = [['se', GERAETE.se.name, akku('se')], ['k1', GERAETE.k1.name, akku
             <div class="chips">{ANSICHTEN.map(([w, n]) => <Chip gruppe="ansicht" data-wert={w} gedrueckt={w === 'hinten'}>{n}</Chip>)}</div>
           </fieldset>
           <div class="gruppe">
-            <Farbwaehler name="handyfarbe" legende="Farbe" wert="Himmelblau" />
+            <Farbwaehler name="handyfarbe" legende="Farbe" wert="sky-blue" />
             <label class="eigene">
               <input type="color" value="#C0392B" data-eigene-farbe />
               <span>Eigene Farbe (Töne werden abgeleitet)</span>
@@ -73,7 +75,7 @@ const innen = [['se', GERAETE.se.name, akku('se')], ['k1', GERAETE.k1.name, akku
           <div class="gruppe">
             <Schalter data-huelle>Hülle</Schalter>
             <div class="huellenfarbe" data-huellenfarbe>
-              <Farbwaehler name="huellenfarbe" legende="Farbe der Hülle" wert="Mattweiss" groesse={28} />
+              <Farbwaehler name="huellenfarbe" legende="Farbe der Hülle" wert="matte-white" groesse={28} />
             </div>
           </div>
           <fieldset class="gruppe">
@@ -111,7 +113,7 @@ const innen = [['se', GERAETE.se.name, akku('se')], ['k1', GERAETE.k1.name, akku
         <legend>Springen zu (8x)</legend>
         <div class="chips">
           <Chip gruppe="ziel" data-ziel="gesamt" gedrueckt>Ganzes Bild</Chip>
-          {ZOOM_TARGETS.map(([name, x, y]) => <Chip gruppe="ziel" data-ziel={name} data-x={x} data-y={y}>{name}</Chip>)}
+          {ZOOM_TARGETS.map(([id, x, y]) => <Chip gruppe="ziel" data-ziel={id} data-x={x} data-y={y}>{DETAIL_NAMEN[id]}</Chip>)}
         </div>
       </fieldset>
       <p class="t-small t-muted" data-panorama-info aria-live="polite"></p>
@@ -128,7 +130,7 @@ const innen = [['se', GERAETE.se.name, akku('se')], ['k1', GERAETE.k1.name, akku
       </div>
       <fieldset class="gruppe">
         <legend>Vorgaben</legend>
-        <div class="chips">{Object.keys(BLUME_FOKUS).map((n) => <Chip gruppe="blume" data-vorgabe={n}>{n}</Chip>)}</div>
+        <div class="chips">{Object.keys(BLUME_FOKUS).map((id) => <Chip gruppe="blume" data-vorgabe={id}>{BLUME_NAMEN[id]}</Chip>)}</div>
       </fieldset>
     </section>
 
@@ -142,7 +144,7 @@ const innen = [['se', GERAETE.se.name, akku('se')], ['k1', GERAETE.k1.name, akku
           {m.reihen.map((r) => (
             <div class="galerie-reihe">
               <span class="reihen-name">{r.aname}</span>
-              {r.handys.map((h) => <figure class="mini"><Fragment set:html={h.svg} /><figcaption>{h.farbe}</figcaption></figure>)}
+              {r.handys.map((h) => <figure class="mini"><Fragment set:html={h.svg} /><figcaption>{FARBNAME[h.farbe]}</figcaption></figure>)}
             </div>
           ))}
         </div>
@@ -150,7 +152,7 @@ const innen = [['se', GERAETE.se.name, akku('se')], ['k1', GERAETE.k1.name, akku
       <div class="galerie-block">
         <h3 class="t-3">Hüllen (auf Titangrau)</h3>
         <div class="galerie-reihe">
-          {huellen.map((h) => <figure class="mini doppel"><span><Fragment set:html={h.hinten} /><Fragment set:html={h.vorne} /></span><figcaption>{h.farbe}</figcaption></figure>)}
+          {huellen.map((h) => <figure class="mini doppel"><span><Fragment set:html={h.hinten} /><Fragment set:html={h.vorne} /></span><figcaption>{FARBNAME[h.farbe]}</figcaption></figure>)}
         </div>
       </div>
       <div class="galerie-block">
@@ -271,6 +273,8 @@ const innen = [['se', GERAETE.se.name, akku('se')], ['k1', GERAETE.k1.name, akku
 </style>
 
 <script>
+  import { farbId } from '../../data/farben.js';
+  import { farben as FARBNAME, panoramaDetails as DETAIL_NAMEN } from '../../i18n/de.js';
   import { handy, palette, crop, begrenze, alpen, zoomPunkte, ZOOM_TARGETS, blume, blumeUnschaerfe, BLUME_FOKUS, BLUR, f } from '../../lib/kiesel-draw/index.js';
 
   // ------------------------------------------------------------ Zustand + Adresse
@@ -281,14 +285,14 @@ const innen = [['se', GERAETE.se.name, akku('se')], ['k1', GERAETE.k1.name, akku
   const S = {
     modell: q('modell', 'pro'),
     ansicht: q('ansicht', 'hinten'),
-    farbe: q('farbe', 'Himmelblau'),
+    farbe: farbId(q('farbe')) ?? q('farbe', 'sky-blue'),
     huelle: q('huelle', ''),
-    huellenfarbe: q('huellenfarbe', 'Mattweiss'),
+    huellenfarbe: farbId(q('huellenfarbe')) ?? 'matte-white',
     led: q('led', 'off'),
     hoehe: Number(q('hoehe', 600)),
     drehung: Number(q('drehung', 0)),
   };
-  if (S.huelle && S.huelle !== 'aus') S.huellenfarbe = S.huelle; // ?huelle=Mattweiss
+  if (S.huelle && S.huelle !== 'aus') S.huellenfarbe = farbId(S.huelle) ?? S.huellenfarbe; // ?huelle=matte-white
 
   function adresseSchreiben() {
     const u = new URL(location.href);
@@ -338,7 +342,7 @@ const innen = [['se', GERAETE.se.name, akku('se')], ['k1', GERAETE.k1.name, akku
   const eigene = document.querySelector('[data-eigene-farbe]');
   function farbeAnzeigen() {
     fwHandy.querySelectorAll('input').forEach((i) => { i.checked = i.value === S.farbe; });
-    fwHandy.querySelector('[data-farbname]').textContent = S.farbe;
+    fwHandy.querySelector('[data-farbname]').textContent = FARBNAME[S.farbe] ?? S.farbe;
     if (/^#/.test(S.farbe)) eigene.value = S.farbe.toLowerCase();
   }
   fwHandy.addEventListener('change', (e) => { S.farbe = e.target.value; zeichneHandy(); });
@@ -353,7 +357,7 @@ const innen = [['se', GERAETE.se.name, akku('se')], ['k1', GERAETE.k1.name, akku
     huellenBox.setAttribute('aria-disabled', S.huelle ? 'false' : 'true');
     fwHuelle.disabled = !S.huelle;
     fwHuelle.querySelectorAll('input').forEach((i) => { i.checked = i.value === S.huellenfarbe; });
-    fwHuelle.querySelector('[data-farbname]').textContent = S.huellenfarbe;
+    fwHuelle.querySelector('[data-farbname]').textContent = FARBNAME[S.huellenfarbe];
   }
   schalterHuelle.addEventListener('kiesel:schalter', (e) => { S.huelle = e.detail.an ? S.huellenfarbe : ''; huelleAnzeigen(); zeichneHandy(); });
   fwHuelle.addEventListener('change', (e) => { S.huellenfarbe = e.target.value; if (S.huelle) S.huelle = S.huellenfarbe; zeichneHandy(); });
@@ -395,7 +399,7 @@ const innen = [['se', GERAETE.se.name, akku('se')], ['k1', GERAETE.k1.name, akku
     const einheitenProPx = 1600 / P.zoom / (pano.clientWidth || 800);
     marken.innerHTML = P.punkte ? zoomPunkte((14 / 16) * einheitenProPx) : '';
     const w = 1600 / P.zoom, h = w / 1.6;
-    const sichtbar = ZOOM_TARGETS.filter(([, x, y]) => Math.abs(x - P.cx) < w / 2 && Math.abs(y - P.cy) < h / 2).map(([n]) => n);
+    const sichtbar = ZOOM_TARGETS.filter(([, x, y]) => Math.abs(x - P.cx) < w / 2 && Math.abs(y - P.cy) < h / 2).map(([id]) => DETAIL_NAMEN[id]);
     panoInfo.textContent = `${P.zoom.toFixed(1)}x · Mitte ${Math.round(P.cx)}, ${Math.round(P.cy)} · viewBox ${crop(P.cx, P.cy, P.zoom)}` +
       (P.zoom >= 4 && sichtbar.length ? ` · Im Bild: ${sichtbar.join(', ')}` : '');
     const u = new URL(location.href);

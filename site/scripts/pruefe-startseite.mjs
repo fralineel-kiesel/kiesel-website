@@ -15,6 +15,7 @@ import { chromium } from 'playwright';
 import { starteServer } from './dist-server.mjs';
 import { MODELLE } from '../src/data/modelle.js';
 import { abPreis } from '../src/data/preise.js';
+import { farbId } from '../src/data/farben.js';
 import { bauplan } from '../src/lib/kiesel-3d/bauplan.js';
 
 const ARGS = ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--disable-gpu-vsync', '--disable-frame-rate-limit'];
@@ -277,16 +278,17 @@ try {
     };
   });
   // Liste der Abweichungen (leer = alles passt zu Modell id in Farbe farbe)
+  // farbe = angezeigter Name; Adresse und Radio-Knopf tragen die Kennung (farbId)
   function abweichungen(z, id, farbe = 'Himmelblau') {
     const name = MODELLE[id].name, f = [];
     if (z.html !== id) f.push(`html=${z.html}`);
     if (z.gedrueckt !== id) f.push(`gedrückt=${z.gedrueckt}`);
     if (z.bilder !== id) f.push(`2D=${z.bilder}`);
     if (!z.svgLabel.startsWith(`${name} in ${farbe},`)) f.push(`Grafik „${z.svgLabel}“`);
-    const soll = [[`${name} entdecken`, pfadBasis + MODELLE[id].pfad], [`Kaufen ${abPreis(id)}: ${name}`, `${pfadBasis}kaufen/?modell=${id}&farbe=${farbe}`]];
+    const soll = [[`${name} entdecken`, pfadBasis + MODELLE[id].pfad], [`Kaufen ${abPreis(id)}: ${name}`, `${pfadBasis}kaufen/?modell=${id}&farbe=${farbId(farbe)}`]];
     if (JSON.stringify(z.knoepfe) !== JSON.stringify(soll)) f.push(`Knöpfe ${JSON.stringify(z.knoepfe)}`);
     if (z.legende !== `Farbe des ${name}`) f.push(`Legende „${z.legende}“`);
-    if (z.farbe !== farbe) f.push(`Farbe=${z.farbe}`);
+    if (z.farbe !== farbId(farbe)) f.push(`Farbe=${z.farbe}`);
     return f;
   }
   const passt = (name, z, id, farbe) => { const f = abweichungen(z, id, farbe); pruefe(name, f.length === 0, f.join(', ') || `${MODELLE[id].name}, ${farbe ?? 'Himmelblau'}`); };

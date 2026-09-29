@@ -23,6 +23,7 @@
     "fotos:funktionen": "astro build && node scripts/fotografiere-funktionen.mjs",
     "fotos:privacy": "astro build && node scripts/fotografiere-privacy.mjs",
     "pruefe:kaufen": "astro build && node scripts/pruefe-kaufen.mjs",
+    "pruefe:kennungen": "astro build && node scripts/pruefe-kennungen.mjs",
     "fotos:kaufen": "astro build && node scripts/fotografiere-kaufen.mjs",
     "pruefe:vergleichen": "astro build && node scripts/pruefe-vergleichen.mjs",
     "pruefe:akku-rechner": "astro build && node scripts/pruefe-akku-rechner.mjs",

@@ -51,7 +51,7 @@ const ABSTAND_NACH_H = Math.max(...KIESEL_IDS.map((id) => GERAETE[id].hoehe)); /
 // einzige lange Aufgabe, während der die Seite nicht reagiert.
 const luftholen = () => new Promise((r) => setTimeout(r, 0));
 
-export async function starte3D({ ziel, modell = 'pro', farbe = 'Himmelblau', label = '', beiAbbruch = () => {}, waechter: mitWaechter = true, gerade = false, freiOben = () => 0 }) {
+export async function starte3D({ ziel, modell = 'pro', farbe = 'sky-blue', label = '', beiAbbruch = () => {}, waechter: mitWaechter = true, gerade = false, freiOben = () => 0 }) {
   const leinwand = document.createElement('canvas');
   leinwand.className = 'leinwand-3d';
   leinwand.setAttribute('role', 'img');

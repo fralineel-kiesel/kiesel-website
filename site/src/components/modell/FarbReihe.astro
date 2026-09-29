@@ -3,19 +3,21 @@
 // Auf dem Handy passt die Reihe nicht in die Breite: Sie lässt sich seitlich wischen und
 // rastet dabei an jedem Handy ein (scroll-snap).
 import { handy } from '../../lib/kiesel-draw/index.js';
-import { FARBNAMEN } from '../../data/farben.js';
+import { FARB_IDS } from '../../data/farben.js';
 import { MODELLE } from '../../data/modelle.js';
+import { texte, spracheVon } from '../../i18n/index.js';
 
 const { modell } = Astro.props;
+const t = texte(spracheVon(Astro.url));
 // Reihenfolge wie im Artboard: die Farbe der Modellseite zuerst
 const farbe = MODELLE[modell].seite.farbe;
-const reihe = [farbe, ...FARBNAMEN.filter((n) => n !== farbe)];
+const reihe = [farbe, ...FARB_IDS.filter((n) => n !== farbe)];
 ---
 <ul role="list" class="farben" aria-label="Die fünf Farben">
   {reihe.map((n) => (
     <li>
-      <Fragment set:html={handy({ ansicht: 'hinten', modell, farbe: n, hoehe: null, label: `${MODELLE[modell].name} in ${n}, Rückseite` })} />
-      <span>{n}</span>
+      <Fragment set:html={handy({ ansicht: 'hinten', modell, farbe: n, hoehe: null, label: `${MODELLE[modell].name} in ${t.farben[n]}, Rückseite` })} />
+      <span>{t.farben[n]}</span>
     </li>
   ))}
 </ul>

@@ -13,6 +13,7 @@ import { PAL, FARBNAMEN_PAL } from '../src/lib/kiesel-draw/colors.js';
 import { backSvg, frontSvg, lens, place, handy } from '../src/lib/kiesel-draw/phone.js';
 import { LED } from '../src/lib/kiesel-draw/colors.js';
 import { alpen, blume, crop, phoneOpen, BLUME_FOKUS } from '../src/lib/kiesel-draw/scene.js';
+import { farbId } from '../src/data/farben.js';
 import { INNENLEBEN_ABWEICHUNG as IA, ohnePrivacyBlock } from './abweichungen.mjs';
 
 const hier = path.dirname(fileURLToPath(import.meta.url));
@@ -41,8 +42,10 @@ for (const mk of ['k1', 'pro']) {
 fall('Linse', 'lens', [100.5, 97.25, 64, 'x', true], {}, () => lens(100.5, 97.25, 64, 'x', true));
 fall('place', 'place', ['pro', '<g></g>', 320.5, 410, -6.25, 0.37], {}, () => place('pro', '<g></g>', 320.5, 410, -6.25, 0.37));
 
-// phone() aus gen2.py, wie es die Artboards benutzen
-const P = PAL;
+// phone() aus gen2.py, wie es die Artboards benutzen. Die Farben heissen hier wie in gen2.py
+// (deutsch); PAL ist nach Kennung sortiert, farbId() übersetzt. handy() bekommt den alten Namen
+// und muss ihn selbst verstehen (Migration).
+const P = new Proxy(PAL, { get: (pal, name) => pal[farbId(name)] });
 let n = 0;
 for (const [kind, mk, col, h, opt] of [
   ['back', 'pro', 'Himmelblau', 440, { rot: -6, case: 'Mattweiss' }],

@@ -65,7 +65,7 @@ function linsenRing(r, h) {
 }
 
 // plan = bauplan('k1'|'pro'). Liefert { handy, boden, masse, plan, setzeFarbe(), dispose() }.
-export async function baueKiesel(plan, { farbe = 'Himmelblau', maxAniso = 1 } = {}) {
+export async function baueKiesel(plan, { farbe = 'sky-blue', maxAniso = 1 } = {}) {
   const { W, H, R, D, zeichnung: z } = plan;
   let col = palette(farbe);
 

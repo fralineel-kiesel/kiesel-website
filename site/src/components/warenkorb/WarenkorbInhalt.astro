@@ -35,7 +35,7 @@ const p = `wk-${art}`; // Präfix für ids, damit Schublade und Seite sich nicht
       <div class="vorschlag-text">
         <h3 id={`${p}-vorschlag`} class="vorschlag-titel">Passende Hülle dazu?</h3>
         <p class="t-small t-muted">Kiesel-Hülle für <span data-vorschlag-modell>Kiesel 1 Pro</span>, {chf(HUELLE_PREIS)}. Hinten milchig, am Rand griffig.</p>
-        <Farbwaehler name={`${p}-vorschlag-farbe`} wert="Mattweiss" legende="Farbe der Hülle" groesse={26} class="vorschlag-farben" />
+        <Farbwaehler name={`${p}-vorschlag-farbe`} wert="matte-white" legende="Farbe der Hülle" groesse={26} class="vorschlag-farben" />
         <Knopf art="sekundaer" groesse="s" data-vorschlag-dazu>Dazulegen<span class="vh" data-vorschlag-vh></span></Knopf>
       </div>
     </section>
@@ -226,6 +226,7 @@ const p = `wk-${art}`; // Präfix für ids, damit Schublade und Seite sich nicht
   import { lesen, summen, artikelInfo, setzeAnzahl, entfernen, hinzufuegen, beiAenderung } from '../../scripts/warenkorb.js';
   import { chfRappen } from '../../lib/format.js';
   import { PREISE, MAX_ANZAHL } from '../../data/preise.js';
+  import { farben as FARBNAME } from '../../i18n/de.js';
 
   // ── Zeichen-Motor erst bei Bedarf ──
   // Die Vorschaubilder zeichnet der Zeichen-Motor (phone.js, rund 19 KB). Dieses Skript läuft
@@ -265,8 +266,8 @@ const p = `wk-${art}`; // Präfix für ids, damit Schublade und Seite sich nicht
   }
   // [modell, handyfarbe, hülle] für das Vorschaubild einer Zeile
   function bildFuer(a, liste) {
-    if (a.art === 'handy') return [a.modell, a.farbe, null];
-    const handyDrunter = liste.find((b) => b.art === 'handy' && b.modell === a.modell);
+    if (a.art === 'phone') return [a.modell, a.farbe, null];
+    const handyDrunter = liste.find((b) => b.art === 'phone' && b.modell === a.modell);
     return [a.modell, handyDrunter?.farbe ?? a.farbe, a.farbe];
   }
 
@@ -328,13 +329,13 @@ const p = `wk-${art}`; // Präfix für ids, damit Schublade und Seite sich nicht
     // Hüllen-Vorschlag: ein Handy liegt drin, aber keine Hülle für dieses Modell
     let vorschlagModell = null;
     function zeichneVorschlag(alle) {
-      const ohne = alle.find((a) => a.art === 'handy' && !alle.some((b) => b.art === 'huelle' && b.modell === a.modell));
+      const ohne = alle.find((a) => a.art === 'phone' && !alle.some((b) => b.art === 'case' && b.modell === a.modell));
       vorschlag.hidden = !ohne;
       if (!ohne) { vorschlagModell = null; return; }
       const farbe = vorschlag.querySelector('input[type="radio"]:checked').value;
       vorschlagModell = ohne.modell;
       vorschlag.querySelector('[data-vorschlag-modell]').textContent = PREISE[ohne.modell].name;
-      vorschlag.querySelector('[data-vorschlag-vh]').textContent = `: Kiesel-Hülle für ${PREISE[ohne.modell].name} in ${farbe}`;
+      vorschlag.querySelector('[data-vorschlag-vh]').textContent = `: Kiesel-Hülle für ${PREISE[ohne.modell].name} in ${FARBNAME[farbe]}`;
       vorschlag.querySelector('[data-vorschlag-bild]').innerHTML = vorschau(ohne.modell, ohne.farbe, farbe) ?? '';
     }
     vorschlag.addEventListener('change', () => zeichneVorschlag(lesen()));
@@ -342,11 +343,11 @@ const p = `wk-${art}`; // Präfix für ids, damit Schublade und Seite sich nicht
       const modell = vorschlagModell;
       if (!modell) return;
       const farbe = vorschlag.querySelector('input[type="radio"]:checked').value;
-      const r = hinzufuegen({ art: 'huelle', modell, farbe });
+      const r = hinzufuegen({ art: 'case', modell, farbe });
       if (!r) return;
       // Der Vorschlag verschwindet jetzt. Fokus auf die neue Zeile, sonst fiele er auf <body>.
       liste.querySelector(`[data-id="${CSS.escape(r.id)}"] [data-name]`)?.focus();
-      sagen(`Kiesel-Hülle für ${PREISE[modell].name} in ${farbe} liegt im Warenkorb.`);
+      sagen(`Kiesel-Hülle für ${PREISE[modell].name} in ${FARBNAME[farbe]} liegt im Warenkorb.`);
     });
 
     // Knöpfe in den Zeilen: ein Zuhörer für alle (auch für Zeilen, die erst später entstehen)

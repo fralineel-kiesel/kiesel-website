@@ -10,7 +10,7 @@ import { chf } from '../../lib/format.js';
 import { pfad } from '../../lib/pfad.js';
 
 const svg = handy({
-  ansicht: 'hinten', modell: 'pro', farbe: 'Himmelblau', huelle: 'Mattweiss', drehung: -6, hoehe: null,
+  ansicht: 'hinten', modell: 'pro', farbe: 'sky-blue', huelle: 'matte-white', drehung: -6, hoehe: null,
   label: 'Kiesel 1 Pro in Himmelblau mit der Kiesel-Hülle in Mattweiss, Rückseite',
 });
 ---
@@ -23,7 +23,7 @@ const svg = handy({
     <div class="knoepfe">
       <Knopf art="sekundaer" href={pfad('zubehoer/')}>Zum Zubehör</Knopf>
       {/* Legt genau die abgebildete Hülle hinein: für den Pro, in Mattweiss */}
-      <Knopf art="primaer" data-teaser-huelle data-modell="pro" data-farbe="Mattweiss"><span data-knopftext>In den Warenkorb</span><span class="vh">: Kiesel-Hülle für Kiesel 1 Pro in Mattweiss</span></Knopf>
+      <Knopf art="primaer" data-teaser-huelle data-modell="pro" data-farbe="matte-white"><span data-knopftext>In den Warenkorb</span><span class="vh">: Kiesel-Hülle für Kiesel 1 Pro in Mattweiss</span></Knopf>
       <p class="vh" aria-live="polite" data-ansage></p>
     </div>
   </div>
