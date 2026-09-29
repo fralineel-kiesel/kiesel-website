@@ -19,7 +19,7 @@ import WarenkorbSchublade from '../components/warenkorb/WarenkorbSchublade.astro
 import KasseDialog from '../components/warenkorb/KasseDialog.astro';
 import unboundedUrl from '../assets/fonts/unbounded.woff2?url';
 import instrumentUrl from '../assets/fonts/instrument-sans.woff2?url';
-import { anker } from '../lib/pfad.js';
+import { anker, seitenKennung } from '../lib/pfad.js';
 import { texte, spracheVon } from '../i18n/index.js';
 
 const sprache = spracheVon(Astro.url);
@@ -38,6 +38,19 @@ const favicon = import.meta.env.BASE_URL + 'favicon.svg';
 // astro.config.mjs). Suchmaschinen fassen damit z.B. /kaufen/?modell=k1 und /kaufen/ zusammen.
 // Nicht bei noindex-Seiten: "nicht aufnehmen" und "das ist die offizielle Adresse" widersprechen sich.
 const kanonisch = new URL(Astro.url.pathname, Astro.site).href;
+const kennung = seitenKennung(Astro.url.pathname);
+// 404: GitHub Pages liefert für jede fehlende Adresse nur die eine (deutsche) 404.html aus.
+// Liegt die Adresse unter /en/, holt sich die Seite die englische Fassung (en/404/) und
+// tauscht sich damit aus, bevor sie sichtbar wird. Die Adresse bleibt stehen. Klappt das nicht
+// (offline), bleibt die deutsche 404 stehen.
+const ist404 = kennung === '404.html';
+const tausch404 = ist404 && sprache === 'de'
+  ? `(function(){var b=${JSON.stringify(import.meta.env.BASE_URL)},h=document.documentElement;`
+    + `if(location.pathname.indexOf(b+'en/')!==0)return;h.style.visibility='hidden';`
+    + `fetch(b+'en/404/').then(function(r){if(!r.ok)throw 0;return r.text();})`
+    + `.then(function(x){document.open();document.write(x);document.close();})`
+    + `.catch(function(){h.style.visibility='';});})();`
+  : null;
 ---
 <!doctype html>
 <html lang={t.sprache.html}>
@@ -70,6 +83,7 @@ const kanonisch = new URL(Astro.url.pathname, Astro.site).href;
         if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
       } catch (e) {}
     </script>
+    {tausch404 && <script is:inline set:html={tausch404} />}
     <slot name="kopf" />
   </head>
   <body>

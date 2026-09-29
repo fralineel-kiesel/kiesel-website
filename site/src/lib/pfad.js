@@ -80,6 +80,8 @@ export function seitenKennung(pathname) {
     const en = rest.slice(EN_PRAEFIX.length);
     return has(SEITE_DE, en) ? SEITE_DE[en] : null;
   }
+  // Die 404-Seite kennt Astro beim Bauen als …/404/ (ausgeliefert wird sie als 404.html)
+  if (rest === '404' || rest === '404/') return '404.html';
   return SEITEN.some(([de]) => de === rest) ? rest : null;
 }
 

@@ -29,7 +29,7 @@ export const SEITEN = [
   ['kaufen/', 'Kaufen', true, 'buy/'],
   ['warenkorb/', 'Warenkorb', true, 'bag/'],
   ['faq/', 'FAQ', true, 'faq/'],
-  ['404.html', '404', false, '404.html'],
+  ['404.html', '404', false, '404/'],
   ['designsystem/', 'Designsystem', false, null],
   ['designsystem/spielwiese/', 'Spielwiese', false, null],
 ];
