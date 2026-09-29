@@ -21,11 +21,13 @@ import { handy } from '../../lib/kiesel-draw/index.js';
 import { rgbFuer } from '../../data/funktionen.js';
 import { texte, spracheVon } from '../../i18n/index.js';
 
-const t = texte(spracheVon(Astro.url));
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
+
 const RGB = rgbFuer(t.rgb);
 const E = RGB.ereignisse;
 const ledAus = (k) => (E[k].color ? { color: E[k].color, o1: E[k].o1, o2: E[k].o2, mid: E[k].mid, edge: E[k].edge } : null);
-const bild = handy({ ansicht: 'hinten', modell: 'pro', farbe: 'titanium-gray', hoehe: null, drehung: -6, led: ledAus(RGB.start), label: t.rgb.bild(E[RGB.start].name) });
+const bild = handy({ texte: t.zeichnung, sprache, ansicht: 'hinten', modell: 'pro', farbe: 'titanium-gray', hoehe: null, drehung: -6, led: ledAus(RGB.start), label: t.rgb.bild(E[RGB.start].name) });
 // Für das Skript: nur was es zum Neuzeichnen braucht
 const daten = Object.fromEntries(Object.entries(E).map(([k, e]) => [k, { name: e.name, led: ledAus(k), rhythmus: e.rhythmus, stufe: e.stufe ?? '', titel: e.titel, text: e.text }]));
 ---
@@ -115,7 +117,10 @@ const daten = Object.fromEntries(Object.entries(E).map(([k, e]) => [k, { name: e
 
 <script>
   import { handy } from '../../lib/kiesel-draw/phone.js';
-  import { rgb as T } from '../../i18n/de.js';
+  import { rgb as T_DE } from '../../i18n/de.js';
+  import { rgb as T_EN } from '../../i18n/en.js';
+  import { waehle } from '../../scripts/seitensprache.js';
+  const T = waehle(T_DE, T_EN);
 
   // Leuchthof und LED im SVG markieren, damit CSS sie animieren kann
   const markiere = (svg) => {

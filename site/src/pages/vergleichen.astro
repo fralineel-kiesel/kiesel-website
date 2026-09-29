@@ -12,13 +12,15 @@ import Chip from '../components/Chip.astro';
 import { GERAETE, KIESEL_IDS } from '../data/geraete.js';
 import { vergleich, BUEHNE, GEGNER } from '../lib/vergleich.js';
 import { frontSvg, palette, uid } from '../lib/kiesel-draw/index.js';
+import { sperrbildschirm } from '../lib/kiesel-draw/sperrbildschirm.js';
 import { texte, spracheVon } from '../i18n/index.js';
 
 const sprache = spracheVon(Astro.url);
 const t = texte(sprache);
+
 const V = t.vergleich;
 const v = vergleich({ kiesel: 'k1', gegen: 'pmax', modus: 'side', T: V, G: t.geraete, sprache });
-const kiesel = KIESEL_IDS.map((id) => ({ id, svg: frontSvg(id, palette('sky-blue'), uid('v')) }));
+const kiesel = KIESEL_IDS.map((id) => ({ id, svg: frontSvg(id, palette('sky-blue'), uid('v'), null, sperrbildschirm(sprache)) }));
 const gegner = [...GEGNER, 'anderer'];
 const gegnerName = (id) => GERAETE[id === 'anderer' ? v.anderer : id].name;
 const pt = (x) => String(x);
@@ -208,7 +210,15 @@ const pt = (x) => String(x);
 <script>
   import { vergleich, BUEHNE, BUEHNE_SCHMAL } from '../lib/vergleich.js';
   import { GERAETE, KIESEL_IDS } from '../data/geraete.js';
-  import { vergleich as V } from '../i18n/de.js';
+  import { vergleich as V_DE, geraete as G_DE } from '../i18n/de.js';
+  import { vergleich as V_EN, geraete as G_EN } from '../i18n/en.js';
+  import { waehle, SPRACHE } from '../scripts/seitensprache.js';
+  import { parameter, parameterName } from '../lib/pfad.js';
+  const V = waehle(V_DE, V_EN);
+  const G = waehle(G_DE, G_EN);
+  // Namen der URL-Parameter in der Sprache der Seite (?kiesel= / ?phone=, data/seiten.js)
+  const N = (name) => parameterName(name, SPRACHE);
+  const ANDERE = SPRACHE === 'en' ? 'de' : 'en';
 
   const gueltig = (id, liste) => (liste.includes(id) ? id : null);
 
@@ -219,20 +229,22 @@ const pt = (x) => String(x);
     const svg = $('[data-svg]');
 
     // Vorwahl per Adresse (Gross/Klein egal, Unbekanntes wird ignoriert)
+    // Parameter deutsch oder englisch benannt, beides geht
     const q = new URLSearchParams(location.search);
+    const wert = (name) => parameter(q, name, SPRACHE);
     const zustand = {
-      kiesel: gueltig(q.get('kiesel')?.toLowerCase(), KIESEL_IDS) ?? 'k1',
-      gegen: gueltig(q.get('gegen')?.toLowerCase(), Object.keys(GERAETE)) ?? 'pmax',
+      kiesel: gueltig(wert('kiesel')?.toLowerCase(), KIESEL_IDS) ?? 'k1',
+      gegen: gueltig(wert('gegen')?.toLowerCase(), Object.keys(GERAETE)) ?? 'pmax',
       // Kennung 'overlay'; bis Etappe 8 hiess sie 'uebereinander' (alte Links gehen weiter)
-      modus: ['overlay', 'uebereinander'].includes(q.get('ansicht')?.toLowerCase()) ? 'over' : 'side',
-      karte: q.get('karte') === '1',
+      modus: ['overlay', 'uebereinander'].includes(wert('ansicht')?.toLowerCase()) ? 'over' : 'side',
+      karte: wert('karte') === '1',
     };
 
     const setze = (el, attr) => { for (const [k, v] of Object.entries(attr)) el.setAttribute(k, String(v)); };
     const druecke = (liste, an) => liste.forEach((c) => c.setAttribute('aria-pressed', an(c) ? 'true' : 'false'));
 
     function zeige() {
-      const v = vergleich(zustand);
+      const v = vergleich({ ...zustand, T: V, G, sprache: SPRACHE });
       zustand.gegen = v.gegen;
       // Chips
       druecke($$('[data-kiesel]'), (c) => c.dataset.kiesel === v.kiesel);
@@ -277,10 +289,12 @@ const pt = (x) => String(x);
         tr.querySelector('[data-bw]').style.width = `${z.bw}%`;
       });
       // Adresse nachführen (teilbar, Zurück-Knopf bleibt unberührt)
+      // (Namen der anderen Sprache fallen weg, die der Seitensprache werden gesetzt)
       const p = new URLSearchParams(location.search);
-      p.set('kiesel', v.kiesel); p.set('gegen', v.gegen);
-      if (v.ueber) p.set('ansicht', 'overlay'); else p.delete('ansicht');
-      if (zustand.karte) p.set('karte', '1'); else p.delete('karte');
+      for (const n of ['kiesel', 'gegen', 'ansicht', 'karte']) p.delete(parameterName(n, ANDERE));
+      p.set(N('kiesel'), v.kiesel); p.set(N('gegen'), v.gegen);
+      if (v.ueber) p.set(N('ansicht'), 'overlay'); else p.delete(N('ansicht'));
+      if (zustand.karte) p.set(N('karte'), '1'); else p.delete(N('karte'));
       history.replaceState(history.state, '', `${location.pathname}?${p}${location.hash}`);
     }
 

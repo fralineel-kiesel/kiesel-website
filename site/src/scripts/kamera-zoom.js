@@ -42,9 +42,13 @@
 // schwenkt dorthin, mit der Maus ziehen verschiebt, mit dem Finger waagrecht ziehen auch
 // (senkrecht scrollt die Seite).
 import { crop, begrenze, ZOOM_TARGETS } from '../lib/kiesel-draw/ausschnitt.js';
-import { panoramaDetails as DETAIL_NAMEN, kamera as K } from '../i18n/de.js';
+import { panoramaDetails as DETAIL_NAMEN_DE, kamera as K_DE } from '../i18n/de.js';
+import { panoramaDetails as DETAIL_NAMEN_EN, kamera as K_EN } from '../i18n/en.js';
+import { waehle } from './seitensprache.js';
 import { bildZoom, kameraZoom, rund, zahl, UNSCHAERFE, linseBei, linsenText, bildText } from '../lib/kamera.js';
 import { MAX_ZOOM, TELE_AB } from '../data/kamera.js';
+const DETAIL_NAMEN = waehle(DETAIL_NAMEN_DE, DETAIL_NAMEN_EN);
+const K = waehle(K_DE, K_EN);
 
 // Für bestehende Skripte, die die Rechnung von hier holen
 export { bildZoom, kameraZoom, rund, zahl, UNSCHAERFE };
@@ -236,8 +240,8 @@ export function starteKamera(fenster) {
     // Linsen-Leiste: der letzte Abschnitt, dessen „ab“ erreicht ist
     const aktiv = abschnitte.filter((a) => r >= Number(a.dataset.ab)).pop();
     abschnitte.forEach((a) => a.toggleAttribute('data-aktiv', a === aktiv));
-    if (linsenFeld) linsenFeld.textContent = linsenText(modell, r, linse);
-    bildtext?.setAttribute('aria-label', bildText(r, linse));
+    if (linsenFeld) linsenFeld.textContent = linsenText(modell, r, linse, K);
+    bildtext?.setAttribute('aria-label', bildText(r, linse, K));
     regler?.setAttribute('aria-valuetext', ansagetext());
     fenster.dispatchEvent(new CustomEvent('kiesel:kamera', { bubbles: true, detail: { z: r, linse } }));
   }

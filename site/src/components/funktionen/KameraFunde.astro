@@ -9,8 +9,11 @@ import { ZOOM_TARGETS } from '../../lib/kiesel-draw/ausschnitt.js';
 import { panoramaAnsicht } from '../../lib/kiesel-draw/scene.js';
 import { texte, spracheVon } from '../../i18n/index.js';
 
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
+
 const { quelle } = Astro.props;
-const D = texte(spracheVon(Astro.url)).kamera.details;
+const D = texte(sprache).kamera.details;
 ---
 <ul class="funde" aria-label={D.liste}>
   {ZOOM_TARGETS.map(([id, x, y], i) => (

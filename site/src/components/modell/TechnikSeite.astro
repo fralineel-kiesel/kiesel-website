@@ -14,19 +14,22 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import Knopf from '../Knopf.astro';
 import Schalter from '../Schalter.astro';
 import Kennzahlen from '../startseite/Kennzahlen.astro';
-import { MODELLE } from '../../data/modelle.js';
+import { modelleFuer } from '../../data/modelle.js';
 import { technikTabelle, technikKennzahlen } from '../../data/technik.js';
 import { abPreis } from '../../data/preise.js';
 import { handy, MODELS } from '../../lib/kiesel-draw/index.js';
 import { texte, spracheVon } from '../../i18n/index.js';
 import { pfad } from '../../lib/pfad.js';
 
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
+const MODELLE = modelleFuer(t, sprache);
+
 const { modell } = Astro.props;
 const anderes = modell === 'pro' ? 'k1' : 'pro';
 const reihe = [modell, anderes];
-const t = texte(spracheVon(Astro.url));
 const TS = t.technikSeite;
-const TECHNIK = technikTabelle(t.technik, t.farben);
+const TECHNIK = technikTabelle(t.technik, t.farben, t.geraete, sprache);
 const spalte = { k1: 1, pro: 2 };
 const m = MODELLE[modell];
 const o = MODELLE[anderes];
@@ -37,8 +40,8 @@ const kopf = reihe.map((id) => {
   const hoch = id === 'pro' ? 170 : 160;
   const H = MODELS[id].H;
   const rand = Math.round(hoch * 200 / H);
-  const svg = handy({ ansicht: 'vorne', modell: id, farbe: MODELLE[id].seite.farbe, hoehe: hoch + 2 * rand, boden: false, label: t.modellseite.bildVorne(MODELLE[id].name, t.farben[MODELLE[id].seite.farbe]) });
-  return { id, svg, rand, name: MODELLE[id].name, preis: abPreis(id), kaufen: pfad(`kaufen/?modell=${id}&farbe=${MODELLE[id].seite.farbe}`) };
+  const svg = handy({ texte: t.zeichnung, sprache, ansicht: 'vorne', modell: id, farbe: MODELLE[id].seite.farbe, hoehe: hoch + 2 * rand, boden: false, label: t.modellseite.bildVorne(MODELLE[id].name, t.farben[MODELLE[id].seite.farbe]) });
+  return { id, svg, rand, name: MODELLE[id].name, preis: abPreis(id, t.preise, sprache), kaufen: pfad(`kaufen/?modell=${id}&farbe=${MODELLE[id].seite.farbe}`, sprache) };
 });
 
 const gruppen = TECHNIK.map((g, i) => ({

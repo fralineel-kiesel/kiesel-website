@@ -1,23 +1,26 @@
 ---
 // Kauf-Box am Ende der Modellseite (letzter Abschnitt im Artboard „Modellseite Kiesel 1 Pro“)
 import Knopf from '../Knopf.astro';
-import { MODELLE } from '../../data/modelle.js';
+import { modelleFuer } from '../../data/modelle.js';
 import { abPreis } from '../../data/preise.js';
 import { pfad } from '../../lib/pfad.js';
 import { texte, spracheVon } from '../../i18n/index.js';
 
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
+const MODELLE = modelleFuer(t, sprache);
+
 const { modell } = Astro.props;
 const m = MODELLE[modell];
-const t = texte(spracheVon(Astro.url));
 ---
 <div class="kaufbox">
   <div class="text">
     <h2 class="t-1">{m.name}</h2>
-    <p class="t-lead t-muted">{t.modellseite.kaufbox(abPreis(modell), m.seite.speicherText)}</p>
+    <p class="t-lead t-muted">{t.modellseite.kaufbox(abPreis(modell, t.preise, sprache), m.seite.speicherText)}</p>
   </div>
   <div class="knoepfe">
-    <Knopf art="sekundaer" groesse="l" href={pfad('vergleichen/')}>{t.navigation.vergleichen}</Knopf>
-    <Knopf art="primaer" groesse="l" href={pfad(`kaufen/?modell=${modell}&farbe=${m.seite.farbe}`)}>{t.geruest.kaufen}</Knopf>
+    <Knopf art="sekundaer" groesse="l" href={pfad('vergleichen/', sprache)}>{t.navigation.vergleichen}</Knopf>
+    <Knopf art="primaer" groesse="l" href={pfad(`kaufen/?modell=${modell}&farbe=${m.seite.farbe}`, sprache)}>{t.geruest.kaufen}</Knopf>
   </div>
 </div>
 

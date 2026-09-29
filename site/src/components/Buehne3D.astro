@@ -27,15 +27,18 @@ import GlasChip from './GlasChip.astro';
 import Farbwaehler from './Farbwaehler.astro';
 import ModellUmschalter from './ModellUmschalter.astro';
 import { handy } from '../lib/kiesel-draw/phone.js';
-import { MODELLE } from '../data/modelle.js';
+import { modelleFuer } from '../data/modelle.js';
 import { KIESEL_IDS } from '../data/geraete.js';
 import { texte, spracheVon } from '../i18n/index.js';
 
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
+const MODELLE = modelleFuer(t, sprache);
+
 const { modell = 'pro', farbe = 'sky-blue', name = 'buehne-farbe' } = Astro.props;
-const t = texte(spracheVon(Astro.url));
 const B = t.buehne3d;
 const legende = (id) => B.farbeDes(MODELLE[id].name);
-const zeichne = (id) => handy({ ansicht: 'hinten', modell: id, farbe, drehung: -10, hoehe: null, label: B.bild2d(B.name(MODELLE[id].name, t.farben[farbe])) });
+const zeichne = (id) => handy({ texte: t.zeichnung, sprache, ansicht: 'hinten', modell: id, farbe, drehung: -10, hoehe: null, label: B.bild2d(B.name(MODELLE[id].name, t.farben[farbe])) });
 const bilder = KIESEL_IDS.map((id) => ({ id, svg: zeichne(id) }));
 const vbHoehe = (svg) => Number(svg.match(/viewBox="[^"]*?(\S+)"/)[1]);
 const groesste = Math.max(...bilder.map((b) => vbHoehe(b.svg)));
@@ -172,8 +175,12 @@ const namen = Object.fromEntries(KIESEL_IDS.map((id) => [id, MODELLE[id].name]))
 <script>
   import { handy } from '../lib/kiesel-draw/phone.js';
   import { grundGegen3D, TESTMODUS } from '../lib/kiesel-3d/pruefen.js';
-  import { buehne3d as B } from '../i18n/de.js';
+  import { buehne3d as B_DE } from '../i18n/de.js';
+  import { buehne3d as B_EN } from '../i18n/en.js';
+  import { waehle, SPRACHE } from '../scripts/seitensprache.js';
+  import { sperrbildschirm } from '../lib/kiesel-draw/sperrbildschirm.js';
   import { merkeStartmodell } from '../scripts/startmodell.js';
+  const B = waehle(B_DE, B_EN);
 
   const WENIGER_BEWEGUNG = matchMedia('(prefers-reduced-motion: reduce)');
 
@@ -259,7 +266,7 @@ const namen = Object.fromEntries(KIESEL_IDS.map((id) => [id, MODELLE[id].name]))
         // die erst jetzt über das Netz kommt.
         const { starte3D } = await import('../lib/kiesel-3d/buehne.js');
         const b = await starte3D({
-          ziel: flaeche, modell, farbe, beiAbbruch: auf2D, label: label3d(),
+          ziel: flaeche, modell, farbe, beiAbbruch: auf2D, label: label3d(), sperr: sperrbildschirm(SPRACHE),
           waechter: TESTMODUS !== 'foto' && TESTMODUS !== 'gerade', gerade: TESTMODUS === 'gerade',
           freiOben: () => { const u = el.querySelector('.umschalter'); return u.offsetTop + u.offsetHeight; },
         });

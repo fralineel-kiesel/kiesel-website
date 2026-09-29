@@ -14,14 +14,17 @@ import Icon from './Icon.astro';
 import Logo from './Logo.astro';
 import Knopf from './Knopf.astro';
 import MenueHandy from './MenueHandy.astro';
-import { MODELLE } from '../data/modelle.js';
+import { modelleFuer } from '../data/modelle.js';
 import { abPreis } from '../data/preise.js';
 import { HAUPTMENUE, linkName } from '../data/navigation.js';
 import { pfad, istAktiv } from '../lib/pfad.js';
 import { texte, spracheVon } from '../i18n/index.js';
 
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
+const MODELLE = modelleFuer(t, sprache);
+
 const aktuell = Astro.url.pathname;
-const t = texte(spracheVon(Astro.url));
 const weitere = HAUPTMENUE.filter((p) => !p.menue);
 ---
 <button type="button" class="burger" aria-label={t.geruest.menueOeffnen} aria-expanded="false" aria-controls="mobil-menue" data-burger>
@@ -30,7 +33,7 @@ const weitere = HAUPTMENUE.filter((p) => !p.menue);
 
 <dialog class="mobil-menue" id="mobil-menue" aria-label={t.geruest.menue} data-mobil-menue>
   <div class="kopf">
-    <a class="marke" href={pfad()} aria-label={t.geruest.zurStartseite}>
+    <a class="marke" href={pfad('', sprache)} aria-label={t.geruest.zurStartseite}>
       <Logo size={26} /><span>{t.geruest.wortmarke}</span>
     </a>
     <button type="button" class="zu" aria-label={t.geruest.menueSchliessen} data-schliessen>
@@ -45,12 +48,12 @@ const weitere = HAUPTMENUE.filter((p) => !p.menue);
         const m = MODELLE[id];
         return (
           <li>
-            <a class="modell" href={pfad(m.pfad)} aria-current={istAktiv(aktuell, m.pfad) ? 'page' : undefined}>
+            <a class="modell" href={pfad(m.pfad, sprache)} aria-current={istAktiv(aktuell, m.pfad, true, sprache) ? 'page' : undefined}>
               <span class="bild"><MenueHandy modell={id} farbe={m.farbe} hoehe={id === 'pro' ? 76 : 72} /></span>
               <span class="text">
                 <span class="name">{m.name}</span>
                 <span class="kurz">{m.kurz}</span>
-                <span class="preis">{abPreis(id)}</span>
+                <span class="preis">{abPreis(id, t.preise, sprache)}</span>
               </span>
               <Icon name="arrow" size={20} class="pfeil" />
             </a>
@@ -61,13 +64,13 @@ const weitere = HAUPTMENUE.filter((p) => !p.menue);
 
     <ul role="list" class="links">
       {weitere.map((p) => (
-        <li><a href={pfad(p.pfad)} aria-current={istAktiv(aktuell, p.pfad) ? 'page' : undefined}>{linkName(p, t)}</a></li>
+        <li><a href={pfad(p.pfad, sprache)} aria-current={istAktiv(aktuell, p.pfad, true, sprache) ? 'page' : undefined}>{linkName(p, t)}</a></li>
       ))}
-      <li><a href={pfad('warenkorb/')}>{t.geruest.warenkorb}</a></li>
+      <li><a href={pfad('warenkorb/', sprache)}>{t.geruest.warenkorb}</a></li>
     </ul>
 
     <div class="unten">
-      <Knopf href={pfad('kaufen/')} art="primaer" groesse="l" breit>{t.geruest.kaufenAb(abPreis('k1'))}</Knopf>
+      <Knopf href={pfad('kaufen/', sprache)} art="primaer" groesse="l" breit>{t.geruest.kaufenAb(abPreis('k1', t.preise, sprache))}</Knopf>
     </div>
   </nav>
 </dialog>

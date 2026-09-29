@@ -6,6 +6,11 @@
 //
 // Jede Zeichnung bekommt von handy() über uid() ein eigenes ID-Präfix für ihre Verläufe und
 // Filter. Sonst würde ein Menü-Handy die Farben eines anderen Handys auf der Seite übernehmen.
+import { zeichnung as Z_DE } from '../i18n/de.js';
+import { zeichnung as Z_EN } from '../i18n/en.js';
+import { waehle, SPRACHE } from './seitensprache.js';
+
+const ZEICHNUNG = waehle(Z_DE, Z_EN);
 let motor = null;
 const lade = () => (motor ??= import('../lib/kiesel-draw/phone.js'));
 
@@ -20,7 +25,7 @@ export async function zeichneMenueHandys(wurzel) {
   try {
     const { handy } = await lade();
     for (const el of leer) {
-      el.innerHTML = handy({ ansicht: 'vorne', modell: el.dataset.menueHandy, farbe: el.dataset.farbe, hoehe: Number(el.dataset.hoehe), boden: false });
+      el.innerHTML = handy({ texte: ZEICHNUNG, sprache: SPRACHE, ansicht: 'vorne', modell: el.dataset.menueHandy, farbe: el.dataset.farbe, hoehe: Number(el.dataset.hoehe), boden: false });
     }
   } catch {
     // Laden fehlgeschlagen (z.B. offline): Platz bleibt leer, beim nächsten Öffnen neuer Versuch

@@ -18,7 +18,11 @@
 import { PREISE, HUELLE_PREIS, VERSAND, MWST_PROZENT, MAX_ANZAHL, speicherStufe } from '../data/preise.js';
 import { farbId } from '../data/farben.js';
 import { saubereGravur } from '../lib/gravur.js';
-import { farben as FARBNAME, warenkorbArtikel as T } from '../i18n/de.js';
+import { farben as FARBNAME_DE, warenkorbArtikel as T_DE } from '../i18n/de.js';
+import { farben as FARBNAME_EN, warenkorbArtikel as T_EN } from '../i18n/en.js';
+import { waehle } from './seitensprache.js';
+const FARBNAME = waehle(FARBNAME_DE, FARBNAME_EN);
+const T = waehle(T_DE, T_EN);
 
 const SCHLUESSEL = 'kiesel-warenkorb';
 export const EREIGNIS = 'kiesel:warenkorb'; // wird ausgelöst, wenn sich der Inhalt ändert

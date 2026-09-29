@@ -27,8 +27,11 @@ import { panoramaQuelle, panoramaAnsicht } from '../../lib/kiesel-draw/index.js'
 import { bildZoom, linseBei, linsenText, bildText } from '../../lib/kamera.js';
 import { texte, spracheVon } from '../../i18n/index.js';
 
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
+
 const { modell = 'pro', start, blick, details = false, vergleich = false, chip = true, klein = false, quelle: q, bildtext } = Astro.props;
-const K = texte(spracheVon(Astro.url)).kamera;
+const K = texte(sprache).kamera;
 const eigeneQuelle = !q;
 const quelle = q ?? panoramaQuelle();
 const ansicht = () => panoramaAnsicht(quelle.id, { zoom: bildZoom(start), cx: blick[0], cy: blick[1] });

@@ -15,13 +15,17 @@
 //   normale Liste da. Erst das Skript schaltet data-scroll="an": Der Abschnitt wird viele
 //   Bildschirme hoch, die Bühne klebt, und die Scroll-Position steuert den Ablauf.
 import { innenteile, akkuText, INNEN_MASSE, INNEN_WAND, phoneOpen, f, E } from '../../lib/kiesel-draw/index.js';
-import { AKKU, SE_MAH } from '../../data/akku.js';
-import { MODELLE } from '../../data/modelle.js';
+import { akkuFuer, SE_MAH } from '../../data/akku.js';
+import { modelleFuer } from '../../data/modelle.js';
 import { GERAETE } from '../../data/geraete.js';
 import { texte, spracheVon } from '../../i18n/index.js';
 
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
+const MODELLE = modelleFuer(t, sprache);
+const AKKU = akkuFuer(t.akku);
+
 const { modell = 'k1' } = Astro.props;
-const t = texte(spracheVon(Astro.url));
 const A = t.akku.story;
 const daten = AKKU[modell];
 const name = MODELLE[modell].name;

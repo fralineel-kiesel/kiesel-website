@@ -17,13 +17,15 @@ import { chf } from '../../lib/format.js';
 import { pfad } from '../../lib/pfad.js';
 import { texte, spracheVon } from '../../i18n/index.js';
 
-const t = texte(spracheVon(Astro.url));
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
+
 const Z = t.zubehoer;
 const ZUBEHOER = zubehoerFuer(Z);
 const NAME = { k1: 'Kiesel 1', pro: 'Kiesel 1 Pro' };
 const K = ZUBEHOER.kombi;
-const kombiBild = (farbe, huelle) => handy({ ansicht: 'hinten', modell: 'pro', farbe, huelle, hoehe: null, drehung: -5, label: Z.bildKombi(t.farben[farbe], t.farben[huelle]) });
-const kaufenLink = (farbe, huelle) => pfad(`kaufen/?modell=pro&farbe=${encodeURIComponent(farbe)}&huelle=${encodeURIComponent(huelle)}`);
+const kombiBild = (farbe, huelle) => handy({ texte: t.zeichnung, sprache, ansicht: 'hinten', modell: 'pro', farbe, huelle, hoehe: null, drehung: -5, label: Z.bildKombi(t.farben[farbe], t.farben[huelle]) });
+const kaufenLink = (farbe, huelle) => pfad(`kaufen/?modell=pro&farbe=${encodeURIComponent(farbe)}&huelle=${encodeURIComponent(huelle)}`, sprache);
 ---
 <BaseLayout titel={Z.seitenTitel} beschreibung={Z.beschreibung}>
   <section class="kopf container" aria-labelledby="zubehoer-titel">
@@ -37,16 +39,16 @@ const kaufenLink = (farbe, huelle) => pfad(`kaufen/?modell=pro&farbe=${encodeURI
   <section class="container produkte" aria-label={Z.produkte} data-produkte>
     {ZUBEHOER.produkte.map((p) => (
       <article class="karte" data-modell={p.modell}>
-        <div class="bild" set:html={handy({ ansicht: 'hinten', modell: p.modell, farbe: p.handy, huelle: p.huelle, hoehe: null, drehung: -6, label: Z.bildKarte(t.farben[p.huelle], NAME[p.modell], t.farben[p.handy]) })} />
+        <div class="bild" set:html={handy({ texte: t.zeichnung, sprache, ansicht: 'hinten', modell: p.modell, farbe: p.handy, huelle: p.huelle, hoehe: null, drehung: -6, label: Z.bildKarte(t.farben[p.huelle], NAME[p.modell], t.farben[p.handy]) })} />
         <h2 class="t-3">{Z.huelle}</h2>
         <p class="t-muted fuer">{Z.fuer(NAME[p.modell])}</p>
         <div class="farben" aria-label={Z.fuenfFarben} role="img">
           {FARB_IDS.map((f) => <span style={`--farbe: ${FARBEN[f].frame}`}></span>)}
         </div>
         <div class="fuss">
-          <span class="preis">{chf(HUELLE_PREIS)}</span>
+          <span class="preis">{chf(HUELLE_PREIS, sprache)}</span>
           <div class="knoepfe">
-            <Knopf art="sekundaer" groesse="s" href={pfad(`zubehoer/huelle/?modell=${p.modell}&farbe=${p.huelle}`)}>{Z.ansehen}<span class="vh">: {Z.huelleFuer(NAME[p.modell])}</span></Knopf>
+            <Knopf art="sekundaer" groesse="s" href={pfad(`zubehoer/huelle/?modell=${p.modell}&farbe=${p.huelle}`, sprache)}>{Z.ansehen}<span class="vh">: {Z.huelleFuer(NAME[p.modell])}</span></Knopf>
             <Knopf art="primaer" groesse="s" data-kaufen data-modell={p.modell} data-farbe={p.huelle}><span data-knopftext>{t.kaufen.inWarenkorb}</span><span class="vh">: {t.warenkorb.huelleFuer(NAME[p.modell], t.farben[p.huelle])}</span></Knopf>
           </div>
         </div>
@@ -145,7 +147,11 @@ const kaufenLink = (farbe, huelle) => pfad(`kaufen/?modell=pro&farbe=${encodeURI
   import { handy } from '../../lib/kiesel-draw/phone.js';
   import { huelleKaufen } from '../../scripts/huelle-kaufen.js';
   import { pfad } from '../../lib/pfad.js';
-  import { farben as FARBNAME, zubehoer as Z } from '../../i18n/de.js';
+  import { farben as FARBNAME_DE, zubehoer as Z_DE } from '../../i18n/de.js';
+  import { farben as FARBNAME_EN, zubehoer as Z_EN } from '../../i18n/en.js';
+  import { waehle, SPRACHE } from '../../scripts/seitensprache.js';
+  const FARBNAME = waehle(FARBNAME_DE, FARBNAME_EN);
+  const Z = waehle(Z_DE, Z_EN);
 
   const ansage = document.querySelector('[data-ansage]');
 
@@ -172,7 +178,7 @@ const kaufenLink = (farbe, huelle) => pfad(`kaufen/?modell=pro&farbe=${encodeURI
       else if (e.target.name === 'kombi-huelle') wahl.huelle = e.target.value;
       else return;
       ort.innerHTML = handy({ ansicht: 'hinten', modell: 'pro', farbe: wahl.handy, huelle: wahl.huelle, hoehe: null, drehung: -5, label: Z.bildKombi(FARBNAME[wahl.handy], FARBNAME[wahl.huelle]) });
-      link.href = pfad(`kaufen/?modell=pro&farbe=${encodeURIComponent(wahl.handy)}&huelle=${encodeURIComponent(wahl.huelle)}`);
+      link.href = pfad(`kaufen/?modell=pro&farbe=${encodeURIComponent(wahl.handy)}&huelle=${encodeURIComponent(wahl.huelle)}`, SPRACHE);
     });
   });
 </script>

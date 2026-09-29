@@ -15,13 +15,17 @@ import GlasChip from '../GlasChip.astro';
 import ZoomBild from './ZoomBild.astro';
 import ZoomSkala from './ZoomSkala.astro';
 import LinsenLeiste from './LinsenLeiste.astro';
-import { STUFEN, LINSEN, TELE_AB, MAX_ZOOM } from '../../data/kamera.js';
+import { stufenFuer, linsenFuer, TELE_AB, MAX_ZOOM } from '../../data/kamera.js';
 import { vergleichTexte } from '../../lib/kamera.js';
 import { texte, spracheVon } from '../../i18n/index.js';
 
+const sprache = spracheVon(Astro.url);
+const K = texte(sprache).kamera;
+const STUFEN = stufenFuer(K);
+const LINSEN = linsenFuer(K);
+
 // Anfangs 5x wie im Artboard: crop(756, 246, 5)
 const START = 5;
-const K = texte(spracheVon(Astro.url)).kamera;
 const t = vergleichTexte(START, undefined, false, K);
 ---
 <div class="zoom-vergleich" data-kamera data-zoom-vergleich data-linse="tele">
@@ -148,7 +152,10 @@ const t = vergleichTexte(START, undefined, false, K);
 <script>
   import { vergleichTexte } from '../../lib/kamera.js';
   import { prozent } from '../../lib/format.js';
-  import { kamera as K } from '../../i18n/de.js';
+  import { kamera as K_DE } from '../../i18n/de.js';
+  import { kamera as K_EN } from '../../i18n/en.js';
+  import { waehle, SPRACHE } from '../../scripts/seitensprache.js';
+  const K = waehle(K_DE, K_EN);
 
   document.querySelectorAll('[data-zoom-vergleich]').forEach((wurzel) => {
     const fenster = wurzel.querySelector('[data-fenster]');
@@ -159,7 +166,7 @@ const t = vergleichTexte(START, undefined, false, K);
 
     // Der Kamera-Motor meldet jede neue Zoomstufe; die Texte kommen aus derselben Quelle wie überall
     const beschrifte = ({ z, linse }) => {
-      const t = vergleichTexte(z, linse, fenster.hasAttribute('data-allein'));
+      const t = vergleichTexte(z, linse, fenster.hasAttribute('data-allein'), K);
       for (const m of ['k1', 'pro']) {
         text[m].textContent = t.lang[m];
         kurz[m].textContent = t.kurz[m];
@@ -174,7 +181,7 @@ const t = vergleichTexte(START, undefined, false, K);
       regler.value = String(v);
       fenster.style.setProperty('--pos', `${v}%`);
       fenster.style.setProperty('--anteil', String(v / 100));
-      regler.setAttribute('aria-valuetext', v === 50 ? K.vergleich.mitte : K.vergleich.anteil(prozent(v), prozent(100 - v)));
+      regler.setAttribute('aria-valuetext', v === 50 ? K.vergleich.mitte : K.vergleich.anteil(prozent(v, SPRACHE), prozent(100 - v, SPRACHE)));
     }
     regler.addEventListener('input', () => setze(+regler.value));
     const ausX = (x) => {

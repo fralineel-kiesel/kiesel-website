@@ -23,11 +23,13 @@ import { GRAVUR_MAX } from '../lib/gravur.js';
 import { chf } from '../lib/format.js';
 import { texte, spracheVon } from '../i18n/index.js';
 
-const t = texte(spracheVon(Astro.url));
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
+
 const K = t.kaufen;
 const START = { modell: 'pro', farbe: 'sky-blue', speicher: '512gb', huelleFarbe: 'matte-white' };
 const startPreis = PREISE[START.modell].speicher.find((s) => s.id === START.speicher);
-const svg = handy({ ansicht: 'hinten', modell: START.modell, farbe: START.farbe, hoehe: null, label: K.bild({ name: PREISE[START.modell].name, farbe: t.farben[START.farbe] }) });
+const svg = handy({ texte: t.zeichnung, sprache, ansicht: 'hinten', modell: START.modell, farbe: START.farbe, hoehe: null, label: K.bild({ name: PREISE[START.modell].name, farbe: t.farben[START.farbe] }) });
 ---
 <BaseLayout titel={K.seitenTitel} beschreibung={K.beschreibung}>
   <div class="container kaufen" data-kaufen data-start={JSON.stringify(START)}>
@@ -50,7 +52,7 @@ const svg = handy({ ansicht: 'hinten', modell: START.modell, farbe: START.farbe,
                 <input class="vh" type="radio" name="modell" value={id} checked={id === START.modell} />
                 <span class="karte-name">{PREISE[id].name}</span>
                 <span class="karte-sub">{t.preise.unterzeile[id]}</span>
-                <span class="karte-preis">{abPreis(id)}</span>
+                <span class="karte-preis">{abPreis(id, t.preise, sprache)}</span>
               </label>
             ))}
           </div>
@@ -67,7 +69,7 @@ const svg = handy({ ansicht: 'hinten', modell: START.modell, farbe: START.farbe,
               <label class="karte karte--klein">
                 <input class="vh" type="radio" name="speicher" value={s.id} checked={s.id === START.speicher} />
                 <span class="karte-name" data-name>{s.name}</span>
-                <span class="karte-sub" data-preis>{chf(s.preis)}</span>
+                <span class="karte-sub" data-preis>{chf(s.preis, sprache)}</span>
               </label>
             ))}
           </div>
@@ -83,7 +85,7 @@ const svg = handy({ ansicht: 'hinten', modell: START.modell, farbe: START.farbe,
 
         <div class="block">
           <h2 class="block-titel">{K.huelle}</h2>
-          <Schalter data-huelle-schalter>{K.huelleDazu(chf(HUELLE_PREIS))}</Schalter>
+          <Schalter data-huelle-schalter>{K.huelleDazu(chf(HUELLE_PREIS, sprache))}</Schalter>
           <div class="huelle-farben" data-huelle-farben hidden>
             <Farbwaehler name="huelle-farbe" wert={START.huelleFarbe} legende={K.huellenFarbe} groesse={30} class="huelle-waehler" />
           </div>
@@ -102,7 +104,7 @@ const svg = handy({ ansicht: 'hinten', modell: START.modell, farbe: START.farbe,
         <div class="abschluss">
           <div class="summe" aria-live="polite" aria-atomic="true">
             <span class="zusammenfassung" data-zusammenfassung>{PREISE[START.modell].name}, {t.farben[START.farbe]}, {startPreis.name}</span>
-            <span class="total" data-total>{chf(startPreis.preis)}</span>
+            <span class="total" data-total>{chf(startPreis.preis, sprache)}</span>
           </div>
           <Knopf type="submit" art="primaer" groesse="l" data-in-warenkorb>{K.inWarenkorb}</Knopf>
         </div>
@@ -223,10 +225,16 @@ const svg = handy({ ansicht: 'hinten', modell: START.modell, farbe: START.farbe,
   import { handy } from '../lib/kiesel-draw/phone.js';
   import { PREISE, HUELLE_PREIS, MAX_ANZAHL, speicherStufe } from '../data/preise.js';
   import { farbId } from '../data/farben.js';
-  import { farben as FARBNAME, kaufen as K } from '../i18n/de.js';
+  import { farben as FARBNAME_DE, kaufen as K_DE, gravur as G_DE } from '../i18n/de.js';
+  import { farben as FARBNAME_EN, kaufen as K_EN, gravur as G_EN } from '../i18n/en.js';
+  import { waehle, SPRACHE } from '../scripts/seitensprache.js';
+  import { parameter, parameterName, suche } from '../lib/pfad.js';
   import { pruefeGravur, saubereGravur, GRAVUR_MAX } from '../lib/gravur.js';
   import { hinzufuegen } from '../scripts/warenkorb.js';
   import { chf } from '../lib/format.js';
+  const FARBNAME = waehle(FARBNAME_DE, FARBNAME_EN);
+  const K = waehle(K_DE, K_EN);
+  const G = waehle(G_DE, G_EN);
 
   // „2 TB“, „2tb“, „512“ → '2tb', '512gb'
   const speicherNormal = (s) => {
@@ -253,11 +261,13 @@ const svg = handy({ ansicht: 'hinten', modell: START.modell, farbe: START.farbe,
     const z = { ...START, wunsch: START.speicher, huelle: false, gravur: '' };
 
     // ------------------------------------------------------------ Adresse lesen
+    // Namen der Parameter deutsch oder englisch (?modell= / ?model=), siehe PARAMETER in data/seiten.js
     const q = new URLSearchParams(location.search);
-    if (PREISE[q.get('modell')]) z.modell = q.get('modell');
-    if (farbId(q.get('farbe'))) z.farbe = farbId(q.get('farbe'));
-    if (q.has('speicher') && speicherStufe(z.modell, speicherNormal(q.get('speicher')))) z.speicher = z.wunsch = speicherNormal(q.get('speicher'));
-    if (farbId(q.get('huelle'))) { z.huelle = true; z.huelleFarbe = farbId(q.get('huelle')); }
+    const wert = (name) => parameter(q, name, SPRACHE);
+    if (PREISE[wert('modell')]) z.modell = wert('modell');
+    if (farbId(wert('farbe'))) z.farbe = farbId(wert('farbe'));
+    if (wert('speicher') !== null && speicherStufe(z.modell, speicherNormal(wert('speicher')))) z.speicher = z.wunsch = speicherNormal(wert('speicher'));
+    if (farbId(wert('huelle'))) { z.huelle = true; z.huelleFarbe = farbId(wert('huelle')); }
 
     // ------------------------------------------------------------ Speicher
     const stufen = () => PREISE[z.modell].speicher;
@@ -277,7 +287,7 @@ const svg = handy({ ansicht: 'hinten', modell: START.modell, farbe: START.farbe,
         radio.value = s.id;
         radio.checked = s.id === z.speicher;
         karte.querySelector('[data-name]').textContent = s.name;
-        karte.querySelector('[data-preis]').textContent = chf(s.preis);
+        karte.querySelector('[data-preis]').textContent = chf(s.preis, SPRACHE);
         return karte;
       });
       speicherListe.replaceChildren(...karten);
@@ -287,7 +297,7 @@ const svg = handy({ ansicht: 'hinten', modell: START.modell, farbe: START.farbe,
 
     // ------------------------------------------------------------ Gravur
     function pruefeFeld() {
-      const { laenge, fehler: meldung } = pruefeGravur(feld.value);
+      const { laenge, fehler: meldung } = pruefeGravur(feld.value, G);
       zaehler.textContent = K.zeichen(laenge, GRAVUR_MAX);
       if (fehler.textContent !== (meldung ?? '')) fehler.textContent = meldung ?? '';
       feld.setAttribute('aria-invalid', meldung ? 'true' : 'false');
@@ -317,12 +327,12 @@ const svg = handy({ ansicht: 'hinten', modell: START.modell, farbe: START.farbe,
         });
       }
       wurzel.querySelector('[data-zusammenfassung]').textContent = zusammenfassung();
-      wurzel.querySelector('[data-total]').textContent = chf(preis());
+      wurzel.querySelector('[data-total]').textContent = chf(preis(), SPRACHE);
       schalter.setAttribute('aria-checked', z.huelle ? 'true' : 'false');
       huelleFarben.hidden = !z.huelle;
       // Adresse nachführen (ohne neuen Verlaufseintrag), damit Neuladen und Teilen die Wahl behalten
-      const p = new URLSearchParams({ modell: z.modell, farbe: z.farbe, speicher: z.speicher });
-      if (z.huelle) p.set('huelle', z.huelleFarbe);
+      const p = suche({ modell: z.modell, farbe: z.farbe, speicher: z.speicher }, SPRACHE);
+      if (z.huelle) p.set(parameterName('huelle', SPRACHE), z.huelleFarbe);
       history.replaceState(history.state, '', `${location.pathname}?${p}${location.hash}`);
     }
 

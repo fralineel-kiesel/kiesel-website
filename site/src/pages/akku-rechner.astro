@@ -17,6 +17,7 @@ import { texte, spracheVon } from '../i18n/index.js';
 
 const sprache = spracheVon(Astro.url);
 const t = texte(sprache);
+
 const A = t.akkuRechner;
 const erg = rechne(RECHNER.tage[RECHNER.vorgabe], A, sprache);
 const bild = diagramm(erg, 620, sprache);
@@ -172,7 +173,10 @@ const ERKLAERUNG = rechnerTexte(t.akku, sprache);
   import { rechne, diagramm, stunden, geschuetzt } from '../lib/akku-rechner.js';
   import { RECHNER } from '../data/akku.js';
   import { zahl } from '../lib/format.js';
-  import { akkuRechner as A } from '../i18n/de.js';
+  import { akkuRechner as A_DE } from '../i18n/de.js';
+  import { akkuRechner as A_EN } from '../i18n/en.js';
+  import { waehle, SPRACHE } from '../scripts/seitensprache.js';
+  const A = waehle(A_DE, A_EN);
 
   document.querySelectorAll('[data-akku-rechner]').forEach((wurzel) => {
     const $ = (s) => wurzel.querySelector(s);
@@ -188,8 +192,8 @@ const ERKLAERUNG = rechnerTexte(t.akku, sprache);
       for (const r of regler) {
         const x = erg.werte[r.dataset.regler];
         if (parseFloat(r.value) !== x) r.value = String(x);
-        r.setAttribute('aria-valuetext', A.stundenVorlesen(zahl(x, 1)));
-        $(`[data-aus="${r.dataset.regler}"]`).textContent = stunden(x);
+        r.setAttribute('aria-valuetext', A.stundenVorlesen(zahl(x, 1, SPRACHE)));
+        $(`[data-aus="${r.dataset.regler}"]`).textContent = stunden(x, SPRACHE);
       }
       wurzel.querySelectorAll('[data-tag]').forEach((c) => c.setAttribute('aria-pressed', c.dataset.tag === erg.tag ? 'true' : 'false'));
       const fehler = $('[data-fehler]');
@@ -212,7 +216,7 @@ const ERKLAERUNG = rechnerTexte(t.akku, sprache);
 
     // Diagramm: Desktop 620 Einheiten breit (wie im Artboard), Handy 360, damit die Schrift lesbar bleibt
     function zeichne() {
-      const bild = diagramm(letzte, schmal.matches ? 360 : 620);
+      const bild = diagramm(letzte, schmal.matches ? 360 : 620, SPRACHE);
       svg.setAttribute('viewBox', bild.viewBox);
       svg.innerHTML = bild.inhalt;
       svg.setAttribute('aria-label', letzte.label);
@@ -220,7 +224,7 @@ const ERKLAERUNG = rechnerTexte(t.akku, sprache);
     schmal.addEventListener('change', zeichne);
 
     // input: schon beim Ziehen und bei jedem Tastendruck neu rechnen
-    wurzel.addEventListener('input', (e) => { if (e.target.matches('[data-regler]')) zeige(rechne(werte())); });
+    wurzel.addEventListener('input', (e) => { if (e.target.matches('[data-regler]')) zeige(rechne(werte(), A, SPRACHE)); });
     // Bild auf/ab: Chrome macht dort nur einen Schritt (0.5 h). Empfohlen sind grössere
     // Sprünge, hier eine ganze Stunde.
     wurzel.addEventListener('keydown', (e) => {
@@ -228,14 +232,14 @@ const ERKLAERUNG = rechnerTexte(t.akku, sprache);
       e.preventDefault();
       const r = e.target;
       r.value = String(Math.min(parseFloat(r.max), Math.max(0, parseFloat(r.value) + (e.key === 'PageUp' ? 1 : -1))));
-      zeige(rechne(werte()));
+      zeige(rechne(werte(), A, SPRACHE));
     });
     wurzel.addEventListener('click', (e) => {
       const chip = e.target.closest('[data-tag]');
-      if (chip) zeige(rechne(RECHNER.tage[chip.dataset.tag]));
+      if (chip) zeige(rechne(RECHNER.tage[chip.dataset.tag], A, SPRACHE));
     });
 
     // Zurück-Knopf (bfcache) oder Formular-Wiederherstellung: Regler können andere Werte haben
-    zeige(rechne(werte()));
+    zeige(rechne(werte(), A, SPRACHE));
   });
 </script>

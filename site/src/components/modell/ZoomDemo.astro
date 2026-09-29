@@ -6,10 +6,14 @@
 import ZoomBild from './ZoomBild.astro';
 import ZoomSkala from './ZoomSkala.astro';
 import LinsenLeiste from './LinsenLeiste.astro';
-import { STUFEN, LINSEN, MAX_ZOOM } from '../../data/kamera.js';
+import { stufenFuer, linsenFuer, MAX_ZOOM } from '../../data/kamera.js';
 import { texte, spracheVon } from '../../i18n/index.js';
 
-const t = texte(spracheVon(Astro.url));
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
+const STUFEN = stufenFuer(t.kamera);
+const LINSEN = linsenFuer(t.kamera);
+
 ---
 <div class="zoom-demo" data-kamera data-zoom-demo>
   <ZoomBild modell="k1" start={1} blick={[756, 246]} />

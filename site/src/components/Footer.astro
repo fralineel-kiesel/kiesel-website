@@ -13,7 +13,8 @@ import { FOOTER_SPALTEN, linkName } from '../data/navigation.js';
 import { pfad } from '../lib/pfad.js';
 import { texte, spracheVon } from '../i18n/index.js';
 
-const t = texte(spracheVon(Astro.url));
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
 ---
 <footer class="footer">
   <div class="container">
@@ -35,7 +36,7 @@ const t = texte(spracheVon(Astro.url));
             </button>
           </h2>
           <ul role="list" id={`footer-${i}`}>
-            {s.links.map((l) => <li><a href={pfad(l.pfad)}>{linkName(l, t)}</a></li>)}
+            {s.links.map((l) => <li><a href={pfad(l.pfad, sprache)}>{linkName(l, t)}</a></li>)}
           </ul>
         </div>
       ))}

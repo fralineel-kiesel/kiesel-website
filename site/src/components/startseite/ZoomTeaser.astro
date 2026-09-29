@@ -12,14 +12,15 @@ import ZoomBild from '../modell/ZoomBild.astro';
 import { pfad } from '../../lib/pfad.js';
 import { texte, spracheVon } from '../../i18n/index.js';
 
-const Z = texte(spracheVon(Astro.url)).startseite.zoom;
+const sprache = spracheVon(Astro.url);
+const Z = texte(sprache).startseite.zoom;
 ---
 <div class="zoom" data-kamera data-zoom-teaser>
   <div class="text">
     <h2 class="t-1">{Z.titel}</h2>
     <p class="t-lead t-muted lang">{Z.text}</p>
     <p class="t-lead t-muted kurz">{Z.textKurz}</p>
-    <div><Knopf art="text" icon="arrow" href={pfad('funktionen/#kamera')}>{Z.knopf}</Knopf></div>
+    <div><Knopf art="text" icon="arrow" href={pfad('funktionen/#kamera', sprache)}>{Z.knopf}</Knopf></div>
   </div>
   <ZoomBild modell="pro" start={3} blick={[756, 232]} klein>
     <div class="leiste"><ZoomLeiste aktiv="3" label={Z.leiste} /></div>

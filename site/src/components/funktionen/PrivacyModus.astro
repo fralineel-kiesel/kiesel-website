@@ -12,8 +12,10 @@ import { privacyFuer, RGB } from '../../data/funktionen.js';
 import { privacyZustand } from '../../lib/privacy.js';
 import { texte, spracheVon } from '../../i18n/index.js';
 
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
+
 const ORANGE = RGB.ereignisse.privacy.color;
-const t = texte(spracheVon(Astro.url));
 const PRIVACY = privacyFuer(t.privacy);
 const z = privacyZustand(0, false, t.privacy);
 
@@ -242,10 +244,13 @@ function schema(art) {
 
 <script>
   import { privacyZustand, waehleStufe, schalteNotruf } from '../../lib/privacy.js';
-  import { PRIVACY } from '../../data/funktionen.js';
+  import { privacy as PRIVACY_DE } from '../../i18n/de.js';
+  import { privacy as PRIVACY_EN } from '../../i18n/en.js';
+  import { waehle } from '../../scripts/seitensprache.js';
+  const PRIVACY = waehle(PRIVACY_DE, PRIVACY_EN);
 
   document.querySelectorAll('[data-privacy-modus]').forEach((wurzel) => {
-    let z = privacyZustand(0, false);
+    let z = privacyZustand(0, false, PRIVACY);
     const $ = (sel) => wurzel.querySelector(sel);
     const $$ = (sel) => wurzel.querySelectorAll(sel);
     const liste = (ul, eintraege) => {
@@ -290,13 +295,13 @@ function schema(art) {
 
     $$('[data-stufe-knopf]').forEach((k) => k.addEventListener('click', () => {
       const vorher = z;
-      z = waehleStufe(z, Number(k.dataset.stufeKnopf));
+      z = waehleStufe(z, Number(k.dataset.stufeKnopf), PRIVACY);
       if (z.stufe === vorher.stufe) return;
       zeige(PRIVACY.ansage(z.name, z.text));
     }));
     $('[data-notruf-knopf]').addEventListener('click', () => {
       if (z.stufe === 0) return; // aria-disabled: bleibt fokussierbar, tut aber nichts
-      z = schalteNotruf(z);
+      z = schalteNotruf(z, PRIVACY);
       zeige(z.notrufText);
     });
     zeige();

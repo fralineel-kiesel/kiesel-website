@@ -19,9 +19,11 @@ import WarenkorbSchublade from '../components/warenkorb/WarenkorbSchublade.astro
 import KasseDialog from '../components/warenkorb/KasseDialog.astro';
 import unboundedUrl from '../assets/fonts/unbounded.woff2?url';
 import instrumentUrl from '../assets/fonts/instrument-sans.woff2?url';
+import { anker } from '../lib/pfad.js';
 import { texte, spracheVon } from '../i18n/index.js';
 
-const t = texte(spracheVon(Astro.url));
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
 const {
   titel,
   beschreibung = t.meta.beschreibung,
@@ -71,10 +73,10 @@ const kanonisch = new URL(Astro.url.pathname, Astro.site).href;
     <slot name="kopf" />
   </head>
   <body>
-    <a class="skip" href="#inhalt">{t.geruest.zumInhalt}</a>
+    <a class="skip" href={`#${anker('inhalt', sprache)}`}>{t.geruest.zumInhalt}</a>
     <Header klebt={!unterleiste} schublade={schublade} />
     {unterleiste && <Unterleiste modell={unterleiste} />}
-    <main id="inhalt" tabindex="-1">
+    <main id={anker('inhalt', sprache)} tabindex="-1">
       <slot />
     </main>
     <Footer />

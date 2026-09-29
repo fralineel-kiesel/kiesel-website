@@ -9,7 +9,8 @@ import { pfad } from '../lib/pfad.js';
 import { texte, spracheVon } from '../i18n/index.js';
 
 const { schublade = true } = Astro.props;
-const t = texte(spracheVon(Astro.url));
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
 ---
 {schublade
   ? (
@@ -18,7 +19,7 @@ const t = texte(spracheVon(Astro.url));
       <span class="zahl" data-warenkorb-zahl hidden>0</span>
     </button>
   ) : (
-    <a class="warenkorb-knopf" href={pfad('warenkorb/')} aria-label={t.warenkorbKnopf.leer} aria-current="page" data-warenkorb-knopf>
+    <a class="warenkorb-knopf" href={pfad('warenkorb/', sprache)} aria-label={t.warenkorbKnopf.leer} aria-current="page" data-warenkorb-knopf>
       <Icon name="bag" size={20} class="tasche" />
       <span class="zahl" data-warenkorb-zahl hidden>0</span>
     </a>
@@ -80,7 +81,10 @@ const t = texte(spracheVon(Astro.url));
 
 <script>
   import { anzahl, beiAenderung } from '../scripts/warenkorb.js';
-  import { warenkorbKnopf as T } from '../i18n/de.js';
+  import { warenkorbKnopf as T_DE } from '../i18n/de.js';
+  import { warenkorbKnopf as T_EN } from '../i18n/en.js';
+  import { waehle } from '../scripts/seitensprache.js';
+  const T = waehle(T_DE, T_EN);
 
   function zeigen() {
     const n = anzahl();

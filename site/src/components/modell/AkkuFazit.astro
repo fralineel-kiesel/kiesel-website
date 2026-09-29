@@ -3,15 +3,19 @@
 // Nummern im Innenleben (Artboard „Modellseite Kiesel 1 Pro“, rechte Hälfte des Akku-Abschnitts).
 //   modell: 'k1' | 'pro'
 import { phoneOpen } from '../../lib/kiesel-draw/index.js';
-import { AKKU } from '../../data/akku.js';
-import { MODELLE } from '../../data/modelle.js';
+import { akkuFuer } from '../../data/akku.js';
+import { modelleFuer } from '../../data/modelle.js';
 import Knopf from '../Knopf.astro';
 import { pfad } from '../../lib/pfad.js';
 import { zahl } from '../../lib/format.js';
 import { texte, spracheVon } from '../../i18n/index.js';
 
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
+const MODELLE = modelleFuer(t, sprache);
+const AKKU = akkuFuer(t.akku);
+
 const { modell } = Astro.props;
-const t = texte(spracheVon(Astro.url));
 const S = t.modellseite;
 const daten = AKKU[modell];
 const [, legende] = phoneOpen(modell, 0, 0, 1, t.zeichnung);
@@ -27,13 +31,13 @@ const max = Math.max(...daten.balken.map(([, w]) => w));
         return (
           <li class:list={{ kiesel }}>
             <span class="name">{name}</span>
-            <span class="wert t-muted">{S.mah(kiesel ? t.geraete.ca : '', zahl(wert))}</span>
+            <span class="wert t-muted">{S.mah(kiesel ? t.geraete.ca : '', zahl(wert, undefined, sprache))}</span>
             <span class="spur" aria-hidden="true"><span style={`width: ${(wert / max * 100).toFixed(1)}%`}></span></span>
           </li>
         );
       })}
     </ul>
-    <Knopf art="text" icon="arrow" href={pfad('akku-rechner/')}>{S.rechnen}</Knopf>
+    <Knopf art="text" icon="arrow" href={pfad('akku-rechner/', sprache)}>{S.rechnen}</Knopf>
   </div>
   <div class="legende">
     <h3 class="t-4">{S.wasSteckt(MODELLE[modell].name)}</h3>

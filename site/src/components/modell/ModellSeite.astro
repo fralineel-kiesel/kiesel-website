@@ -14,17 +14,21 @@ import AkkuFazit from './AkkuFazit.astro';
 import FarbReihe from './FarbReihe.astro';
 import Eckdaten from './Eckdaten.astro';
 import KaufBox from './KaufBox.astro';
-import { MODELLE } from '../../data/modelle.js';
+import { modelleFuer } from '../../data/modelle.js';
 import { akku } from '../../data/geraete.js';
 import { WERTE } from '../../data/technik.js';
+import { anker } from '../../lib/pfad.js';
 import { texte, spracheVon } from '../../i18n/index.js';
+
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
+const MODELLE = modelleFuer(t, sprache);
 
 const W = WERTE;
 
 const { modell } = Astro.props;
 const m = MODELLE[modell];
 const pro = modell === 'pro';
-const t = texte(spracheVon(Astro.url));
 const S = t.modellseite;
 const beschreibung = pro ? S.beschreibung.pro(W.tele, akku('pro', t.geraete)) : S.beschreibung.k1(akku('k1', t.geraete));
 ---
@@ -35,7 +39,7 @@ const beschreibung = pro ? S.beschreibung.pro(W.tele, akku('pro', t.geraete)) : 
     <Kennzahlen zahlen={m.seite.kennzahlen} />
   </section>
 
-  <section class="abschnitt container" id="kamera" aria-labelledby="kamera-titel">
+  <section class="abschnitt container" id={anker('kamera', sprache)} aria-labelledby="kamera-titel">
     {pro ? (
       <>
         <h2 class="t-1" id="kamera-titel">{S.kamera.pro.titel(W.tele)}</h2>
@@ -61,7 +65,7 @@ const beschreibung = pro ? S.beschreibung.pro(W.tele, akku('pro', t.geraete)) : 
     </div>
   </section>
 
-  <div class="abschnitt" id="akku">
+  <div class="abschnitt" id={anker('akku', sprache)}>
     <AkkuStory modell={modell} />
   </div>
 
@@ -69,7 +73,7 @@ const beschreibung = pro ? S.beschreibung.pro(W.tele, akku('pro', t.geraete)) : 
     <AkkuFazit modell={modell} />
   </section>
 
-  <section class="abschnitt container" id="farben" aria-labelledby="farben-titel">
+  <section class="abschnitt container" id={anker('farben', sprache)} aria-labelledby="farben-titel">
     <h2 class="t-1" id="farben-titel">{S.farbenTitel}</h2>
     <div class="farben"><FarbReihe modell={modell} /></div>
   </section>
