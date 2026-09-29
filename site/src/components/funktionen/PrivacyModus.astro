@@ -1,105 +1,301 @@
 ---
-// Privacy-Modus auf /funktionen/ (Artboard „Funktionen“, Abschnitt privacy): links das
-// Schaltbild (640 × 380, Masse aus gen3.py), rechts Text, Schalter und die zwei Listen.
-// Ein Schalter trennt alle drei (so im Artboard): Die Hebel klappen um 32° auf, die Leitungen
-// dahinter werden grau gestrichelt, „verbunden“ wird „getrennt“, der Punkt auf der Platine
-// leuchtet orange wie die LED im Privacy-Modus. Farben über die Tokens, also in beiden Themen.
-import Schalter from '../Schalter.astro';
+// Privacy-Modus in zwei Stufen auf /funktionen/ (Artboard „Privacy-Modus in zwei Stufen“,
+// design/generator/gen5.py). Links das Schema: sechs Bauteile in zwei Gruppen hängen über je
+// einen Schalter an der Platine. Rechts Stufenwahl, Halte-Leiste, die zwei Listen und der
+// Notruf-Kasten. Welche Schalter offen sind, rechnet src/lib/privacy.js (= priv_js).
+//
+// Das Schema gibt es zweimal: „breit“ = Artboard (760 × 580), „hoch“ fürs Handy (430 × 820),
+// sonst wäre die Schrift bei 350 px Breite nur 7 px gross. Das Skript führt beide nach.
+// Zustände stehen als data-Attribute im SVG (data-zustand, data-aus, data-led auf der Wurzel),
+// die Farben setzt das CSS, also in beiden Themen.
 import { PRIVACY, RGB } from '../../data/funktionen.js';
+import { privacyZustand } from '../../lib/privacy.js';
 
 const ORANGE = RGB.ereignisse.privacy.color;
+const z = privacyZustand(0, false);
+
+const YS = [92, 164, 236, 380, 452, 524];
 const text = (x, y, inhalt, klasse, extra = '') => `<text x="${x}" y="${y}" class="${klasse}" ${extra}>${inhalt}</text>`;
-let zeilen = '';
-PRIVACY.teile.forEach((name, i) => {
-  const y = [80, 190, 300][i];
-  zeilen += `<rect x="20" y="${y - 34}" width="150" height="68" rx="14" class="kasten"/>`
-    + text(95, y - 4, name, 'name')
-    + text(95, y + 17, PRIVACY.status[0], 'status', 'data-status')
-    + `<path d="M170 ${y} H222" class="zuleitung"/>`
-    + `<circle cx="228" cy="${y}" r="6" class="kontakt"/>`
-    + `<line x1="228" y1="${y}" x2="282" y2="${y}" class="hebel" style="transform-origin: 228px ${y}px"/>`
-    + `<circle cx="288" cy="${y}" r="6" class="kontakt"/>`
-    + `<path d="M294 ${y} H340 C380 ${y} 390 190 440 190" class="leitung"/>`;
-});
-const schema = `<svg viewBox="0 0 640 380" role="img" aria-label="Schema: Kamera, Mikrofon und GPS hängen über je einen Schalter an der Platine. Alle verbunden." data-privacy-schema>`
-  + zeilen
-  + '<rect x="440" y="120" width="170" height="140" rx="16" class="kasten"/>'
-  + text(525, 178, 'Platine', 'name')
-  + text(525, 200, PRIVACY.platine[0], 'status', 'data-platine')
-  + `<circle cx="525" cy="232" r="9" class="anzeige"/>`
-  + '</svg>';
+
+function schema(art) {
+  const breit = art === 'breit';
+  // breit: Masse aus gen5.py. hoch: Kästen schmaler, Leitungen laufen als Bus nach unten
+  const K = breit ? { w: 210, nx: 40, sx: 288, px: 180 } : { w: 180, nx: 36, sx: 242, px: 150 };
+  const P = breit ? { x: 560, y: 230, w: 180, h: 200 } : { x: 110, y: 600, w: 300, h: 200 };
+  const mx = P.x + P.w / 2;
+  let g = '';
+  PRIVACY.gruppen.forEach((titel, i) => {
+    const y = [40, 328][i];
+    g += `<g data-gruppe="${i + 1}" data-aus="false">`
+      + text(20, y, titel, 'gruppe')
+      + `<rect x="${K.px}" y="${y - 16}" width="50" height="22" rx="11" class="plakette"/>`
+      + text(K.px + 25, y - 1, PRIVACY.plakette[0], 'plakette-text', 'data-plakette')
+      + '</g>';
+  });
+  z.teile.forEach((t, i) => {
+    const y = YS[i];
+    const x1 = 20 + K.w, a = K.sx, b = K.sx + 60;
+    // Leitung vom zweiten Kontakt zur Platine
+    const bx = 400 - i * 14; // hoch: oberste Zeile ganz rechts, so kreuzt sich nichts
+    const leitung = breit
+      ? `M${b + 6} ${y} H430 C500 ${y} 500 ${P.y + P.h / 2} ${P.x} ${P.y + P.h / 2}`
+      : `M${b + 6} ${y} H${bx - 10} Q${bx} ${y} ${bx} ${y + 10} V${P.y}`;
+    g += `<g data-teil="${i}" data-zustand="${t.zustand}">`
+      + `<rect x="20" y="${y - 28}" width="${K.w}" height="56" rx="14" class="kasten"/>`
+      + text(K.nx, y - 4, t.name, 'name')
+      + text(K.nx, y + 15, PRIVACY.status[t.zustand], 'status', 'data-status')
+      + `<path d="M${x1} ${y} H${a - 6}" class="zuleitung"/>`
+      + `<circle cx="${a}" cy="${y}" r="6" class="kontakt"/>`
+      + `<line x1="${a}" y1="${y}" x2="${a + 54}" y2="${y}" class="hebel" style="transform-origin: ${a}px ${y}px"/>`
+      + `<circle cx="${b}" cy="${y}" r="6" class="kontakt"/>`
+      + `<path d="${leitung}" class="leitung"/>`
+      + '</g>';
+  });
+  g += `<rect x="${P.x}" y="${P.y}" width="${P.w}" height="${P.h}" rx="18" class="kasten"/>`;
+  g += text(mx, P.y + 64, 'Platine', 'name mitte');
+  g += text(mx, P.y + 88, z.platine, 'status mitte', 'data-platine');
+  g += `<circle cx="${mx}" cy="${P.y + 132}" r="22" class="led-ring"/>`;
+  g += `<circle cx="${mx}" cy="${P.y + 132}" r="11" class="led"/>`;
+  g += text(mx, P.y + 178, z.ledText, 'klein mitte', 'data-led-text');
+  const [w, h] = breit ? [760, 580] : [430, 820];
+  return `<svg viewBox="0 0 ${w} ${h}" class="${art}" role="img" aria-label="${z.aria}" data-privacy-schema>${g}</svg>`;
+}
 ---
-<div class="privacy" data-privacy="aus" data-privacy-modus style={`--privacy-orange: ${ORANGE}`}>
-  <div class="schema" set:html={schema} />
-  <div class="text">
+<div class="privacy" data-privacy-modus data-stufe="0" data-notruf="false" data-led={z.led} style={`--privacy-orange: ${ORANGE}`}>
+  <div class="schema" set:html={schema('breit') + schema('hoch')} />
+  <div class="kopf">
     <h2 class="t-1">{PRIVACY.titel}</h2>
     <p class="t-lead t-muted">{PRIVACY.text}</p>
-    <div class="schalter"><Schalter data-privacy-schalter><span data-privacy-label>{PRIVACY.schalter[0]}</span></Schalter></div>
+  </div>
+  <div class="bedienung">
+    <div class="stufen" role="group" aria-label={PRIVACY.stufeWaehlen}>
+      {PRIVACY.stufen.map(([name], i) => (
+        <button type="button" aria-pressed={i === z.stufe ? 'true' : 'false'} data-stufe-knopf={i}>{name}</button>
+      ))}
+    </div>
+    <p class="stufe-text" data-stufe-text>{z.text}</p>
+    <div class="halten">
+      <span class="halten-titel" id="privacy-halten">{PRIVACY.halten}</span>
+      <div class="spur" role="progressbar" aria-labelledby="privacy-halten" aria-valuemin="0" aria-valuemax="4" aria-valuenow="0" aria-valuetext={PRIVACY.marken[0]} data-leiste>
+        <div class="fuellung" style={`width: ${z.leiste}`}></div>
+        <span class="marke" style="left: 50%"></span>
+        <span class="marke" style="left: calc(100% - 2px)"></span>
+      </div>
+      <div class="marken" aria-hidden="true">
+        {PRIVACY.marken.map((m) => <span>{m}</span>)}
+      </div>
+    </div>
+  </div>
+  <div class="rest">
     <div class="listen">
-      {[[PRIVACY.weiterTitel, PRIVACY.weiter, 'weiter'], [PRIVACY.pausiertTitel, PRIVACY.pausiert, 'pausiert']].map(([titel, liste, art]) => (
+      {[[PRIVACY.weiterTitel, z.weiter, 'weiter'], [PRIVACY.pausiertTitel, z.pausiert, 'pausiert']].map(([titel, liste, art]) => (
         <div>
           <h3>{titel}</h3>
-          <ul>{liste.map((t) => <li class={art}>{t}</li>)}</ul>
+          <ul class={art} data-liste={art}>{liste.map((t) => <li>{t}</li>)}</ul>
         </div>
       ))}
     </div>
-    <p class="hinweis t-small t-muted">{PRIVACY.hinweis}</p>
+    <div class="notruf" data-notruf-kasten>
+      <div class="notruf-kopf">
+        <h3 class="t-3">{PRIVACY.notruf.titel}</h3>
+        <button type="button" class="notruf-knopf" aria-pressed="false" aria-disabled="true" data-notruf-knopf>{z.knopf}</button>
+      </div>
+      <p class="t-muted" data-notruf-text>{z.notrufText}</p>
+    </div>
   </div>
   <p class="vh" aria-live="polite" data-privacy-ansage></p>
 </div>
 
 <style>
-  .privacy { display: grid; gap: var(--space-6); align-items: center; }
-  .schema { padding: var(--space-4); border: 1px solid var(--line); border-radius: var(--radius-xl); background: var(--bg); }
+  .privacy {
+    display: grid;
+    grid-template-areas: "kopf" "bedienung" "schema" "rest";
+    gap: var(--space-6);
+  }
+  .schema { grid-area: schema; padding: var(--space-4); border: 1px solid var(--line); border-radius: var(--radius-xl); background: var(--bg); }
+  .kopf { grid-area: kopf; }
+  .bedienung { grid-area: bedienung; }
+  .rest { grid-area: rest; }
   .schema :global(svg) { display: block; width: 100%; height: auto; }
-  /* Schaltbild: Farben aus den Tokens */
+  .schema :global(svg.breit) { display: none; }
+
+  /* ── Schema: Farben aus den Tokens ── */
   .schema :global(.kasten) { fill: var(--surface); stroke: var(--line); stroke-width: 1.2; }
-  .schema :global(.name) { font-family: var(--body); font-size: 15px; font-weight: 600; fill: var(--ink); text-anchor: middle; }
-  .schema :global(.status) { font-family: var(--body); font-size: 12.5px; fill: var(--muted); text-anchor: middle; transition: fill 0.3s; }
+  .schema :global(.name) { font-family: var(--body); font-size: 15px; font-weight: 600; fill: var(--ink); }
+  .schema :global(.name.mitte) { font-size: 16px; }
+  .schema :global(.status) { font-family: var(--body); font-size: 12.5px; font-weight: 500; fill: var(--muted); transition: fill 0.3s; }
+  .schema :global(.klein) { font-family: var(--body); font-size: 12px; fill: var(--muted); }
+  .schema :global(.mitte) { text-anchor: middle; font-weight: 400; }
+  .schema :global(.name.mitte) { font-weight: 600; }
+  .schema :global(.gruppe) { font-family: var(--body); font-size: 13px; font-weight: 600; fill: var(--muted); letter-spacing: 0.02em; }
+  .schema :global(.plakette) { fill: var(--surface); transition: fill 0.3s; }
+  .schema :global(.plakette-text) { font-family: var(--body); font-size: 12px; font-weight: 600; fill: var(--muted); text-anchor: middle; }
+  .schema :global([data-aus="true"] .plakette) { fill: var(--heat); }
+  .schema :global([data-aus="true"] .plakette-text) { fill: var(--heat-ink); }
   .schema :global(.zuleitung) { fill: none; stroke: var(--accent); stroke-width: 2.5; }
   .schema :global(.kontakt) { fill: var(--bg); stroke: var(--ink); stroke-width: 2; }
   .schema :global(.hebel) { stroke: var(--ink); stroke-width: 3; stroke-linecap: round; transition: transform 0.35s cubic-bezier(0.3, 1.4, 0.5, 1); }
   .schema :global(.leitung) { fill: none; stroke: var(--accent); stroke-width: 2.5; transition: stroke 0.3s; }
-  .schema :global(.anzeige) { fill: var(--line); transition: fill 0.3s; }
-  [data-privacy="an"] .schema :global(.hebel) { transform: rotate(-32deg); }
-  [data-privacy="an"] .schema :global(.leitung) { stroke: var(--muted); stroke-dasharray: 5 5; }
-  [data-privacy="an"] .schema :global(.status[data-status]) { fill: var(--heat); }
-  [data-privacy="an"] .schema :global(.anzeige) { fill: var(--privacy-orange); }
-  @media (prefers-reduced-motion: reduce) { .schema :global(*) { transition: none !important; } }
+  /* getrennt: Hebel offen, Leitung tot. Für Notruf verbunden: Status in Akzentfarbe */
+  .schema :global([data-zustand="getrennt"] .hebel) { transform: rotate(-32deg); }
+  .schema :global([data-zustand="getrennt"] .leitung) { stroke: var(--muted); stroke-dasharray: 5 5; }
+  .schema :global([data-zustand="getrennt"] .status) { fill: var(--heat); }
+  .schema :global([data-zustand="notruf"] .status) { fill: var(--accent); }
+  /* RGB-Punkt auf der Platine: aus, ruhig orange, orange mit Ring und kurzem Blinken */
+  .schema :global(.led) { fill: var(--line); transition: fill 0.3s; }
+  .schema :global(.led-ring) { fill: none; stroke: transparent; stroke-width: 2; stroke-dasharray: 4 4; }
+  [data-led="ruhig"] .schema :global(.led), [data-led="blinkt"] .schema :global(.led) { fill: var(--privacy-orange); }
+  [data-led="blinkt"] .schema :global(.led-ring) { stroke: var(--privacy-orange); }
+  [data-led="blinkt"] .schema :global(.led) { animation: privacy-blinkt 3s linear infinite; }
+  @keyframes privacy-blinkt { 0%, 90%, 97%, 100% { opacity: 1; } 92%, 95% { opacity: 0.12; } }
+  @media (prefers-reduced-motion: reduce) {
+    .schema :global(*) { transition: none !important; animation: none !important; }
+    .fuellung { transition: none !important; }
+  }
 
-  .text { display: flex; flex-direction: column; }
-  .text .t-lead { margin-top: var(--space-4); max-width: 520px; }
-  .schalter { margin-top: calc(var(--space-6) - 4px); }
-  .listen { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-5); margin-top: var(--space-6); }
-  h3 { margin: 0 0 var(--space-2); font-family: var(--body); font-size: var(--fs-small); font-weight: 600; color: var(--muted); }
-  ul { display: flex; flex-direction: column; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
-  li { display: flex; align-items: center; gap: 10px; }
-  li::before { content: ''; flex-shrink: 0; width: 8px; height: 8px; border-radius: var(--radius-full); }
-  li.weiter::before { background: var(--accent); }
-  li.pausiert::before { background: var(--heat); }
-  .hinweis { margin-top: var(--space-5); }
+  /* ── Rechte Spalte ── */
+  .kopf .t-lead { margin-top: var(--space-4); max-width: 540px; }
+  /* Artboard: Pille über die ganze Spaltenbreite (inline-flex in einer Flex-Spalte = gestreckt) */
+  .stufen { display: flex; flex-wrap: wrap; gap: var(--space-1); padding: var(--space-1); border: 1px solid var(--line); border-radius: var(--radius-full); background: var(--surface); }
+  .stufen button {
+    min-height: 44px;
+    padding: 0 18px;
+    border: 0;
+    border-radius: var(--radius-full);
+    background: transparent;
+    color: var(--ink);
+    font: 600 var(--fs-text) / 1 var(--body);
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .stufen button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+  .stufen button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .stufe-text { margin-top: calc(var(--space-4) + 2px); min-height: 52px; max-width: 540px; }
+
+  .halten { display: flex; flex-direction: column; gap: 10px; margin-top: calc(var(--space-6) - 4px); }
+  .halten-titel { font-size: var(--fs-small); font-weight: 600; color: var(--muted); }
+  .spur { position: relative; height: 10px; border-radius: 5px; background: var(--raised); }
+  .fuellung { position: absolute; inset: 0 auto 0 0; border-radius: 5px; background: var(--accent); transition: width 0.4s ease; }
+  .marke { position: absolute; top: -5px; width: 2px; height: 20px; background: var(--ink); }
+  .marken { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); font-size: var(--fs-small); }
+  .marken span { color: var(--ink); font-weight: 600; text-align: center; }
+  .marken span:first-child { color: var(--muted); font-weight: 400; text-align: left; }
+  .marken span:last-child { text-align: right; }
+
+  .listen { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-5); }
+  .listen h3 { margin: 0 0 10px; font-family: var(--body); font-size: var(--fs-small); font-weight: 600; color: var(--muted); }
+  ul { display: flex; flex-direction: column; gap: 10px; margin: 0; padding: 0; list-style: none; }
+  /* :global, weil das Skript die Einträge neu schreibt (ohne Astros data-astro-cid) */
+  ul :global(li) { display: flex; align-items: center; gap: 10px; }
+  ul :global(li)::before { content: ''; flex-shrink: 0; width: 8px; height: 8px; border-radius: var(--radius-full); }
+  .weiter :global(li)::before { background: var(--accent); }
+  .pausiert :global(li)::before { background: var(--heat); }
+
+  .notruf {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    margin-top: var(--space-6);
+    padding: 22px var(--space-5);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-l);
+    background: var(--surface);
+  }
+  .notruf-kopf { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--space-3) var(--space-4); }
+  /* Artboard: Unbounded 20 px, Knopf auf derselben Zeile. --fs-3 wäre 22 px und schiebt ihn darunter */
+  .notruf h3 { margin: 0; font-size: var(--fs-4); }
+  .notruf p { margin: 0; font-size: 15px; }
+  .notruf-knopf {
+    min-height: 44px;
+    padding: 0 var(--space-4);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-full);
+    background: var(--surface);
+    color: var(--ink);
+    font: 600 var(--fs-small) / 1 var(--body);
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .notruf-knopf:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .notruf-knopf[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
+  [data-notruf="true"] .notruf { border-color: var(--heat); background: var(--raised); }
+  [data-notruf="true"] .notruf-knopf { border-color: var(--heat); background: var(--heat); color: var(--heat-ink); }
 
   @media (min-width: 900px) {
-    .privacy { grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); gap: var(--space-8); }
-    .schema { padding: var(--space-6); }
+    .privacy {
+      grid-template-columns: minmax(0, 7fr) minmax(0, 6fr);
+      grid-template-rows: auto auto 1fr;
+      grid-template-areas: "schema kopf" "schema bedienung" "schema rest";
+      gap: 0 var(--space-7);
+      align-items: start;
+    }
+    .schema { padding: 28px; }
+    .schema :global(svg.breit) { display: block; }
+    .schema :global(svg.hoch) { display: none; }
+    .stufen { margin-top: calc(var(--space-6) - 4px); }
+    .listen { margin-top: var(--space-6); }
   }
 </style>
 
 <script>
+  import { privacyZustand, waehleStufe, schalteNotruf } from '../../lib/privacy.js';
   import { PRIVACY } from '../../data/funktionen.js';
 
   document.querySelectorAll('[data-privacy-modus]').forEach((wurzel) => {
-    const label = wurzel.querySelector('[data-privacy-label]');
-    const schema = wurzel.querySelector('[data-privacy-schema]');
-    const ansage = wurzel.querySelector('[data-privacy-ansage]');
-    wurzel.querySelector('[data-privacy-schalter]').addEventListener('kiesel:schalter', (e) => {
-      const an = e.detail.an;
-      wurzel.dataset.privacy = an ? 'an' : 'aus';
-      label.textContent = PRIVACY.schalter[an ? 1 : 0];
-      wurzel.querySelectorAll('[data-status]').forEach((t) => { t.textContent = PRIVACY.status[an ? 1 : 0]; });
-      wurzel.querySelector('[data-platine]').textContent = PRIVACY.platine[an ? 1 : 0];
-      schema.setAttribute('aria-label', `Schema: Kamera, Mikrofon und GPS hängen über je einen Schalter an der Platine. ${an ? 'Alle drei getrennt, die Platine läuft weiter.' : 'Alle verbunden.'}`);
-      ansage.textContent = an ? 'Privacy-Modus an: Kamera, Mikrofon und GPS sind vom Strom getrennt.' : 'Privacy-Modus aus: alles wieder verbunden.';
+    let z = privacyZustand(0, false);
+    const $ = (sel) => wurzel.querySelector(sel);
+    const $$ = (sel) => wurzel.querySelectorAll(sel);
+    const liste = (ul, eintraege) => {
+      ul.replaceChildren(...eintraege.map((t) => Object.assign(document.createElement('li'), { textContent: t })));
+    };
+
+    const zeige = (ansage) => {
+      wurzel.dataset.stufe = String(z.stufe);
+      wurzel.dataset.notruf = String(z.notruf);
+      wurzel.dataset.led = z.led;
+      // Schema (beide Fassungen)
+      $$('[data-teil]').forEach((g) => {
+        const t = z.teile[Number(g.dataset.teil)];
+        g.dataset.zustand = t.zustand;
+        g.querySelector('[data-status]').textContent = PRIVACY.status[t.zustand];
+      });
+      $$('[data-gruppe]').forEach((g) => {
+        const aus = z.gruppen[Number(g.dataset.gruppe) - 1];
+        g.dataset.aus = String(aus);
+        g.querySelector('[data-plakette]').textContent = PRIVACY.plakette[aus ? 1 : 0];
+      });
+      $$('[data-platine]').forEach((t) => { t.textContent = z.platine; });
+      $$('[data-led-text]').forEach((t) => { t.textContent = z.ledText; });
+      $$('[data-privacy-schema]').forEach((svg) => svg.setAttribute('aria-label', z.aria));
+      // Bedienung
+      $$('[data-stufe-knopf]').forEach((k) => k.setAttribute('aria-pressed', String(Number(k.dataset.stufeKnopf) === z.stufe)));
+      $('[data-stufe-text]').textContent = z.text;
+      const leiste = $('[data-leiste]');
+      leiste.querySelector('.fuellung').style.width = z.leiste;
+      leiste.setAttribute('aria-valuenow', String(z.stufe * 2));
+      leiste.setAttribute('aria-valuetext', PRIVACY.marken[z.stufe]);
+      liste($('[data-liste="weiter"]'), z.weiter);
+      liste($('[data-liste="pausiert"]'), z.pausiert);
+      // Notruf
+      const knopf = $('[data-notruf-knopf]');
+      knopf.setAttribute('aria-pressed', String(z.notruf));
+      knopf.setAttribute('aria-disabled', String(z.stufe === 0));
+      knopf.textContent = z.knopf;
+      $('[data-notruf-text]').textContent = z.notrufText;
+      if (ansage) $('[data-privacy-ansage]').textContent = ansage;
+    };
+
+    $$('[data-stufe-knopf]').forEach((k) => k.addEventListener('click', () => {
+      const vorher = z;
+      z = waehleStufe(z, Number(k.dataset.stufeKnopf));
+      if (z.stufe === vorher.stufe) return;
+      zeige(`${z.name}. ${z.text}`);
+    }));
+    $('[data-notruf-knopf]').addEventListener('click', () => {
+      if (z.stufe === 0) return; // aria-disabled: bleibt fokussierbar, tut aber nichts
+      z = schalteNotruf(z);
+      zeige(z.notrufText);
     });
+    zeige();
   });
 </script>

@@ -1,15 +1,22 @@
 ---
 // RGB-Licht auf /funktionen/ (Artboard „Funktionen“, Abschnitt rgb): links die Rückseite des
-// Pro in Titangrau, rechts acht Ereignisse. Ein Klick zeichnet das Handy mit der LED-Farbe des
+// Pro in Titangrau, rechts neun Ereignisse. Ein Klick zeichnet das Handy mit der LED-Farbe des
 // Ereignisses neu (Zeichen-Motor im Browser) und startet den passenden Rhythmus.
 //
 // Warum 2D und nicht 3D: Das 3D-Modell hat keine LED-Zustände, und three.js lädt nur die
 // Startseite. Der Leuchthof ist im SVG ein Kreis (r = 120) über einem Verlauf; CSS lässt ihn
 // und die LED selbst pulsieren (Klassen .hof und .kern setzt das Skript nach jedem Zeichnen).
 // Rhythmen (data-rhythmus auf der Bühne): schnell (Anruf), zweimal (Nachricht), atmen (Lädt),
-// langsam (Akku tief), ruhig, aus. Bei „weniger Bewegung“ leuchtet alles ruhig.
+// langsam (Akku tief), ruhig, blinkt (Funkstille = Privacy-Modus Stufe 2), aus.
+// Bei „weniger Bewegung“ leuchtet alles ruhig. Damit Funkstille und Privacy Stufe 1 dann
+// trotzdem unterscheidbar bleiben, steht ihre Stufe als Glas-Chip auf der Bühne.
+//
+// Warum ein eigenes Ereignis „Funkstille“ statt zwei Rhythmen unter „Privacy“: Jeder Chip
+// zeigt genau ein Lichtmuster, Karte und Punkt sagen immer dasselbe. Zwei Rhythmen unter
+// einem Chip bräuchten einen Unterschalter oder eine Karte, die mehr erklärt als zu sehen ist.
 import Buehne from '../Buehne.astro';
 import Chip from '../Chip.astro';
+import GlasChip from '../GlasChip.astro';
 import { handy } from '../../lib/kiesel-draw/index.js';
 import { RGB } from '../../data/funktionen.js';
 
@@ -17,12 +24,13 @@ const E = RGB.ereignisse;
 const ledAus = (k) => (E[k].color ? { color: E[k].color, o1: E[k].o1, o2: E[k].o2, mid: E[k].mid, edge: E[k].edge } : null);
 const bild = handy({ ansicht: 'hinten', modell: 'pro', farbe: 'Titangrau', hoehe: null, drehung: -6, led: ledAus(RGB.start), label: `Kiesel 1 Pro von hinten, RGB-Licht: ${E[RGB.start].name}` });
 // Für das Skript: nur was es zum Neuzeichnen braucht
-const daten = Object.fromEntries(Object.entries(E).map(([k, e]) => [k, { name: e.name, led: ledAus(k), rhythmus: e.rhythmus, titel: e.titel, text: e.text }]));
+const daten = Object.fromEntries(Object.entries(E).map(([k, e]) => [k, { name: e.name, led: ledAus(k), rhythmus: e.rhythmus, stufe: e.stufe ?? '', titel: e.titel, text: e.text }]));
 ---
 <div class="rgb" data-rgb data-daten={JSON.stringify(daten)}>
   <Buehne class="buehne" data-rhythmus={E[RGB.start].rhythmus}>
     <div class="handy" data-rgb-handy set:html={bild} />
     <span class="blitz" aria-hidden="true"></span>
+    <span class="stufe" aria-hidden="true" data-rgb-stufe hidden={!E[RGB.start].stufe}><GlasChip><span data-rgb-stufe-text>{E[RGB.start].stufe ?? ''}</span></GlasChip></span>
   </Buehne>
   <div class="text">
     <h2 class="t-1">{RGB.titel}</h2>
@@ -78,6 +86,14 @@ const daten = Object.fromEntries(Object.entries(E).map(([k, e]) => [k, { name: e
   @keyframes atmen { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
   @keyframes langsam { 0%, 100% { opacity: 1; } 50% { opacity: 0.15; } }
   @keyframes langsam-kern { 50% { opacity: 0.55; } }
+  /* Funkstille: ruhig orange, alle 3 s ein kurzes Blinken (ca. 0.2 s dunkel) */
+  [data-rhythmus="blinkt"] :global(.hof) { animation: blinkt 3s linear infinite; }
+  [data-rhythmus="blinkt"] :global(.kern) { animation: blinkt-kern 3s linear infinite; }
+  @keyframes blinkt { 0%, 90%, 97%, 100% { opacity: 1; } 92%, 95% { opacity: 0.08; } }
+  @keyframes blinkt-kern { 0%, 90%, 97%, 100% { opacity: 1; } 92%, 95% { opacity: 0.3; } }
+
+  /* Stufe des Privacy-Modus als Text, nur bei „weniger Bewegung“ (dann blinkt nichts) */
+  .stufe { position: absolute; left: 50%; bottom: var(--space-5); transform: translateX(-50%); display: none; }
 
   /* Fotoblitz: die Bühne blitzt einmal hell auf */
   .blitz { position: absolute; inset: 0; background: var(--glass-on); opacity: 0; pointer-events: none; }
@@ -86,6 +102,7 @@ const daten = Object.fromEntries(Object.entries(E).map(([k, e]) => [k, { name: e
 
   @media (prefers-reduced-motion: reduce) {
     .rgb :global(.hof), .rgb :global(.kern), .blitz { animation: none !important; }
+    .stufe:not([hidden]) { display: block; }
   }
   @media (min-width: 900px) {
     .rgb { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: var(--space-8); }
@@ -108,6 +125,7 @@ const daten = Object.fromEntries(Object.entries(E).map(([k, e]) => [k, { name: e
     const ort = wurzel.querySelector('[data-rgb-handy]');
     const titel = wurzel.querySelector('[data-rgb-titel]');
     const text = wurzel.querySelector('[data-rgb-text]');
+    const stufe = wurzel.querySelector('[data-rgb-stufe]');
     markiere(ort.querySelector('svg'));
 
     wurzel.querySelectorAll('[data-ereignis]').forEach((knopf) => knopf.addEventListener('click', () => {
@@ -118,6 +136,8 @@ const daten = Object.fromEntries(Object.entries(E).map(([k, e]) => [k, { name: e
       wurzel.dataset.aktuell = k;
       titel.textContent = e.titel;
       text.textContent = e.text;
+      stufe.hidden = !e.stufe;
+      stufe.querySelector('[data-rgb-stufe-text]').textContent = e.stufe;
       // Fotoblitz: Animation jedes Mal neu starten
       wurzel.removeAttribute('data-blitzt');
       if (k === 'flash') { void wurzel.offsetWidth; wurzel.setAttribute('data-blitzt', ''); }

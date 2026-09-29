@@ -13,12 +13,14 @@ import { PAL, FARBNAMEN_PAL } from '../src/lib/kiesel-draw/colors.js';
 import { backSvg, frontSvg, lens, place, handy } from '../src/lib/kiesel-draw/phone.js';
 import { LED } from '../src/lib/kiesel-draw/colors.js';
 import { alpen, blume, crop, phoneOpen, BLUME_FOKUS } from '../src/lib/kiesel-draw/scene.js';
+import { INNENLEBEN_ABWEICHUNG as IA, ohnePrivacyBlock } from './abweichungen.mjs';
 
 const hier = path.dirname(fileURLToPath(import.meta.url));
 
 // Jeder Fall: [Name, Aufruf für Python, Funktion für JavaScript]
 const faelle = [];
-const fall = (name, fn, args, kwargs, js) => faelle.push({ name, py: { fn, args, kwargs }, js });
+// abweichung: bewusste Änderung gegenüber der Vorlage (scripts/abweichungen.mjs)
+const fall = (name, fn, args, kwargs, js, abweichung = null) => faelle.push({ name, py: { fn, args, kwargs }, js, abweichung });
 
 for (const mk of ['k1', 'pro']) {
   for (const farbe of FARBNAMEN_PAL) {
@@ -66,7 +68,7 @@ for (const [name, fx] of Object.entries(BLUME_FOKUS)) {
   fall(`blume ${name}`, 'blume', ['bl', fx.bg, fx.fl, fx.fg, fx.bee], {}, () => blume('bl', fx.bg, fx.fl, fx.fg, fx.bee));
 }
 for (const [kind, ox, oy, s] of [['se', 60, 20, 3.1], ['k1', 90.38, 30, 3.4], ['pro', 60, 20, 3.1], ['pro', 80.86, 30, 3.4]]) {
-  fall(`innenleben ${kind}`, 'phone_open', [kind, ox, oy, s], {}, () => JSON.stringify(phoneOpen(kind, ox, oy, s)));
+  fall(`innenleben ${kind}`, 'phone_open', [kind, ox, oy, s], {}, () => JSON.stringify(phoneOpen(kind, ox, oy, s)), IA.modelle.includes(kind) ? IA : null);
 }
 
 // Python einmal mit allen Aufrufen starten
@@ -84,9 +86,21 @@ function starte(eingabe) {
 
 const erwartet = starte(JSON.stringify(faelle.map((f) => f.py)));
 let fehler = 0;
+let abweichungen = 0;
 faelle.forEach((fl, i) => {
-  const ist = fl.js();
-  const soll = erwartet[i];
+  let ist = fl.js();
+  let soll = erwartet[i];
+  if (fl.abweichung) {
+    // Privacy-Schalter: Vorlage alt, wir neu, der Rest muss gleich bleiben
+    const a = fl.abweichung, v = ohnePrivacyBlock(soll), j = ohnePrivacyBlock(ist);
+    if (v.name !== a.altName || v.schalter !== a.altSchalter || j.name !== a.neuName || j.schalter !== a.neuSchalter) {
+      fehler++;
+      console.log(`✗ ${fl.name}: Privacy-Schalter nicht wie in abweichungen.mjs (Vorlage ${v.schalter} × „${v.name}“, wir ${j.schalter} × „${j.name}“)`);
+      return;
+    }
+    abweichungen++;
+    soll = v.rest; ist = j.rest;
+  }
   if (ist === soll) return;
   fehler++;
   // Erste abweichende Stelle mit etwas Umgebung zeigen
@@ -97,5 +111,5 @@ faelle.forEach((fl, i) => {
 const zeichen = erwartet.reduce((a, s) => a + s.length, 0);
 console.log(fehler
   ? `\n${fehler} von ${faelle.length} Fällen weichen ab.`
-  : `✓ Alle ${faelle.length} Fälle identisch mit Python (${(zeichen / 1e6).toFixed(1)} Mio. Zeichen verglichen).`);
+  : `✓ Alle ${faelle.length} Fälle identisch mit Python (${(zeichen / 1e6).toFixed(1)} Mio. Zeichen verglichen${abweichungen ? `; in ${abweichungen} davon die Privacy-Schalter bewusst neu, siehe abweichungen.mjs` : ''}).`);
 process.exit(fehler ? 1 : 0);

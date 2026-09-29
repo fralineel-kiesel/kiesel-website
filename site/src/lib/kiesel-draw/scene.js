@@ -405,6 +405,11 @@ export function chip(x, y, w, h, fill, label = null) {
   return g;
 }
 
+// Privacy-Schalter auf der Platine (Kiesel 1 und Pro): y in mm je Reihe (Stufe 1, Stufe 2)
+// und der Name in der Legende. innenteile.js zeichnet dieselben Schalter als ein Teil.
+export const PRIVACY_REIHEN = [30, 24.5];
+export const PRIVACY_LEGENDE = 'Privacy-Schalter: Sensoren (Stufe 1) und Funk (Stufe 2)';
+
 // kind: 'se' | 'k1' | 'pro'; ox, oy = Ecke oben links; s = px pro mm.
 // Rückgabe wie in Python: [SVG-Text, Legende als [[Nummer, Name, fälltWeg], …]]
 export function phoneOpen(kind, ox, oy, s) {
@@ -441,11 +446,16 @@ export function phoneOpen(kind, ox, oy, s) {
     const pro = kind === 'pro';
     g += E('rect', { x: f(X(4)), y: f(Y(4.5)), width: f((W - 8) * s), height: f(34 * s), rx: '6', style: 'fill: #1E3A2F; stroke: #2F5646; stroke-width: 1' });
     g += chip(X(W / 2 - 7), Y(12), 14 * s, 14 * s, '#0E7490', 'A20') + chip(X(W / 2 + 9), Y(12), 9 * s, 9 * s, '#3A424B') + chip(X(6.5), Y(27), 10 * s, 7 * s, '#3A424B');
-    for (let i = 0; i < 3; i++) {
-      g += E('rect', { x: f(X(W - 16 + i * 3.4)), y: f(Y(30)), width: f(2.4 * s), height: f(4 * s), rx: '1.5', style: 'fill: #FF9A2E' });
+    // Privacy-Schalter in zwei Reihen (Etappe 8b, bewusst anders als scene.py): unten wie bisher
+    // Stufe 1 (Kamera, Mikrofon, GPS), darüber Stufe 2 (WLAN und Bluetooth, Mobilfunk, NFC).
+    // Die Nummer steht links daneben, über den Schaltern wäre sie jetzt im Weg.
+    for (const y of PRIVACY_REIHEN) {
+      for (let i = 0; i < 3; i++) {
+        g += E('rect', { x: f(X(W - 16 + i * 3.4)), y: f(Y(y)), width: f(2.4 * s), height: f(4 * s), rx: '1.5', style: 'fill: #FF9A2E' });
+      }
     }
     g += comp(L('Platine mit A20 Pro (abgespeckt)'), '', X(W / 2), Y(31));
-    g += comp(L('Privacy-Schalter: Kamera, Mikrofon, GPS'), '', X(W - 12), Y(30) - 18);
+    g += comp(L(PRIVACY_LEGENDE), '', X(W - 16) - 16, Y(29.25));
     if (pro) {
       g += E('rect', { x: f(X(W / 2 - 12)), y: f(Y(8)), width: f(24 * s), height: f(24 * s), rx: '8', style: 'fill: #CF8E5F; opacity: 0.35; stroke: #CF8E5F; stroke-width: 2; stroke-dasharray: 6 4' });
       g += comp(L('Mini-Vapor-Chamber'), '', X(W / 2 - 12), Y(8));

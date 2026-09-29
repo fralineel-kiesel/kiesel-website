@@ -6,7 +6,8 @@
 //    richtigen Rhythmus (Animation), „Aus“ ohne Leuchthof; Tastatur; bei „weniger Bewegung“
 //    keine Animation.
 // 2. Zen-Modus: Schalter (Maus und Tastatur) blendet die drei Mitteilungen aus und die Pille ein.
-// 3. Privacy-Modus: Schalter klappt die drei Hebel auf, Status „getrennt“, Platine orange.
+// 3. Privacy-Modus in zwei Stufen (Etappe 8b): alle Zustände (Stufe 0/1/2, mit und ohne Notruf)
+//    gegen das Artboard aus gen5.py, Notruf in Stufe Aus ohne Wirkung, nur Tastatur, 390 px.
 // 4. Zubehör: Filter, Platzhalter-Kachel bleibt, „In den Warenkorb“ legt genau die gezeigte Hülle
 //    hinein (Zähler oben zählt), „Frei kombinieren“ zeichnet neu und führt den Link nach.
 // 5. Hülle: Vorwahl aus der Adresse, Modell, Ansicht, Farben; Warenkorb nur mit Modell und
@@ -15,6 +16,9 @@
 import { chromium } from 'playwright';
 import { starteServer } from './dist-server.mjs';
 import { RGB } from '../src/data/funktionen.js';
+import { referenzPrivacy } from './gen5-referenz.mjs';
+
+const REF_PRIVACY = referenzPrivacy();
 
 const DREI_D = /\/buehne\.[\w-]+\.js$/;
 const browser = await chromium.launch();
@@ -59,7 +63,7 @@ try {
       await seite.locator(`[data-ereignis="${k}"]`).click();
       const l = await led();
       const gedrueckt = await seite.locator(`[data-ereignis="${k}"]`).getAttribute('aria-pressed');
-      const erwartetAnimation = { schnell: 'schnell', zweimal: 'zweimal', atmen: 'atmen', langsam: 'langsam', ruhig: 'none', aus: 'none' }[e.rhythmus];
+      const erwartetAnimation = { schnell: 'schnell', zweimal: 'zweimal', atmen: 'atmen', langsam: 'langsam', blinkt: 'blinkt', ruhig: 'none', aus: 'none' }[e.rhythmus];
       const ok = gedrueckt === 'true' && l.titel === e.titel && l.rhythmus === e.rhythmus
         && (e.color ? l.farbe?.toUpperCase() === e.color.toUpperCase() : l.farbe === null)
         && l.animation.includes(erwartetAnimation);
@@ -69,6 +73,9 @@ try {
     await seite.locator('[data-ereignis="msg"]').focus();
     await seite.keyboard.press('Enter');
     pruefe('Tastatur: Enter wählt das Ereignis', (await led()).titel === RGB.ereignisse.msg.titel);
+    await seite.locator('[data-ereignis="funkstille"]').click();
+    const stufeSichtbar = await seite.evaluate(() => getComputedStyle(document.querySelector('[data-rgb-stufe]')).display);
+    pruefe('Mit Bewegung: kein Stufen-Text auf der Bühne (das Blinken zeigt die Stufe)', stufeSichtbar === 'none', stufeSichtbar);
     const anker = await seite.evaluate(() => ['rgb', 'zen', 'privacy', 'kamera'].filter((id) => !document.getElementById(id)));
     pruefe('Sprungmarken #rgb, #zen, #privacy, #kamera vorhanden', anker.length === 0, anker.join(', '));
     pruefe('Keine Skriptfehler, kein three.js, kein Platzhalter', status.fehler.length === 0 && !status.dreiD && !(await seite.content()).includes('Inhalt folgt'), status.fehler.join(' | '));
@@ -79,6 +86,15 @@ try {
     await seite.locator('[data-ereignis="call"]').click();
     const animation = await seite.evaluate(() => getComputedStyle(document.querySelector('[data-rgb] circle.hof')).animationName);
     pruefe('Weniger Bewegung: LED leuchtet ruhig (keine Animation)', animation === 'none', animation);
+    // Funkstille ohne Blinken: dafür steht die Stufe als Text auf der Bühne
+    const stufe = () => seite.evaluate(() => { const s = document.querySelector('[data-rgb-stufe]'); return getComputedStyle(s).display === 'none' ? '' : s.textContent.trim(); });
+    const ohne = await stufe();
+    await seite.locator('[data-ereignis="funkstille"]').click();
+    const f = await stufe();
+    const fAnim = await seite.evaluate(() => getComputedStyle(document.querySelector('[data-rgb] circle.hof')).animationName);
+    await seite.locator('[data-ereignis="privacy"]').click();
+    const p = await stufe();
+    pruefe('Weniger Bewegung: Funkstille blinkt nicht, Bühne zeigt „Stufe 2: Funkstille“ bzw. „Stufe 1: Sensoren aus“, bei Anruf nichts', ohne === '' && f === 'Stufe 2: Funkstille' && fAnim === 'none' && p === 'Stufe 1: Sensoren aus', `${ohne} | ${f} (${fAnim}) | ${p}`);
     await ctx.close();
   }
   {
@@ -124,29 +140,195 @@ try {
     await ctx.close();
   }
 
-  console.log('\n── Privacy-Modus ──');
-  {
-    const { seite, ctx } = await oeffne('funktionen/', { reducedMotion: 'reduce' });
-    const zustand = () => seite.evaluate(() => {
+  console.log('\n── Privacy-Modus in zwei Stufen ──');
+  // Soll = das Artboard selbst: gen5-referenz.mjs führt priv_js aus gen5.py aus und bedient es
+  // mit den Original-Handlern (pick, toggleNotruf). Die Seite wird parallel geklickt, nach
+  // jedem Schritt muss jeder Wert des Artboards auf der Seite stimmen (Texte, Listen, Farben
+  // als Token, Hebel, Leitungen, Plaketten, LED, Leiste, Notruf-Knopf).
+  for (const [thema, breite] of [['dark', 1440], ['light', 1440], ['dark', 390]]) {
+    const { seite, ctx, status } = await oeffne('funktionen/', { reducedMotion: 'reduce', colorScheme: thema, viewport: { width: breite, height: 900 } });
+    const ab = REF_PRIVACY.artboard(thema);
+    const T = REF_PRIVACY.werte({ thema }).t;
+    // Farbe im Artboard → Token auf der Seite. Weiss auf Warnung ist bei uns --heat-ink (Kontrast)
+    const token = (c) => ({ [T.heat]: 'heat', [T.accent]: 'accent', [T.muted]: 'muted', [T.surface]: 'surface', [T.line]: 'line', [T.raised]: 'raised', [T.ink]: 'ink', [T.bg]: 'bg', '#FFFFFF': 'heat-ink', '#FF9A2E': 'orange', transparent: 'transparent' })[c] ?? `?${c}`;
+    // Zwei Bilder warten: global.css lässt bei „weniger Bewegung“ Übergänge von 0.01 ms stehen,
+    // direkt nach dem Klick liefert getComputedStyle sonst noch die alte Farbe
+    const lese = () => seite.evaluate(async () => {
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
       const w = document.querySelector('[data-privacy-modus]');
+      const svgs = [...w.querySelectorAll('[data-privacy-schema]')];
+      const svg = svgs.find((x) => getComputedStyle(x).display !== 'none');
+      const cs = (el) => getComputedStyle(el);
+      const farbe = (v) => { const d = document.createElement('div'); d.style.color = v; w.append(d); const c = cs(d).color; d.remove(); return c; };
+      const tokens = Object.fromEntries(['heat', 'accent', 'muted', 'surface', 'line', 'raised', 'ink', 'bg', 'heat-ink'].map((v) => [v, farbe(`var(--${v})`)]));
+      tokens.orange = farbe('#FF9A2E'); tokens.transparent = 'rgba(0, 0, 0, 0)';
+      const knopf = w.querySelector('[data-notruf-knopf]');
       return {
-        checked: w.querySelector('[data-privacy-schalter]').getAttribute('aria-checked'),
-        label: w.querySelector('[data-privacy-label]').textContent,
-        hebel: [...w.querySelectorAll('.hebel')].map((h) => getComputedStyle(h).transform),
-        status: [...w.querySelectorAll('[data-status]')].map((t) => t.textContent),
-        platine: w.querySelector('[data-platine]').textContent,
-        anzeige: getComputedStyle(w.querySelector('.anzeige')).fill,
-        leitung: getComputedStyle(w.querySelector('.leitung')).strokeDasharray,
+        tokens,
+        sichtbar: svg.classList.contains('breit') ? 'breit' : 'hoch',
+        // beide Fassungen des Schemas müssen denselben Zustand tragen
+        gleich: svgs.every((x) => x.getAttribute('aria-label') === svg.getAttribute('aria-label')
+          && [...x.querySelectorAll('[data-teil]')].map((g) => g.dataset.zustand).join() === [...svg.querySelectorAll('[data-teil]')].map((g) => g.dataset.zustand).join()),
+        aria: svg.getAttribute('aria-label'),
+        teile: [...svg.querySelectorAll('[data-teil]')].map((g) => ({
+          name: g.querySelector('.name').textContent,
+          status: g.querySelector('[data-status]').textContent,
+          col: cs(g.querySelector('[data-status]')).fill,
+          hebel: cs(g.querySelector('.hebel')).transform,
+          wire: cs(g.querySelector('.leitung')).stroke,
+          dash: cs(g.querySelector('.leitung')).strokeDasharray,
+        })),
+        gruppen: [...svg.querySelectorAll('[data-gruppe]')].map((g) => ({ txt: g.querySelector('[data-plakette]').textContent, bg: cs(g.querySelector('.plakette')).fill, fg: cs(g.querySelector('[data-plakette]')).fill })),
+        mainTxt: svg.querySelector('[data-platine]').textContent,
+        ledTxt: svg.querySelector('[data-led-text]').textContent,
+        ledCol: cs(svg.querySelector('.led')).fill,
+        ledRing: cs(svg.querySelector('.led-ring')).stroke,
+        levels: [...w.querySelectorAll('[data-stufe-knopf]')].map((k) => ({ name: k.textContent, pressed: k.getAttribute('aria-pressed'), bg: cs(k).backgroundColor, fg: cs(k).color })),
+        levelTxt: w.querySelector('[data-stufe-text]').textContent,
+        holdW: w.querySelector('.fuellung').style.width,
+        leisteWert: w.querySelector('[data-leiste]').getAttribute('aria-valuenow'),
+        works: [...w.querySelectorAll('[data-liste="weiter"] li')].map((li) => li.textContent),
+        paused: [...w.querySelectorAll('[data-liste="pausiert"] li')].map((li) => li.textContent),
+        nr: {
+          pressed: knopf.getAttribute('aria-pressed'), adis: knopf.getAttribute('aria-disabled'), btnTxt: knopf.textContent,
+          btnOp: Number(cs(knopf).opacity), btnBg: cs(knopf).backgroundColor, btnFg: cs(knopf).color, btnBd: cs(knopf).borderTopColor,
+          bg: cs(w.querySelector('.notruf')).backgroundColor, bd: cs(w.querySelector('.notruf')).borderTopColor,
+          txt: w.querySelector('[data-notruf-text]').textContent,
+        },
+        ansage: w.querySelector('[data-privacy-ansage]').textContent,
       };
     });
-    let z = await zustand();
-    pruefe('Aus: Hebel zu, alles „verbunden“', z.checked === 'false' && z.hebel.every((t) => t === 'none') && z.status.every((t) => t === 'verbunden') && z.platine === 'alles verbunden', JSON.stringify(z));
-    await seite.locator('[data-privacy-schalter]').click();
-    z = await zustand();
-    // rotate(-32deg) = matrix(cos, sin, …) mit sin(-32°) ≈ -0.53
-    const offen = z.hebel.every((t) => /matrix\(0\.84\d*, -0\.52\d*/.test(t));
-    pruefe('An: drei Hebel offen (−32°), „getrennt“, Leitungen gestrichelt, Platine läuft weiter', z.checked === 'true' && offen && z.status.length === 3 && z.status.every((t) => t === 'getrennt') && z.platine === 'läuft weiter' && z.leitung !== 'none' && z.label === 'Privacy-Modus ausschalten', JSON.stringify(z));
-    pruefe('An: Punkt auf der Platine leuchtet orange wie die LED im Privacy-Modus', z.anzeige === 'rgb(255, 154, 46)', z.anzeige);
+    // Vergleich Seite ↔ Artboard, liefert die Liste der Unterschiede
+    const vergleiche = (ist, soll) => {
+      const d = [];
+      const eq = (was, a, b) => { if (JSON.stringify(a) !== JSON.stringify(b)) d.push(`${was}: ${JSON.stringify(a)} ≠ ${JSON.stringify(b)}`); };
+      const farbeEq = (was, a, c) => eq(was, a, ist.tokens[token(c)] ?? `Token ${token(c)}`);
+      const offen = (t) => /^matrix\(0\.84\d*, -0\.52\d*/.test(t);
+      eq('aria', ist.aria, soll.aria);
+      eq('beide Schemas gleich', ist.gleich, true);
+      REF_PRIVACY.zeilen.forEach(([name], i) => {
+        const a = ist.teile[i], r = soll[`r${i}`];
+        eq(`Zeile ${i} Name`, a.name, name);
+        eq(`${name} Status`, a.status, r.status);
+        farbeEq(`${name} Statusfarbe`, a.col, r.col);
+        eq(`${name} Hebel offen`, offen(a.hebel), r.angle === '-32');
+        eq(`${name} Hebel zu`, a.hebel === 'none', r.angle === '0');
+        farbeEq(`${name} Leitung`, a.wire, r.wire);
+        eq(`${name} gestrichelt`, a.dash === 'none' ? 'none' : a.dash.replace(/px/g, '').replace(',', ''), r.dash);
+      });
+      ['g1', 'g2'].forEach((g, i) => {
+        eq(`${g} Plakette`, ist.gruppen[i].txt, soll[g].txt);
+        farbeEq(`${g} Plakette Grund`, ist.gruppen[i].bg, soll[g].bg);
+        farbeEq(`${g} Plakette Schrift`, ist.gruppen[i].fg, soll[g].fg);
+      });
+      eq('Platine', ist.mainTxt, soll.mainTxt);
+      eq('LED-Text', ist.ledTxt, soll.ledTxt);
+      farbeEq('LED', ist.ledCol, soll.ledCol);
+      farbeEq('LED-Ring', ist.ledRing, soll.ledRing);
+      soll.levels.forEach((lv, i) => {
+        eq(`Stufenknopf ${i}`, [ist.levels[i].name, ist.levels[i].pressed], [lv.name, lv.pressed]);
+        farbeEq(`Stufenknopf ${i} Grund`, ist.levels[i].bg, lv.bg);
+        farbeEq(`Stufenknopf ${i} Schrift`, ist.levels[i].fg, lv.fg);
+      });
+      eq('Stufentext', ist.levelTxt, soll.levelTxt);
+      eq('Halte-Leiste', ist.holdW, soll.holdW);
+      eq('Halte-Leiste aria-valuenow', ist.leisteWert, String(['0%', '50%', '100%'].indexOf(soll.holdW) * 2));
+      eq('Funktioniert weiter', ist.works, soll.works);
+      eq('Pausiert', ist.paused, soll.paused);
+      for (const k of ['pressed', 'adis', 'btnTxt', 'btnOp', 'txt']) eq(`Notruf ${k}`, ist.nr[k], soll.nr[k]);
+      for (const k of ['btnBg', 'btnFg', 'btnBd', 'bg', 'bd']) farbeEq(`Notruf ${k}`, ist.nr[k], soll.nr[k]);
+      return d;
+    };
+    const stufe = (i) => seite.locator(`[data-stufe-knopf="${i}"]`).click();
+    const notruf = () => seite.locator('[data-notruf-knopf]').click({ force: true }); // aria-disabled: force (Stolperstein)
+    const beschreibe = (w) => `Stufe ${['0 Aus', '1 Sensoren aus', '2 Funkstille'][w.levels.findIndex((l) => l.pressed === 'true')]}${w.nr.pressed === 'true' ? ' + Notruf' : ''}`;
+    const gesehen = new Set();
+    // [Schritt, Seite, Artboard]
+    const SCHRITTE = [
+      ['Laden', async () => {}, () => {}],
+      ['Notruf in Stufe Aus', notruf, () => ab.notruf()],
+      ['→ Sensoren aus', () => stufe(1), () => ab.pick(1)],
+      ['Notruf', notruf, () => ab.notruf()],
+      ['→ Funkstille (Notruf bleibt)', () => stufe(2), () => ab.pick(2)],
+      ['Notruf beenden', notruf, () => ab.notruf()],
+      ['Notruf', notruf, () => ab.notruf()],
+      ['→ Sensoren aus (Notruf bleibt)', () => stufe(1), () => ab.pick(1)],
+      ['→ Aus (beendet den Notruf)', () => stufe(0), () => ab.pick(0)],
+      ['→ Funkstille (ohne Notruf)', () => stufe(2), () => ab.pick(2)],
+      ['→ Aus', () => stufe(0), () => ab.pick(0)],
+    ];
+    const titel = `${breite} px ${thema === 'dark' ? 'dunkel' : 'hell'}`;
+    for (const [name, aufSeite, imArtboard] of SCHRITTE) {
+      await aufSeite(); imArtboard();
+      const soll = ab.werte(), ist = await lese();
+      const d = vergleiche(ist, soll);
+      gesehen.add(beschreibe(ist));
+      if (breite === 1440 && thema === 'dark' || d.length) pruefe(`${titel}, ${name}: ${beschreibe(ist)} = Artboard`, d.length === 0, d.slice(0, 4).join(' | '));
+    }
+    pruefe(`${titel}: alle Zustände = Artboard: Stufe Aus (auch mit gedrücktem Notruf), Sensoren aus und Funkstille je mit/ohne Notruf`, gesehen.size === 5 && [...gesehen].filter((g) => g.includes('Notruf')).length === 2, [...gesehen].join(', '));
+    const ist = await lese();
+    pruefe(`${titel}: sichtbar ist das Schema „${breite < 900 ? 'hoch' : 'breit'}“`, ist.sichtbar === (breite < 900 ? 'hoch' : 'breit'));
+    if (breite === 390) {
+      const seitlich = await seite.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+      const klein = await seite.evaluate(() => [...document.querySelectorAll('#privacy button')].filter((b) => b.getBoundingClientRect().height < 44).length);
+      pruefe('390 px: kein seitliches Scrollen, alle Knöpfe mind. 44 px hoch', seitlich <= 0 && klein === 0, `seitlich ${seitlich}, zu klein ${klein}`);
+    }
+    pruefe(`${titel}: keine Skriptfehler`, status.fehler.length === 0, status.fehler.join(' | '));
+    await ctx.close();
+  }
+  {
+    // Notruf in Stufe „Aus“: markiert, fokussierbar, ohne Wirkung (auch per Tastatur)
+    const { seite, ctx } = await oeffne('funktionen/', { reducedMotion: 'reduce' });
+    const k = seite.locator('[data-notruf-knopf]');
+    const vorher = await seite.locator('[data-privacy-modus]').innerHTML();
+    await k.click({ force: true });
+    await k.focus();
+    await seite.keyboard.press('Enter');
+    await seite.keyboard.press('Space');
+    const nachher = await seite.locator('[data-privacy-modus]').innerHTML();
+    pruefe('Notruf in Stufe Aus: aria-disabled="true", aria-pressed="false", Klick/Enter/Leertaste ändern nichts, keine Ansage',
+      (await k.getAttribute('aria-disabled')) === 'true' && (await k.getAttribute('aria-pressed')) === 'false' && vorher === nachher && (await k.evaluate((e) => e === document.activeElement)));
+    await ctx.close();
+  }
+  {
+    // Nur Tastatur: Tab-Reihenfolge = HTML-Reihenfolge, Enter und Leertaste
+    const { seite, ctx } = await oeffne('funktionen/', { reducedMotion: 'reduce' });
+    const fokus = () => seite.evaluate(() => {
+      const a = document.activeElement;
+      return a.dataset.stufeKnopf !== undefined ? `stufe${a.dataset.stufeKnopf}` : a.hasAttribute('data-notruf-knopf') ? 'notruf' : a.tagName;
+    });
+    const zustand = () => seite.evaluate(() => { const w = document.querySelector('[data-privacy-modus]'); return `${w.dataset.stufe}/${w.dataset.notruf}`; });
+    const ansage = () => seite.locator('[data-privacy-ansage]').textContent();
+    // Start auf dem ersten Knopf (ein Klick auf die Überschrift träfe die klebende Kopfzeile)
+    await seite.locator('[data-stufe-knopf="0"]').focus();
+    const weg = [await fokus()];
+    await seite.keyboard.press('Tab'); weg.push(await fokus());
+    await seite.keyboard.press('Enter'); weg.push(await zustand());
+    const a1 = await ansage();
+    await seite.keyboard.press('Tab'); weg.push(await fokus());
+    await seite.keyboard.press('Space'); weg.push(await zustand());
+    await seite.keyboard.press('Tab'); weg.push(await fokus());
+    await seite.keyboard.press('Enter'); weg.push(await zustand());
+    const a2 = await ansage();
+    await seite.keyboard.press('Space'); weg.push(await zustand());
+    await seite.keyboard.press('Shift+Tab'); await seite.keyboard.press('Shift+Tab'); await seite.keyboard.press('Shift+Tab'); weg.push(await fokus());
+    await seite.keyboard.press('Enter'); weg.push(await zustand());
+    const soll = ['stufe0', 'stufe1', '1/false', 'stufe2', '2/false', 'notruf', '2/true', '2/false', 'stufe0', '0/false'];
+    pruefe('Nur Tastatur: Tab → Aus → Sensoren aus (Enter) → Funkstille (Leertaste) → Notruf (Enter an, Leertaste aus) → zurück auf Aus', JSON.stringify(weg) === JSON.stringify(soll), weg.join(' '));
+    pruefe('Ansagen (aria-live): Stufe und Notruf werden vorgelesen', a1.startsWith('Sensoren aus.') && a2.startsWith('Mobilfunk, Mikrofon und GPS sind wieder verbunden'), `${a1.slice(0, 40)} | ${a2.slice(0, 40)}`);
+    const halten = await seite.locator('[data-leiste]').evaluate((e) => [e.getAttribute('role'), e.getAttribute('aria-valuetext'), document.getElementById(e.getAttribute('aria-labelledby'))?.textContent]);
+    pruefe('Halte-Leiste: progressbar „Action-Button halten“ mit Klartext', halten[0] === 'progressbar' && halten[1] === '0 s' && halten[2] === 'Action-Button halten', halten.join(' | '));
+    await ctx.close();
+  }
+  {
+    // Mit Bewegung blinkt der Punkt der Platine in Stufe 2, ohne nicht
+    const { seite, ctx } = await oeffne('funktionen/');
+    await seite.locator('[data-stufe-knopf="2"]').click();
+    const led = () => seite.evaluate(() => getComputedStyle([...document.querySelectorAll('[data-privacy-schema]')].find((s) => getComputedStyle(s).display !== 'none').querySelector('.led')).animationName);
+    const blinkt = await led();
+    await seite.locator('[data-stufe-knopf="1"]').click();
+    const ruhig = await led();
+    pruefe('Platine: Stufe 2 blinkt kurz, Stufe 1 ruhig', blinkt.includes('privacy-blinkt') && ruhig === 'none', `${blinkt} / ${ruhig}`);
     await ctx.close();
   }
 

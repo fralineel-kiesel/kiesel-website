@@ -9,6 +9,7 @@
 //    Vorwahl und Nachführen der Adresse, Kiesel im selben Massstab wie die Umrisse, Handy-Ausschnitt,
 //    keine Skriptfehler, kein three.js.
 // Jeder Fall druckt ✓ oder ✗, bei einem ✗ endet das Skript mit Fehlercode 1.
+import { specMitAbweichungen, SPEC_ABWEICHUNGEN } from './abweichungen.mjs';
 import { chromium } from 'playwright';
 import { starteServer } from './dist-server.mjs';
 import { referenz } from './gen4-referenz.mjs';
@@ -32,8 +33,8 @@ for (const [id, d] of Object.entries(ref.daten.DEV)) {
   if (!!d.est !== !!GERAETE[id].geschaetzt) falsch.push(`${id}.geschaetzt`);
 }
 pruefe('geraete.js = DEV aus gen4.py (6 Geräte)', falsch.length === 0 && Object.keys(GERAETE).length === 6, falsch.join(', '));
-const spec = JSON.stringify(ref.daten.SPEC), unsere = JSON.stringify(TECHNIK.map((g) => [g.titel, g.zeilen]));
-pruefe('technik.js = SPEC aus gen4.py (Zeichen für Zeichen)', spec === unsere);
+const spec = JSON.stringify(specMitAbweichungen(ref.daten.SPEC)), unsere = JSON.stringify(TECHNIK.map((g) => [g.titel, g.zeilen]));
+pruefe(`technik.js = SPEC aus gen4.py + ${SPEC_ABWEICHUNGEN.length} Abweichung (Zeichen für Zeichen)`, spec === unsere);
 
 // ------------------------------------------------------------------ 2. Rechnung
 console.log('\n── Rechnung gegen das Artboard ──');

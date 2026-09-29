@@ -21,6 +21,7 @@
     "pruefe:kamera-stellen": "astro build && node scripts/pruefe-kamera-stellen.mjs",
     "pruefe:funktionen": "astro build && node scripts/pruefe-funktionen.mjs",
     "fotos:funktionen": "astro build && node scripts/fotografiere-funktionen.mjs",
+    "fotos:privacy": "astro build && node scripts/fotografiere-privacy.mjs",
     "pruefe:kaufen": "astro build && node scripts/pruefe-kaufen.mjs",
     "fotos:kaufen": "astro build && node scripts/fotografiere-kaufen.mjs",
     "pruefe:vergleichen": "astro build && node scripts/pruefe-vergleichen.mjs",

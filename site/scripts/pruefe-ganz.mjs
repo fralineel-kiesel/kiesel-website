@@ -8,6 +8,7 @@
 //    einsetzt. Externe Links werden nur aufgelistet (kein Netz nötig).
 // 3. Platzhalter: kein „Inhalt folgt“, kein leerer Link (href="#"), keine Etappen-Hinweise.
 //    Bewusste Platzhalter in eckigen Klammern („[Material]“) werden aufgelistet, nicht bemängelt.
+// 3b. Privacy-Modus (Etappe 8b): nirgends mehr „trennt nur Kamera, Mikrofon und GPS“, mit Gegenprobe.
 // 4. Feste Werte: Preiszahlen nur in data/preise.js, Gerätewerte (mAh, mm, g, GB, MP, W, Zoll …)
 //    nur in src/data/. Durchsucht wird src/ ohne Kommentare. Zeichen-Motor und 3D rechnen in
 //    eigenen Einheiten (Zeichnungsmasse aus lib.py) und sind ausgenommen.
@@ -26,6 +27,9 @@ import { starteServer } from './dist-server.mjs';
 import { SEITEN } from './seiten.mjs';
 import { PREISE, HUELLE_PREIS } from '../src/data/preise.js';
 import { GERAETE } from '../src/data/geraete.js';
+import { PRIVACY, RGB } from '../src/data/funktionen.js';
+import { FAQ } from '../src/data/faq.js';
+import { FAQ_ABWEICHUNGEN } from './abweichungen.mjs';
 
 const hier = path.dirname(fileURLToPath(import.meta.url));
 const dist = path.join(hier, '..', 'dist');
@@ -188,6 +192,45 @@ pruefe('Kein „Inhalt folgt“, kein Etappen-Hinweis, kein href="#" auf öffent
 const benutzt = dateienIn(src, /\.astro$/).filter((d) => /<Platzhalter\b/.test(fs.readFileSync(d, 'utf8')));
 pruefe('Keine Platzhalter-Komponente mehr (entfernt in Etappe 7)', benutzt.length === 0 && !fs.existsSync(path.join(src, 'components', 'Platzhalter.astro')), benutzt.map((d) => rel(d)).join(', '));
 console.log(`  bewusst stehen gelassen: ${[...bewusst].join(', ') || 'keine'}`);
+
+// ------------------------------------------------------------------ 3b. Privacy-Modus
+// Seit Etappe 8b hat der Privacy-Modus zwei Stufen. Nirgends darf mehr stehen, er trenne nur
+// Kamera, Mikrofon und GPS. Durchsucht wird alles, was ausgeliefert wird: Text und Attribute
+// jeder gebauten Seite (auch aria-label, JSON-LD, data-*) und die Skripte in dist/_astro/.
+// Ein Textstück (zwischen Tags oder Anführungszeichen) fällt durch, wenn es die drei Sensoren
+// als getrennt/stromlos beschreibt, ohne die zweite Stufe (Funk, Notruf …) zu erwähnen.
+console.log('\n── Privacy-Modus: nur noch zwei Stufen ──');
+const SENSOREN = /Kamera,? Mikrofon,? (?:und )?GPS/i;
+const GETRENNT = /trenn|getrennt|vom Strom|stromlos/i;
+const ZWEITE_STUFE = /WLAN|Bluetooth|Mobilfunk|\bFunk|Stufe|Notruf|zusätzlich/i;
+const ALT_IMMER = [/drei Schalter/i, /alle drei getrennt/i, /Privacy-Schalter: Kamera, Mikrofon, GPS/i];
+// Bewusste Ausnahme: der Text unter dem Knopf „Sensoren aus“ beschreibt nur Stufe 1
+const PRIVACY_ERLAUBT = [PRIVACY.stufen[1][1]];
+const alterStand = (stueck) => {
+  const t = stueck.replace(/\s+/g, ' ').trim();
+  if (PRIVACY_ERLAUBT.includes(t)) return false;
+  return ALT_IMMER.some((m) => m.test(t)) || (SENSOREN.test(t) && GETRENNT.test(t) && !ZWEITE_STUFE.test(t));
+};
+const entitaeten = (s) => s.replace(/&quot;/g, '"').replace(/&#39;|&#x27;/g, "'").replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+const stuecke = (inhalt) => entitaeten(inhalt).split(/[<>"'`]/).filter((x) => SENSOREN.test(x) || ALT_IMMER.some((m) => m.test(x)));
+// Gegenprobe: die alten Texte müssen erkannt werden, die neuen nicht
+const ALTE_TEXTE = [
+  'Halte den Action-Button zwei Sekunden. Drei Schalter trennen Kamera, Mikrofon und GPS vom Strom. Keine Software-Sperre: Ohne Strom kann auch eine gehackte App nichts aufnehmen.',
+  'Kamera, Mikrofon und GPS werden elektrisch getrennt. Ohne Strom kann auch eine gehackte App nichts aufnehmen.',
+  'Solange Kamera, Mikrofon und GPS vom Strom getrennt sind.',
+  'Privacy-Modus an: Kamera, Mikrofon und GPS sind vom Strom getrennt.',
+  'Privacy-Schalter: Kamera, Mikrofon, GPS',
+  ...FAQ_ABWEICHUNGEN.filter((a) => a.alt?.includes('GPS')).map((a) => a.alt),
+];
+const verpasst = ALTE_TEXTE.filter((t) => !stuecke(`<p>${t}</p>`).some(alterStand));
+const fehlalarm = [...FAQ.map((f) => f.antwort), PRIVACY.text, ...PRIVACY.notruf.text, ...Object.values(RGB.ereignisse).map((e) => e.text)].filter((t) => stuecke(`<p>${t}</p>`).some(alterStand));
+pruefe(`Gegenprobe: ${ALTE_TEXTE.length} alte Privacy-Texte würden erkannt, die neuen nicht`, verpasst.length === 0 && fehlalarm.length === 0, [...verpasst.map((t) => `verpasst: ${t}`), ...fehlalarm.map((t) => `Fehlalarm: ${t}`)].join(' | '));
+const altePrivacy = [];
+const privacyDateien = [...dateienIn(dist, /\.html$/), ...dateienIn(path.join(dist, '_astro'), /\.js$/)];
+for (const datei of privacyDateien) {
+  for (const st of stuecke(fs.readFileSync(datei, 'utf8')).filter(alterStand)) altePrivacy.push(`${rel(datei, dist)}: „${st.trim().slice(0, 90)}“`);
+}
+pruefe(`Nirgends „der Privacy-Modus trennt nur Kamera, Mikrofon und GPS“ (${privacyDateien.length} Dateien in dist/)`, altePrivacy.length === 0, [...new Set(altePrivacy)].join('\n    '));
 
 // ------------------------------------------------------------------ 4. Feste Werte
 console.log('\n── Feste Werte im Code ──');
