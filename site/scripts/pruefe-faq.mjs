@@ -13,6 +13,7 @@ import { chromium } from 'playwright';
 import { starteServer } from './dist-server.mjs';
 import { referenz } from './gen4-referenz.mjs';
 import { FAQ, THEMEN } from '../src/data/faq.js';
+import { faqMitAbweichungen, FAQ_ABWEICHUNGEN } from './abweichungen.mjs';
 
 let fehler = 0;
 function pruefe(name, ok, info = '') {
@@ -21,10 +22,11 @@ function pruefe(name, ok, info = '') {
 }
 
 console.log('── Daten ──');
-const ref = referenz().daten.FAQ;
+// Vorlage plus die bewussten Änderungen aus abweichungen.mjs (Etappe 8b: Privacy, Notruf)
+const ref = faqMitAbweichungen(referenz().daten.FAQ);
 const unsere = FAQ.map((f) => [f.thema, f.frage, f.antwort]);
 const abw = ref.map((r, i) => (JSON.stringify(r) === JSON.stringify(unsere[i]) ? null : `${i}: ${JSON.stringify(r)} ≠ ${JSON.stringify(unsere[i])}`)).filter(Boolean);
-pruefe(`faq.js = FAQ aus gen4.py (${ref.length} Fragen, Zeichen für Zeichen)`, abw.length === 0 && ref.length === FAQ.length, abw[0] ?? '');
+pruefe(`faq.js = FAQ aus gen4.py + ${FAQ_ABWEICHUNGEN.length} Abweichungen (${ref.length} Fragen, Zeichen für Zeichen)`, abw.length === 0 && ref.length === FAQ.length, abw[0] ?? '');
 pruefe('Themen wie im Artboard', JSON.stringify(THEMEN) === JSON.stringify([...new Set(ref.map((r) => r[0]))]));
 pruefe('IDs eindeutig', new Set(FAQ.map((f) => f.id)).size === FAQ.length);
 
@@ -106,6 +108,18 @@ try {
   pruefe('JSON-LD im <head>: FAQPage mit allen Fragen und Antworten wie auf der Seite', ld.length === 1 && gleich);
   const sichtbarerText = await seite.locator('[data-faq]').innerText();
   pruefe('Jede Frage im JSON-LD steht auch sichtbar auf der Seite', daten.mainEntity.every((q) => sichtbarerText.includes(q.name)));
+  // Gegen das DOM, nicht gegen faq.js: gleiche Fragen in gleicher Reihenfolge, jede Antwort
+  // steht so im Akkordeon (dort evtl. mit einem Link danach). Fällt z.B. durch, wenn eine
+  // neue Frage nur im JSON-LD oder nur auf der Seite landet.
+  const dom = await seite.evaluate(() => [...document.querySelectorAll('[data-faq] [data-eintrag]')].map((e) => ({
+    frage: e.querySelector('.frage button .f').textContent.replace(/\s+/g, ' ').trim(),
+    antwort: e.querySelector('.antwort').textContent.replace(/\s+/g, ' ').trim(),
+  })));
+  const ldFragen = daten.mainEntity.map((q) => q.name);
+  pruefe(`JSON-LD = sichtbare Fragen (${dom.length}), gleiche Reihenfolge, auch die Notruf-Frage`,
+    JSON.stringify(ldFragen) === JSON.stringify(dom.map((d) => d.frage)) && ldFragen.includes('Kann ich im Privacy-Modus den Notruf wählen?'), `${ldFragen.length} im JSON-LD`);
+  const falsch = daten.mainEntity.filter((q, i) => !dom[i]?.antwort.startsWith(q.acceptedAnswer.text)).map((q) => q.name);
+  pruefe('JSON-LD-Antworten = sichtbare Antworten', falsch.length === 0, falsch.join(' | '));
   pruefe('Keine Skriptfehler', status.fehler.length === 0, status.fehler.join(' | '));
   await ctx.close();
 

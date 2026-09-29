@@ -10,8 +10,8 @@ import { pfad } from '../../lib/pfad.js';
 const blau = LED_FARBEN.call; // derselbe Blauton wie der Blitz beim Anruf
 const KACHELN = [
   { id: 'rgb', titel: 'RGB-Licht', anker: 'rgb', text: 'Der Blitz neben der Kamera leuchtet farbig bei Anrufen, Nachrichten und beim Laden. Das Display bleibt aus.' },
-  { id: 'zen', titel: 'Zen-Modus', anker: 'zen', text: 'Ein Druck auf den Action-Button, und das Handy ist still. Nochmal drücken, und alles ist wieder da.' },
-  { id: 'privacy', titel: 'Privacy-Modus', anker: 'privacy', text: 'Kamera, Mikrofon und GPS werden elektrisch getrennt. Ohne Strom kann auch eine gehackte App nichts aufnehmen.' },
+  { id: 'zen', titel: 'Zen-Modus', anker: 'zen', text: 'Ein kurzer Druck auf den Action-Button, und das Handy ist still. Nochmal drücken, und alles ist wieder da.' },
+  { id: 'privacy', titel: 'Privacy-Modus', anker: 'privacy', text: 'Zwei Stufen in Hardware: erst Kamera, Mikrofon und GPS, dann auch WLAN, Bluetooth, Mobilfunk und NFC. Ohne Strom kann auch eine gehackte App nichts aufnehmen oder senden.' },
 ];
 ---
 <ul role="list" class="kacheln">
@@ -42,9 +42,9 @@ const KACHELN = [
           )}
           {k.id === 'privacy' && (
             <div class="privacy">
-              {['Kamera', 'Mikrofon', 'GPS'].map((n) => (
+              {[['Sensoren', 'Stufe 1'], ['Funk', 'Stufe 2']].map(([n, stufe]) => (
                 <div class="zeile">
-                  <span class="name">{n}</span>
+                  <span class="name">{n}<small>{stufe}</small></span>
                   <svg width="84" height="20" viewBox="0 0 84 20" class="trenner">
                     <line x1="0" y1="10" x2="24" y2="10" class="leitung" />
                     <circle cx="28" cy="10" r="4" class="kontakt" />
@@ -110,10 +110,11 @@ const KACHELN = [
   .spur { position: relative; width: 46px; height: 28px; border-radius: 14px; background: var(--accent); }
   .knauf { position: absolute; top: 3px; left: 21px; width: 22px; height: 22px; border-radius: 11px; background: #FFFFFF; }
 
-  /* Privacy: drei offene Schalter, die Leitung dahinter ist tot (gestrichelt) */
-  .privacy { display: flex; flex-direction: column; gap: var(--space-3); }
+  /* Privacy: zwei offene Schalter (Stufe 1 Sensoren, Stufe 2 Funk), die Leitung dahinter ist tot (gestrichelt) */
+  .privacy { display: flex; flex-direction: column; gap: var(--space-5); }
   .zeile { display: flex; align-items: center; gap: 10px; }
-  .name { width: 78px; font-size: 14px; font-weight: 600; }
+  .name { display: flex; flex-direction: column; width: 78px; font-size: 14px; font-weight: 600; line-height: 1.3; }
+  .name small { font-size: 12px; font-weight: 500; color: var(--muted); }
   .trenner { overflow: visible; }
   .leitung { stroke: var(--muted); stroke-width: 2; }
   .tot { stroke-dasharray: 3 3; }

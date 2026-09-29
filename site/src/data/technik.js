@@ -81,7 +81,7 @@ export const TECHNIK = [
     ['System', ...beide(`${W.system} mit schlankem Look`)],
     ['Updates', ...beide(`mindestens ${W.updateJahre} Jahre System- und Sicherheitsupdates`)],
     ['Tasten', ...beide('Action-Button, Kamera-Knopf, Lautstärke, Seitentaste')],
-    ['Extras', ...beide('Zen-Modus, Privacy-Modus mit Hardware-Trennung')],
+    ['Extras', ...beide('Zen-Modus, Privacy-Modus mit Hardware-Trennung in zwei Stufen (Sensoren, Funkstille)')],
   ] },
   { titel: 'Preis', zeilen: [
     ['Ab', ab('k1'), ab('pro')],

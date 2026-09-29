@@ -1,5 +1,7 @@
-// Häufige Fragen: die 13 Fragen aus design/generator/gen4.py (Artboard „FAQ“). Die FAQ-Seite
-// zeigt alle, die Startseite die mit startseite: true. Fragen und Antworten nur hier ändern.
+// Häufige Fragen: die 13 Fragen aus design/generator/gen4.py (Artboard „FAQ“), seit Etappe 8b
+// mit Privacy-Modus in zwei Stufen und der neuen Frage zum Notruf (Abweichungen von gen4.py
+// stehen in scripts/abweichungen.mjs). Die FAQ-Seite zeigt alle, die Startseite die mit
+// startseite: true. Fragen und Antworten nur hier ändern.
 //
 // Zahlen kommen aus den Datendateien (Preis aus preise.js, Werte aus technik.js/geraete.js),
 // damit eine Änderung dort auch hier ankommt.
@@ -71,13 +73,19 @@ export const FAQ = [
   {
     id: 'privacy', thema: 'Funktionen', startseite: true,
     frage: 'Was macht der Privacy-Modus genau?',
-    antwort: 'Halte den Action-Button zwei Sekunden. Drei Schalter trennen Kamera, Mikrofon und GPS vom Strom. Solange der Modus aktiv ist, leuchtet der RGB-Punkt orange.',
+    antwort: 'Er hat zwei Stufen, beide in Hardware. Hältst du den Action-Button zwei Sekunden, sind Kamera, Mikrofon und GPS stromlos (Sensoren aus). Hältst du weiter bis vier Sekunden, sind zusätzlich WLAN, Bluetooth, Mobilfunk und NFC stromlos (Funkstille). Der RGB-Punkt leuchtet in Stufe 1 ruhig orange und blinkt in Stufe 2 alle paar Sekunden kurz.',
     link: { text: 'Privacy-Modus ausprobieren', pfad: 'funktionen/#privacy' },
+  },
+  {
+    id: 'notruf', thema: 'Funktionen',
+    frage: 'Kann ich im Privacy-Modus den Notruf wählen?',
+    antwort: 'Ja, in beiden Stufen. Drückst du fünfmal schnell die Seitentaste, sind Mobilfunk, Mikrofon und GPS sofort wieder verbunden. So kannst du 112, 117 oder 144 anrufen, und dein Standort kann mitgeschickt werden. Der Mobilfunk bleibt danach an, bis du den Privacy-Modus beendest, damit dich die Rettung zurückrufen kann.',
+    link: { text: 'Notruf ausprobieren', pfad: 'funktionen/#privacy' },
   },
   {
     id: 'rgb', thema: 'Funktionen',
     frage: 'Was bedeuten die Farben des RGB-Lichts?',
-    antwort: 'Blau für Anrufe, Violett für Nachrichten, Grün beim Laden, Rot bei tiefem Akku und Orange im Privacy-Modus. Beim Fotografieren leuchtet die LED neutral weiss.',
+    antwort: 'Blau für Anrufe, Violett für Nachrichten, Grün beim Laden, Rot bei tiefem Akku und Orange im Privacy-Modus, in der Funkstille mit kurzem Blinken. Beim Fotografieren leuchtet die LED neutral weiss.',
     link: { text: 'RGB-Licht ausprobieren', pfad: 'funktionen/#rgb' },
   },
   {
