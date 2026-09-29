@@ -232,9 +232,13 @@ async function pseudoPruefen() {
     { art: 'phone', modell: 'k1', farbe: 'sky-blue', speicher: '256gb', anzahl: 1 },
   ])); } catch { /* egal */ } });
   const alle = new Map(); // Wort-Rest → [Seite, Stelle, Text]
+  // Skriptfehler: Fehlt einem Skript beim Umbau sein Text (ReferenceError), bleibt der alte Text
+  // einfach stehen und fiele sonst nicht auf (so war es beim Zen-Schalter)
+  const fehler = [];
   for (const [adresse, , ] of SEITEN) {
     if (adresse.startsWith('designsystem')) continue; // bleibt deutsch (Werkbank)
     const seite = await ctx.newPage();
+    seite.on('pageerror', (e) => fehler.push(`/${adresse}: ${e.message.split('\n')[0]}`));
     await seite.goto(basis + adresse, { waitUntil: 'networkidle' });
     await seite.evaluate(() => new Promise((r) => requestIdleCallback(() => requestAnimationFrame(() => r()), { timeout: 2000 })));
     const texte = await seite.evaluate(sammleTexte);
@@ -256,6 +260,7 @@ async function pseudoPruefen() {
   await browser.close();
   await schliessen();
   const liste = [...alle.values()];
+  pruefe('Keine Skriptfehler beim Laden und Bedienen', fehler.length === 0, fehler.join('\n    '));
   pruefe(`Alle Texte kommen aus der Textdatei (${SEITEN.length - 2} Seiten, nach dem Skriptlauf)`, liste.length === 0,
     liste.slice(0, 400).map((e) => `${[...e.seiten].slice(0, 3).join(' ')}${e.seiten.size > 3 ? ` (+${e.seiten.size - 3})` : ''}  ${e.wo}\n      „${e.text.slice(0, 140)}“  → ${e.r.join(' ')}`).join('\n    '));
   return liste;
