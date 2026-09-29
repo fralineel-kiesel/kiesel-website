@@ -1,0 +1,58 @@
+---
+// Umschalter „Kiesel 1 | Kiesel 1 Pro“ aus Glas, wie die Zoom-Leiste. Liegt oben auf der
+// 3D-Bühne der Startseite.
+// Zwei echte <button> mit aria-pressed: Maus, Finger und Tastatur (Tab, Enter, Leertaste)
+// bringt der Browser mit. Der Baustein meldet nur die Wahl (Ereignis kiesel:modellwahl,
+// detail.modell), was sie bewirkt, entscheidet die Seite (hier Buehne3D).
+//   wert: 'k1' | 'pro'   label: Name der Gruppe für Screenreader
+import { KIESEL_IDS } from '../data/geraete.js';
+import { MODELLE } from '../data/modelle.js';
+
+const { wert = 'pro', label = 'Modell', class: klasse } = Astro.props;
+---
+<div class:list={['modell-umschalter', klasse]} role="group" aria-label={label} data-modell-umschalter>
+  {KIESEL_IDS.map((id) => (
+    <button type="button" aria-pressed={id === wert ? 'true' : 'false'} data-modell-wahl={id}>{MODELLE[id].name}</button>
+  ))}
+</div>
+
+<style>
+  .modell-umschalter {
+    display: inline-flex;
+    gap: var(--space-1);
+    padding: var(--space-1);
+    border-radius: var(--radius-full);
+    background: var(--glass);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+  }
+  button {
+    min-width: 44px;
+    height: 44px;
+    padding: 0 var(--space-4);
+    border: 0;
+    border-radius: var(--radius-full);
+    background: transparent;
+    color: var(--glass-ink);
+    font-family: var(--body);
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    /* Doppeltippen soll nicht zoomen, schnelles Hin und Her soll schalten */
+    touch-action: manipulation;
+  }
+  button[aria-pressed="true"] { background: var(--glass-on); color: var(--glass-on-ink); cursor: default; }
+  button:focus-visible { outline-offset: 2px; }
+</style>
+
+<script>
+  document.querySelectorAll('[data-modell-umschalter]').forEach((gruppe) => {
+    gruppe.addEventListener('click', (e) => {
+      const knopf = e.target.closest('[data-modell-wahl]');
+      if (!knopf || knopf.getAttribute('aria-pressed') === 'true') return;
+      gruppe.querySelectorAll('[data-modell-wahl]').forEach((b) => b.setAttribute('aria-pressed', b === knopf ? 'true' : 'false'));
+      gruppe.dispatchEvent(new CustomEvent('kiesel:modellwahl', { bubbles: true, detail: { modell: knopf.dataset.modellWahl } }));
+    });
+  });
+</script>

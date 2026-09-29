@@ -6,11 +6,13 @@
 //   radius: Eckradius der Vorderseite in mm (für die Umrisse auf /vergleichen/)
 //   typ: 'kiesel' | 'home' (Home-Button) | 'notch' | 'island' (Dynamic Island), bestimmt die Details
 //   geschaetzt: true = Konzept-Schätzung, Anzeige mit „ca.“
+//   kameras: Anzahl Kameras hinten (nur Kiesel). Daraus zeichnen der Zeichen-Motor (models.js)
+//            und das 3D-Modell (kiesel-3d/bauplan.js) die Kamerareihe.
 // iPhone-Werte laut Hersteller und Presseberichten. Beim iPhone 18 Pro Max weichen die Quellen
 // bei Dicke und Akku leicht voneinander ab.
 export const GERAETE = {
-  k1: { name: 'Kiesel 1', hoehe: 123.8, breite: 58.6, dicke: 9.0, gewicht: 140, akku: 3000, display: 4.7, radius: 9.6, typ: 'kiesel', geschaetzt: true },
-  pro: { name: 'Kiesel 1 Pro', hoehe: 131.5, breite: 64.2, dicke: 9.0, gewicht: 170, akku: 3600, display: 5.4, radius: 10.6, typ: 'kiesel', geschaetzt: true },
+  k1: { name: 'Kiesel 1', hoehe: 123.8, breite: 58.6, dicke: 9.0, gewicht: 140, akku: 3000, display: 4.7, radius: 9.6, typ: 'kiesel', geschaetzt: true, kameras: 1 },
+  pro: { name: 'Kiesel 1 Pro', hoehe: 131.5, breite: 64.2, dicke: 9.0, gewicht: 170, akku: 3600, display: 5.4, radius: 10.6, typ: 'kiesel', geschaetzt: true, kameras: 2 },
   se: { name: 'iPhone SE (2016)', hoehe: 123.8, breite: 58.6, dicke: 7.6, gewicht: 113, akku: 1624, display: 4.0, radius: 8.6, typ: 'home' },
   mini: { name: 'iPhone 13 mini', hoehe: 131.5, breite: 64.2, dicke: 7.65, gewicht: 140, akku: 2438, display: 5.4, radius: 10.5, typ: 'notch' },
   p18: { name: 'iPhone 18 Pro', hoehe: 150.0, breite: 71.9, dicke: 8.75, gewicht: 211, akku: 4056, display: 6.3, radius: 12, typ: 'island' },

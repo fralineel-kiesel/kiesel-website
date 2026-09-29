@@ -8,6 +8,7 @@ import Knopf from '../components/Knopf.astro';
 import Chip from '../components/Chip.astro';
 import GlasChip from '../components/GlasChip.astro';
 import ZoomLeiste from '../components/ZoomLeiste.astro';
+import ModellUmschalter from '../components/ModellUmschalter.astro';
 import ZoomSkala from '../components/modell/ZoomSkala.astro';
 import LinsenLeiste from '../components/modell/LinsenLeiste.astro';
 import { STUFEN, LINSEN } from '../data/kamera.js';
@@ -140,6 +141,7 @@ const RADIEN = [['s', '8 · klein'], ['m', '16 · Felder'], ['l', '24 · Karten'
           <Chip gruppe="ds">Normal</Chip>
           <Chip gruppe="ds">256 GB</Chip>
           <span class="glasgrund"><ZoomLeiste /></span>
+          <span class="glasgrund"><ModellUmschalter label="Modell (Beispiel)" /></span>
           <span class="glasgrund"><GlasChip icon="rotate">Glas-Chip</GlasChip></span>
         </div>
         <div class="reihe">

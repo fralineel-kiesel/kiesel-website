@@ -102,26 +102,25 @@ function loch(umriss, zuOrt, fase, wand) {
   };
 }
 
-// W, H: Breite und Höhe des Handys (mm). flachBis: bis zu welchem |x| die Unterkante gerade
-// ist (danach beginnt die Rundung der Ecke, dort gehören keine Löcher hin).
+// H: Höhe des Handys (mm). plan: bauplan().unterkante mit USB-C und den Lautsprecher-Löchern
+// (Lage und Anzahl rechnet bauplan.js, hier wird nur gezeichnet).
 // Liefert Geometrien für { fase, wand, grund, zunge }, alle zusammengefasst: So braucht die
 // ganze Unterkante nur vier Zeichenaufrufe, egal wie viele Löcher.
-export function unterkante({ H, flachBis }) {
+export function unterkante({ H, plan }) {
   const y = -H / 2 - 0.02; // 0.02 mm vor der Kante, gegen z-fighting
   const bei = (cx, cz = 0) => ([u, v]) => [cx + u, y, cz + v];
   const teile = { fase: [], wand: [], grund: [], zunge: [] };
   const dazu = (l) => { for (const k of ['fase', 'wand', 'grund']) teile[k].push(l[k]); };
 
-  // USB-C: Öffnung 8.4 × 2.6 mm (wie die echte Buchse), 0.35 mm Fase, 0.2 mm Innenwand
-  const usb = kapsel(8.4 + 0.7, 2.6 + 0.7);
-  dazu(loch(usb, bei(0), 0.35, 0.2));
+  // USB-C: Öffnung 8.4 × 2.6 mm, 0.35 mm Fase, 0.2 mm Innenwand
+  const { usb } = plan;
+  dazu(loch(kapsel(usb.breite + 0.7, usb.hoehe + 0.7), bei(usb.x), 0.35, 0.2));
   // Die Zunge in der Mitte: 6.6 × 0.7 mm, etwas heller als der Grund
   const zunge = kapsel(6.6, 0.7, 6);
-  teile.zunge.push(flaeche(zunge, ([u, v]) => [u, y - 0.01, v]));
+  teile.zunge.push(flaeche(zunge, ([u, v]) => [usb.x + u, y - 0.01, v]));
 
-  // Lautsprecher: eine Reihe runder Löcher (Ø 1.2 mm), neben USB-C bis kurz vor die Rundung
-  const start = 4.55 + 2.6, abstand = 2.2, ende = flachBis - 1.2;
-  for (let x = start; x <= ende + 1e-6; x += abstand) dazu(loch(kreis(0.6 + 0.2), bei(x), 0.2, 0.12));
+  // Lautsprecher: runde Löcher, Fase 0.2 mm rundherum
+  for (const l of plan.lautsprecher) dazu(loch(kreis(l.r + 0.2), bei(l.x), 0.2, 0.12));
 
   return Object.fromEntries(Object.entries(teile).map(([k, g]) => [k, mergeGeometries(g)]));
 }

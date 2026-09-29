@@ -9,7 +9,7 @@
 // <defs> anlegt. Sie funktionieren darum nur innerhalb einer Rückseite mit demselben pid.
 // Die Reihenfolge der Zeilen ist Absicht: In SVG liegt später Gezeichnetes oben.
 import { E, esc, stop, f, rr, uid } from './svg.js';
-import { MODELS, DICKE, geo, camrow } from './models.js';
+import { MODELS, DICKE, geo, camrow, KNOPF_HOEHE, LINSE_R, MIKRO_R, BLITZ_R } from './models.js';
 import { palette, led as ledZustand } from './colors.js';
 
 // Kiesel-Logo: die Kieselform und zwei "Adern"
@@ -39,8 +39,9 @@ export function commonDefs(pid, col) {
 // rechts; von hinten ist es gespiegelt.
 export function buttons(W, g, side, fill, dx = -10, w = 12) {
   let L, Rr;
-  if (side === 'front') { L = [['act', 70], ['v1', 120], ['v2', 120]]; Rr = [['pw', 180], ['cc', 110]]; }
-  else { L = [['pw', 180], ['cc', 110]]; Rr = [['act', 70], ['v1', 120], ['v2', 120]]; }
+  const K = KNOPF_HOEHE;
+  if (side === 'front') { L = [['act', K.act], ['v1', K.v1], ['v2', K.v2]]; Rr = [['pw', K.pw], ['cc', K.cc]]; }
+  else { L = [['pw', K.pw], ['cc', K.cc]]; Rr = [['act', K.act], ['v1', K.v1], ['v2', K.v2]]; }
   let out = '';
   for (const [k, h] of L) out += E('rect', { x: f(dx), y: f(g[k]), width: String(w), height: String(h), rx: '5', style: `fill: ${fill}` });
   for (const [k, h] of Rr) out += E('rect', { x: f(W - 12 - dx), y: f(g[k]), width: String(w), height: String(h), rx: '5', style: `fill: ${fill}` });
@@ -75,7 +76,7 @@ export function ledSvg(cx, cy, pid, led) {
   let s = '';
   if (led) s += E('circle', { cx: f(cx), cy: f(cy), r: '120', style: `fill: url(#${pid}lg)` });
   s += E('circle', { cx: f(cx), cy: f(cy + 3), r: '27', style: 'fill: #000000; opacity: 0.25', filter: `url(#${pid}ls)` });
-  s += E('circle', { cx: f(cx), cy: f(cy), r: '25', style: `fill: url(#${pid}bz)` });
+  s += E('circle', { cx: f(cx), cy: f(cy), r: String(BLITZ_R), style: `fill: url(#${pid}bz)` });
   s += E('circle', { cx: f(cx), cy: f(cy), r: '20', style: 'fill: #15171B' });
   s += E('circle', { cx: f(cx), cy: f(cy), r: '17', style: `fill: url(#${pid}ld)` });
   s += E('circle', { cx: f(cx - 5), cy: f(cy - 6), r: '4', style: 'fill: #FFFFFF; opacity: 0.7' });
@@ -149,9 +150,9 @@ export function backSvg(mk, col, pid, led = null, huelle = null, gravur = null) 
   // Gravur (neu, nicht aus lib.py) unter der MagSafe-Markierung. Ohne Gravur kommt nichts
   // dazu, darum bleiben alle Vergleiche mit Python gleich.
   if (gravur) s += gravurSvg(W, my + 320, col, gravur, !!huelle);
-  s += lens(xs[0], c, 68, pid, false);
-  if (m.cams === 2) s += lens(xs[1], c, 64, pid, true);
-  s += E('circle', { cx: f(mic), cy: f(c), r: '6', style: `fill: ${col.lo}` });
+  s += lens(xs[0], c, LINSE_R.haupt, pid, false);
+  if (m.cams === 2) s += lens(xs[1], c, LINSE_R.tele, pid, true);
+  s += E('circle', { cx: f(mic), cy: f(c), r: String(MIKRO_R), style: `fill: ${col.lo}` });
   s += ledSvg(fl, c, pid, led);
   return s;
 }
