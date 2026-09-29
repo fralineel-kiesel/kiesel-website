@@ -8,6 +8,7 @@
 //   Z      Bild-Zoom im Panorama: 1 = ganzes Bild (1600 breit), 8 = 200 breit
 //   linse  'haupt' (Hauptkamera, auch Kiesel 1) oder 'tele' (nur Pro, ab 3x)
 import { LINSEN_NAME, TELE_AB, MAX_ZOOM } from '../data/kamera.js';
+import { zahl as zahlFormat } from './format.js';
 
 // ── Zoom-Umrechnung ──
 // Stützpunkte Kamera-Zoom → Bild-Zoom, dazwischen gleichmässig im Logarithmus.
@@ -26,7 +27,7 @@ export const kameraZoom = (Z) => zwischen(Z, 1, 0);
 
 // Anzeige wie in der Kamera-App: eine Nachkommastelle, ohne „.0“ (2.8x, 3x)
 export const rund = (z) => Math.round(z * 10) / 10;
-export const zahl = (z) => String(rund(z));
+export const zahl = (z, sprache = 'de') => zahlFormat(rund(z), undefined, sprache);
 
 // Unschärfe in px bei 600 px Bildbreite (kamera-zoom.js rechnet auf die echte Breite um)
 //   Hauptkamera (auch Kiesel 1): bis 1x optisch scharf, darüber digital immer weicher.

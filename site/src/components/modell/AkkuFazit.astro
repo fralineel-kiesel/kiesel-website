@@ -7,12 +7,12 @@ import { AKKU } from '../../data/akku.js';
 import { MODELLE } from '../../data/modelle.js';
 import Knopf from '../Knopf.astro';
 import { pfad } from '../../lib/pfad.js';
+import { zahl } from '../../lib/format.js';
 
 const { modell } = Astro.props;
 const daten = AKKU[modell];
 const [, legende] = phoneOpen(modell, 0, 0, 1);
 const max = Math.max(...daten.balken.map(([, w]) => w));
-const zahl = (w) => w.toLocaleString('de-CH').replace(/[’']/g, '’');
 ---
 <div class="fazit">
   <div class="text">

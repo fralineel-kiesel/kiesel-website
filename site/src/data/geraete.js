@@ -23,12 +23,10 @@ export const GERAETE = {
 export const KIESEL_IDS = ['k1', 'pro'];
 export const VORBILD = { k1: 'se', pro: 'mini' };
 
-// Zahl im Schweizer Format: Dezimalpunkt, Tausender mit ’ (3’600). stellen = feste Nachkommastellen.
-// Ohne stellen: so viele wie nötig (9 → „9“, 123.8 → „123.8“).
-export function zahl(wert, stellen) {
-  const opt = stellen === undefined ? { maximumFractionDigits: 2 } : { minimumFractionDigits: stellen, maximumFractionDigits: stellen };
-  return wert.toLocaleString('de-CH', opt).replace(/[’']/g, '’');
-}
+// Zahl im Schweizer Format (3’600, 123.8): steht jetzt in lib/format.js, hier weitergereicht,
+// weil viele Dateien sie von hier holen.
+import { zahl } from '../lib/format.js';
+export { zahl };
 
 // Häufige Texte
 const ca = (g) => (g.geschaetzt ? 'ca. ' : '');

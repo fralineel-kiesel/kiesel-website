@@ -11,18 +11,16 @@
 //   Tage = 100 / (Tagesverbrauch + 8 Nachtstunden Standby)
 import { RECHNER } from '../data/akku.js';
 import { GERAETE } from '../data/geraete.js';
+import { zahl, uhrzeit, geschuetzt, prozent } from './format.js';
+
+export { uhrzeit, geschuetzt };
 
 const R = RECHNER;
 export const STUNDEN = R.ende - R.start; // 16
 export const TAETIGKEITEN = Object.keys(R.verbrauch);
 
-// „3.0 h“ (immer eine Nachkommastelle, Schweizer Format)
-export const stunden = (x) => x.toLocaleString('de-CH', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' h';
-// Uhrzeit aus Stunden: 22.307 → „22:18“
-export const uhrzeit = (h) => { const m = Math.round(h * 60); const H = Math.floor(m / 60) % 24, M = m % 60; return (H < 10 ? '0' : '') + H + ':' + (M < 10 ? '0' : '') + M; };
-
-// Für die Anzeige: „15 %“ nie zwischen Zahl und Prozentzeichen umbrechen (geschütztes Leerzeichen)
-export const geschuetzt = (text) => text.replace(/ %/g, '\u00a0%');
+// „3.0 h“ (immer eine Nachkommastelle). uhrzeit() und geschuetzt() stehen in lib/format.js.
+export const stunden = (x, sprache = 'de') => zahl(x, 1, sprache) + ' h';
 
 // Welcher typische Tag passt genau zu diesen Werten? (sonst null)
 export const welcherTag = (v) => Object.keys(R.tage).find((name) => TAETIGKEITEN.every((k) => R.tage[name][k] === v[k])) ?? null;
@@ -64,7 +62,7 @@ export function rechne(werte) {
   const namen = { pro: GERAETE.pro.name, k1: GERAETE.k1.name, se: GERAETE.se.name };
   if (summe > STUNDEN) {
     return {
-      werte: v, summe, tag, fehler: `Zusammen ${summe.toLocaleString('de-CH')} Stunden aktiv. Ein Tag von 07:00 bis 23:00 hat nur ${STUNDEN}, stell einen Regler tiefer.`,
+      werte: v, summe, tag, fehler: `Zusammen ${zahl(summe)} Stunden aktiv. Ein Tag von 07:00 bis 23:00 hat nur ${STUNDEN}, stell einen Regler tiefer.`,
       schlagzeile: '–',
       balken: ['pro', 'k1', 'se'].map((id) => ({ id, name: namen[id], text: '–', prozent: 0, farbe: 'line', leer: false, tage: '' })),
       ergebnisse: null, label: 'Keine Berechnung möglich',
@@ -95,14 +93,14 @@ export function rechne(werte) {
 }
 
 // Das ganze Diagramm als SVG-Text (Gitter, Achsen, drei Linien). breite: 620 (Desktop) oder schmaler.
-export function diagramm(erg, breite = 620) {
+export function diagramm(erg, breite = 620, sprache = 'de') {
   const { X, hoehe } = diagrammMasse(breite);
   let s = '';
   for (let i = 0; i < 5; i++) {
     s += `<line class="gitter" x1="50" y1="${20 + i * 60}" x2="${breite - 30}" y2="${20 + i * 60}"></line>`;
-    s += `<text class="achse" x="40" y="${24 + i * 60}" text-anchor="end">${100 - i * 25} %</text>`;
+    s += `<text class="achse" x="40" y="${24 + i * 60}" text-anchor="end">${prozent(100 - i * 25, sprache)}</text>`;
   }
-  for (const h of [7, 11, 15, 19, 23]) s += `<text class="achse" x="${X(h)}" y="286" text-anchor="middle">${String(h).padStart(2, '0')}:00</text>`;
+  for (const h of [7, 11, 15, 19, 23]) s += `<text class="achse" x="${X(h)}" y="286" text-anchor="middle">${uhrzeit(h, sprache)}</text>`;
   if (erg.ergebnisse) {
     s += `<path class="linie se" d="${linie(erg.ergebnisse.se, breite)}"></path>`;
     s += `<path class="linie k1" d="${linie(erg.ergebnisse.k1, breite)}"></path>`;
