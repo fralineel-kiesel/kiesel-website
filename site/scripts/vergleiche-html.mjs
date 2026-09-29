@@ -162,7 +162,16 @@ function ohneZusatzCss(css, cids, zaehler) {
   }).join('');
 }
 // data-astro-cid der neuen Bausteine (aus dem neuen HTML)
-const neueCids = (html) => [...new Set([...html.matchAll(/<(?:aside class="sprachhinweis|nav class="sprachwahl)[^>]*?(data-astro-cid-[a-z0-9]+)/g)].map((m) => m[1]))];
+// (aus dem ganzen Build: das CSS steckt auch in Seiten, die den Baustein nicht zeigen, z.B. Designsystem)
+let cidsCache = null;
+function neueCids(neuDist) {
+  if (cidsCache) return cidsCache;
+  const alle = new Set();
+  for (const d of dateien(neuDist).filter((x) => x.endsWith('.html'))) {
+    for (const m of fs.readFileSync(path.join(neuDist, d), 'utf8').matchAll(/<(?:aside class="sprachhinweis|nav class="sprachwahl)[^>]*?(data-astro-cid-[a-z0-9]+)/g)) alle.add(m[1]);
+  }
+  return (cidsCache = [...alle]);
+}
 
 // Nur im Browser-Teil: die Adresse nach dem Laden
 const REGELN_ADRESSE = [
@@ -184,6 +193,15 @@ const REGELN_ADRESSE = [
 // Dateinamen mit Hash (/_astro/kaufen.C8kEdgo3.css): Der Hash hängt am Inhalt, und der
 // Code der Skripte ändert sich ja. Auf beiden Seiten gleichmachen.
 const ohneHash = (s) => s.replace(/(\/_astro\/[\w.-]+?)\.[\w-]{8}\.(js|css|woff2|png|jpg|webp|svg)/g, '$1.[hash].$2');
+// Etappe 9b, ebenfalls auf beiden Seiten gleichmachen:
+// - Namen der CSS-Pakete (/_astro/index.css → pages.css): Seit die englischen Seiten die
+//   deutschen als Bausteine einbinden, teilt Vite die Pakete anders auf und benennt sie neu.
+//   Der Inhalt aller eingebundenen Stylesheets wird je Seite ohnehin verglichen (in Reihenfolge).
+// - erzeugte IDs (kiesel-logo-14, qs49fl): Logo.astro und uid() im Zeichen-Motor zählen über den
+//   ganzen Build; mit den englischen Seiten dazwischen verschieben sich die Nummern. Je Datei neu
+//   nummeriert, samt Verweisen (idsNeu, wie im Browser-Teil).
+const ohneCssNamen = (s) => s.replace(/(\/_astro\/)[\w.-]+?(\.\[hash\]\.css)/g, '$1[paket]$2');
+const gleichmachen = (s) => idsNeu(ohneCssNamen(ohneHash(s)));
 
 // Modul-Skripte: Ihr Code wandert mit dem Umbau (neue Importe, anderer Hash, klein genug zum
 // Einbetten oder nicht mehr). Was sie auf der Seite anrichten, prüft der Browser-Teil.
@@ -270,8 +288,8 @@ function vergleicheStatisch(altDist, neuDist, regeln = REGELN) {
       continue;
     }
     const at = a.toString('utf8'), bt = b.toString('utf8');
-    let erwartet = wendeAn(ohneModule(ohneHash(at)), regeln, zaehler);
-    let ist = regeln.length ? wendeAn(ohneModule(ohneHash(bt)), ZUSAETZE, zaehler) : ohneModule(ohneHash(bt));
+    let erwartet = wendeAn(ohneModule(gleichmachen(at)), regeln, zaehler);
+    let ist = regeln.length ? wendeAn(ohneModule(gleichmachen(bt)), ZUSAETZE, zaehler) : ohneModule(gleichmachen(bt));
     if (erwartet !== ist && regeln.length && stileSortiert(erwartet) === stileSortiert(ist)) {
       erwartet = ist;
       zaehler.set(CSS_REIHENFOLGE.name, (zaehler.get(CSS_REIHENFOLGE.name) ?? 0) + 1);
@@ -297,7 +315,7 @@ function vergleicheStatisch(altDist, neuDist, regeln = REGELN) {
     if (regeln.length) {
       // Zusätze nur herausnehmen, wo sie stehen; der Rest muss auch in der Reihenfolge gleich sein
       const blockweise = (t) => t.split('\n/* ── */\n').map((x) => obersteBloecke(x).join('')).join('\n/* ── */\n');
-      const ohne = b.split('\n/* ── */\n').map((x) => ohneZusatzCss(x, neueCids(neuHtml), zaehler)).join('\n/* ── */\n');
+      const ohne = b.split('\n/* ── */\n').map((x) => ohneZusatzCss(x, neueCids(neuDist), zaehler)).join('\n/* ── */\n');
       if (blockweise(a) === ohne) b = a;
     }
     if (a !== b) { console.log(`✗ ${d}: CSS anders\n${zeigeUnterschied(a, b)}`); cssFehler++; }
@@ -365,9 +383,11 @@ async function schnappschuss(kontext, url, ohneZusaetze = false) {
 // Nummer hängt davon ab, in welcher Reihenfolge Leerlauf-Aufgaben zeichnen. Darum bekommt jede
 // ID mit einer Ziffer eine neue Nummer nach Auftreten, samt aller Verweise (#id, url(#id)).
 function browserGleich(dom) {
-  let t = ohneHash(dom)
+  return idsNeu(ohneCssNamen(ohneHash(dom))
     .replace(/http:\/\/127\.0\.0\.1:\d+/g, '')
-    .replace(/^ *<link [^\n]*rel="modulepreload"[^\n]*\n/gm, '');
+    .replace(/^ *<link [^\n]*rel="modulepreload"[^\n]*\n/gm, ''));
+}
+function idsNeu(t) {
   const neu = new Map();
   for (const [, id] of t.matchAll(/\bid="([^"]*\d[^"]*)"/g)) if (!neu.has(id)) neu.set(id, `id${neu.size + 1}`);
   if (!neu.size) return t;
@@ -376,13 +396,18 @@ function browserGleich(dom) {
   return t.replace(re, (id) => neu.get(id));
 }
 
-async function stile(browser, url, schema) {
-  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce', colorScheme: schema });
+async function stile(browser, url, schema, ohneZusaetze = false) {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce', colorScheme: schema, locale: 'de-CH' });
   const s = await ctx.newPage();
   await s.goto(url, { waitUntil: 'networkidle' });
-  const r = await s.evaluate(() => [...document.querySelectorAll('*')].map((el) => { const c = getComputedStyle(el); return el.tagName + '|' + [...c].sort().map((p) => `${p}:${c.getPropertyValue(p)}`).join(';'); }));
+  if (ohneZusaetze) await s.evaluate((sel) => document.querySelectorAll(sel).forEach((e) => e.remove()), ZUSAETZE_DOM);
+  // <script> und <link> haben keinen sichtbaren Stil; ihre Anzahl hängt davon ab, wie Vite den
+  // Code aufteilt (modulepreload, Skripte der neuen Bausteine), darum nicht mitzählen
+  const r = await s.evaluate(() => [...document.querySelectorAll('*')].filter((el) => el.tagName !== 'SCRIPT' && el.tagName !== 'LINK').map((el) => { const c = getComputedStyle(el); return el.tagName + '|' + [...c].sort().map((p) => `${p}:${c.getPropertyValue(p)}`).join(';'); }));
   await ctx.close();
-  return r;
+  // Verweise auf erzeugte IDs (fill: url("#qs55fr")) nach Auftreten neu nummerieren, wie idsNeu()
+  const nr = new Map();
+  return r.map((z) => z.replace(/url\("#([^"]+)"\)/g, (_, id) => { if (!nr.has(id)) nr.set(id, nr.size + 1); return `url("#id${nr.get(id)}")`; }));
 }
 
 async function vergleicheLaufzeit(altDist, neuDist, regeln = REGELN, regelnAdresse = REGELN_ADRESSE) {
@@ -415,7 +440,7 @@ async function vergleicheLaufzeit(altDist, neuDist, regeln = REGELN, regelnAdres
   for (const d of stilSeiten) {
     const adresse = d.replace(/index\.html$/, '');
     for (const schema of ['light', 'dark']) {
-      const a = await stile(browser, alt.basis + adresse, schema), b = await stile(browser, neu.basis + adresse, schema);
+      const a = await stile(browser, alt.basis + adresse, schema), b = await stile(browser, neu.basis + adresse, schema, regeln.length > 0);
       const anders = a.length !== b.length ? Infinity : a.filter((s, i) => s !== b[i]).length;
       console.log(`${anders ? '✗' : '✓'} /${adresse} (${schema}): ${a.length} Elemente, ${anders === Infinity ? 'andere Anzahl' : `${anders} mit anderen berechneten Stilen`}`);
       if (anders) fehler++;
@@ -444,6 +469,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     console.log(`${String(n).padStart(5)} × ${r.name}\n        Grund: ${r.grund}`);
   }
   console.log('  immer: Hash in /_astro/-Dateinamen gleichgemacht, Modul-Skripte im statischen Teil ausgeblendet (Wirkung prüft Teil 2)');
+  console.log('  immer (seit 9b): Namen der CSS-Pakete und Nummern der Logo-IDs gleichgemacht (Aufteilung und Zähler über den ganzen Build; Inhalt je Seite verglichen)');
   const summe = statisch.fehler + laufzeit.fehler;
   console.log(summe ? `\n✗ ${summe} Unterschied(e) ohne Regel` : `\n✓ Kein Unterschied ausser den Regeln oben (alter Stand ${basis.sha})`);
   process.exit(summe ? 1 : 0);
