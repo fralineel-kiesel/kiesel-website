@@ -5,13 +5,13 @@
 export const akku = {
   story: {
     original: { titel: '2016: the original', text: (mah) => `The iPhone SE had ${mah} mAh. Its battery shared the space with a headphone jack, a SIM tray and a Home button.` },
-    klinke: { titel: 'Jack out', text: 'The jack at the bottom left goes, along with the electronics behind it. Want a cable? That’s what USB-C is for.', plus: '+ room at the bottom' },
-    sim: { titel: 'SIM tray out', text: 'eSIM only. No tray, no spring, no eject hole on the side.', plus: '+ room on the side' },
-    home: { titel: 'Home button out', text: 'Face ID takes over. The mechanics at the bottom disappear, and the display gets to go all the way to the edge.', plus: '+ room at the bottom' },
+    klinke: { titel: 'Jack: gone', text: 'The jack at the bottom left is gone, and so is the circuitry behind it. Need a cable? That’s what USB-C is for.', plus: '+ room at the bottom' },
+    sim: { titel: 'SIM tray: gone', text: 'eSIM only. No tray, no spring, no eject hole on the side.', plus: '+ room on the side' },
+    home: { titel: 'Home button: gone', text: 'Face ID takes over. The mechanics at the bottom disappear, and the display gets to go all the way to the edge.', plus: '+ room at the bottom' },
     waechst: {
       titel: 'The battery grows',
-      k1: (mm) => `The logic board gets more compact, the motor and speaker move down. Add ${mm} mm of thickness and silicon-carbon cells.`,
-      pro: (mm) => `The body grows to the size of the 13 mini, and the logic board gets more compact. Add ${mm} mm of thickness over the SE and silicon-carbon cells.`,
+      k1: (mm) => `The logic board gets more compact, and the motor and speaker move down. Plus ${mm} mm of extra thickness and silicon-carbon cells.`,
+      pro: (mm) => `The body grows to the size of the 13 mini, and the logic board gets more compact. Plus ${mm} mm more thickness than the SE and silicon-carbon cells.`,
       plus: (mah) => `approx. ${mah} mAh`,
     },
     titel: ['Less inside.', 'More battery.'],   // two lines
@@ -32,13 +32,13 @@ export const akku = {
   },
   fazit: {
     k1: (mm, mah) => `No headphone jack, no SIM tray, no Home button. Plus a silicon-carbon cell and ${mm} mm of extra thickness. That’s how around ${mah} mAh fit into the footprint of the SE.`,
-    pro: (mm, mah) => `No SIM tray, a silicon-carbon cell and ${mm} mm of extra thickness. That’s how around ${mah} mAh fit into the footprint of the 13 mini.`,
+    pro: (mm, mah) => `No SIM tray, a silicon-carbon cell and ${mm} mm more thickness than the 13 mini. That’s how around ${mah} mAh fit into the same footprint.`,
   },
   rechner: {
     verbrauch: (v) => `Battery used per hour on Kiesel 1: browsing ${v.surf}, video ${v.video}, music ${v.music}, camera and navigation ${v.cam}, gaming ${v.game}, standby ${v.standby}. The hours are spread evenly across the day.`,
     pro: (v) => `The Pro has ${v.mehr} more battery. Its bigger display costs a little, but thanks to the vapor chamber, the chip runs cooler and more efficiently for camera and gaming. All in all, it uses ${v.surf} less per hour, ${v.cam} less for camera and ${v.game} less for gaming.`,
     vorsprung: 'The more you use your phone, the bigger the Pro’s lead. On a quiet day, the two are close. On a long vacation day, every percent counts.',
-    se: (weniger, faktor) => `The 2016 SE is there for comparison. It has around ${weniger} less battery than Kiesel 1, so the model gives it ${faktor} times the consumption.`,
+    se: (weniger, faktor) => `The 2016 SE is there for comparison. It has around ${weniger} less battery than Kiesel 1, so the model has it draining ${faktor} times as fast.`,
   },
 };
 
@@ -57,11 +57,11 @@ export const akkuRechner = {
   soWird: 'How it’s calculated',
   gutZuWissen: 'Good to know',
   // result (rechne())
-  zuViel: (summe, von, bis, stunden) => `That’s ${summe} active hours. A day from ${von} to ${bis} only has ${stunden}, so turn a slider down.`,
+  zuViel: (summe, von, bis, stunden) => `That’s ${summe} active hours, but a day from ${von} to ${bis} only has ${stunden}. Turn a slider down.`,
   keineBerechnung: 'Can’t calculate',
   leerUm: (uhr) => `empty at ${uhr}`,
-  reicht: (tage, einTag) => `With this routine, lasts approx. ${einTag ? '1 day' : `${tage} days`}`,
-  schlapp: (name, uhr, proUhr, proRest) => `${name} runs out at ${uhr}, the Pro ${proUhr ? `at ${proUhr}` : `still has ${proRest} left`}.`,
+  reicht: (tage, einTag) => `Lasts approx. ${einTag ? '1 day' : `${tage} days`} at this rate`,
+  schlapp: (name, uhr, proUhr, proRest) => `${name} runs out at ${uhr}, ${proUhr ? `the Pro at ${proUhr}` : `while the Pro still has ${proRest} left`}.`,
   mehrUebrig: (punkte) => `The Pro has ${punkte} percentage points more left.`,
   label: (uhr, geraete) => `At ${uhr}: ${geraete.map(([name, text]) => `${name} ${text}`).join(', ')}`,
 };

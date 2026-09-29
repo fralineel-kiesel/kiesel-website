@@ -12,7 +12,7 @@ export const funktionen = {
   sprungmarken: 'On this page',
   kamera: {
     titel: 'Find the summit cross.',
-    text: 'Eight details are hidden in the panorama, and they only show up when you zoom in. At 3x, the Pro switches to its telephoto lens. You’ll spot it by the quick jump in sharpness.',
+    text: 'Eight details are hidden in the panorama, and they only show up when you zoom in. At 3x, the Pro switches to its telephoto lens. You can tell by the quick jump in sharpness.',
   },
 };
 

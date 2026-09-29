@@ -36,7 +36,7 @@ export const startseite = {
   huelle: {
     bild: (handy, farbe, huelle) => `${handy} in ${farbe} with the Kiesel Case in ${huelle}, back`,
     titel: 'The Kiesel Case',
-    text: 'Frosted on the back, so the color and the Kiesel shine through. Firm and grippy around the edges. In the same five colors as the phones, for both models.',
+    text: 'Frosted on the back, so the color and the pebble logo shine through. Firm and grippy around the edges. In the same five colors as the phones, for both models.',
     zumZubehoer: 'See accessories',
   },
 };
@@ -108,7 +108,7 @@ export const modellseite = {
   },
   makro: {
     titel: 'Get up close.',
-    pro: (cm) => `Two ways to go close: macro with the ultra wide from just a few centimeters, or the telephoto lens, which already focuses from around ${cm} cm. Switch lenses and watch the background. Tap the image to move the focus.`,
+    pro: (cm) => `Two ways to get close: macro with the ultra-wide lens from just a few centimeters, or the telephoto lens, which can focus from around ${cm} cm. Switch lenses and watch the background. Tap the image to move the focus.`,
     k1: 'The main camera does macro: blossom, bee and dewdrops, all up close. Tap the image to move the focus.',
   },
   akkuVergleich: 'Battery compared',
@@ -169,7 +169,7 @@ export const technik = {
     anschluss: 'USB-C',
     sim: 'eSIM only',
     mobilfunk: '4G by default, 5G only under heavy data load',
-    system: (system) => `${system} with a slim look`,
+    system: (system) => `${system} with a streamlined look`,
     updates: (jahre) => `at least ${jahre} years of system and security updates`,
     tasten: 'Action button, Camera button, volume, side button',
     extras: 'Zen Mode, Privacy Mode with a two-level hardware disconnect (Sensors Off, Radio Silence)',
@@ -188,14 +188,14 @@ export const technik = {
 // ── /kiesel-1/specs/ and /kiesel-1-pro/specs/ (TechnikSeite.astro) ──
 export const technikSeite = {
   seitenTitel: (name) => `${name} · Tech Specs`,
-  beschreibung: (name, anderes) => `All tech specs of ${name}, compared with ${anderes}. A fan concept, all values are estimates.`,
+  beschreibung: (name, anderes) => `All tech specs for ${name}, compared with ${anderes}. A fan concept, so all values are estimates.`,
   titel: 'Tech Specs',
   einleitung: (name, anderes) => `${name} and ${anderes} side by side. Anything that’s different on ${anderes} is marked in blue.`,
   nurUnterschiede: 'Show differences only',
   merkmal: 'Feature',
   anders: ' (different)',   // screen readers only, after the value
   keineUnterschiede: 'No differences in this view.',
-  hinweis: 'All values are concept figures and partly estimated. Kiesel is not a real product.',
+  hinweis: 'All values are concept figures, and some are estimates. Kiesel is not a real product.',
 };
 
 // ── 3D stage on the home page (Buehne3D.astro, also in the browser) ──

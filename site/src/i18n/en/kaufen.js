@@ -15,15 +15,15 @@ export const kaufen = {
   huellenFarbe: 'Case color',
   gravurTitel: 'Engraving, free',
   gravurVh: 'Engraving. ',   // screen readers only, before the hint
-  gravurHinweis: (max) => `Up to ${max} characters, engraved on the back below the Kiesel.`,
+  gravurHinweis: (max) => `Up to ${max} characters, engraved on the back below the pebble logo.`,
   gravurBeispiel: 'e.g. Lino’s Kiesel',
   zeichen: (n, max) => `${n} of ${max} characters`,
   inWarenkorb: 'Add to Bag',
   // description of the phone on the stage
-  bild: ({ name, farbe, huelle, gravur }) => `${name} in ${farbe}` + (huelle ? ` with case in ${huelle}` : '') + ', back' + (gravur ? `, engraved “${gravur}”` : ''),
-  zusammenfassung: ({ name, farbe, speicher, huelle, gravur }) => [name, farbe, speicher].concat(huelle ? ['with case'] : []).concat(gravur ? ['engraved'] : []).join(', '),
+  bild: ({ name, farbe, huelle, gravur }) => `${name} in ${farbe}` + (huelle ? ` with a case in ${huelle}` : '') + ', back' + (gravur ? `, engraved “${gravur}”` : ''),
+  zusammenfassung: ({ name, farbe, speicher, huelle, gravur }) => [name, farbe, speicher].concat(huelle ? ['with a case'] : []).concat(gravur ? ['engraved'] : []).join(', '),
   speicherNurBeim: (wunsch, modell, jetzt) => `${wunsch} is only available on ${modell}, so it’s ${jetzt} for now.`,
   speicherWieder: (stufe) => `Back to ${stufe}, as you picked before.`,
-  gravurPasstNicht: (fehler) => `The engraving doesn’t work yet: ${fehler}`,
-  schonVoll: (max) => `You already have ${max} of this Kiesel in your bag. That’s the limit.`,
+  gravurPasstNicht: (fehler) => `Check your engraving: ${fehler}`,
+  schonVoll: (max) => `You already have ${max} of these in your bag. That’s the limit.`,
 };
