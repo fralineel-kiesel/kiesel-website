@@ -7,17 +7,20 @@ import Buehne from '../Buehne.astro';
 import { handy } from '../../lib/kiesel-draw/index.js';
 import { MODELLE } from '../../data/modelle.js';
 import { abPreis } from '../../data/preise.js';
+import { texte, spracheVon } from '../../i18n/index.js';
 
 const { modell } = Astro.props;
 const m = MODELLE[modell];
+const t = texte(spracheVon(Astro.url));
+const S = t.modellseite;
 // hoehe: null = Grösse per CSS (die Bühne ist auf dem Handy kleiner)
-const hinten = handy({ ansicht: 'hinten', modell, farbe: m.seite.farbe, drehung: -8, hoehe: null, label: `${m.name}, Rückseite in ${m.seite.farbe}` });
-const vorne = handy({ ansicht: 'vorne', modell, farbe: m.seite.farbe, drehung: 5, hoehe: null, label: `${m.name}, Vorderseite in ${m.seite.farbe}` });
+const hinten = handy({ ansicht: 'hinten', modell, farbe: m.seite.farbe, drehung: -8, hoehe: null, label: S.bildHinten(m.name, t.farben[m.seite.farbe]) });
+const vorne = handy({ ansicht: 'vorne', modell, farbe: m.seite.farbe, drehung: 5, hoehe: null, label: S.bildVorne(m.name, t.farben[m.seite.farbe]) });
 ---
 <section class="kopf container" aria-labelledby="modell-titel">
   <h1 class="t-display" id="modell-titel">{m.name}</h1>
   <p class="t-2 unterzeile">{m.seite.unterzeile}</p>
-  <p class="preis t-muted">{abPreis(modell)} oder <a href="#farben">in fünf Farben ansehen</a></p>
+  <p class="preis t-muted">{S.preisOder(abPreis(modell))}<a href="#farben">{S.farbenAnsehen}</a></p>
   <Buehne class="doppel">
     <div class="paar">
       <div class="hinten" set:html={hinten} />

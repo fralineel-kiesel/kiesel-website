@@ -18,8 +18,11 @@ import { innenteile, akkuText, INNEN_MASSE, INNEN_WAND, phoneOpen, f, E } from '
 import { AKKU, SE_MAH } from '../../data/akku.js';
 import { MODELLE } from '../../data/modelle.js';
 import { GERAETE } from '../../data/geraete.js';
+import { texte, spracheVon } from '../../i18n/index.js';
 
 const { modell = 'k1' } = Astro.props;
+const t = texte(spracheVon(Astro.url));
+const A = t.akku.story;
 const daten = AKKU[modell];
 const name = MODELLE[modell].name;
 const S = 3.4; // px pro mm, wie im Artboard „Innenleben“
@@ -57,7 +60,7 @@ for (const t of zielTeile) {
 }
 // Beschriftung auf dem Akku: steht an der Kiesel-Stelle, das Skript schiebt sie vom SE her
 const tz = akkuText(modell, 0, 0, S), ts = akkuText('se', (dw - sw) / 2, (dh - sh) / 2, S);
-const endText = `ca. ${daten.mah} mAh`;
+const endText = A.waechst.plus(daten.mah);
 const textEbene = { id: 'akkutext', x: tz.x - 90, y: tz.y - 22, w: 180, h: 30 };
 const textSvg = E('svg', { width: '180', height: '30', viewBox: `${f(tz.x - 90)} ${f(tz.y - 22)} 180 30`, 'aria-hidden': 'true' },
   E('text', { x: f(tz.x), y: f(tz.y), 'data-akkutext': '', style: "font-family: 'Unbounded', sans-serif; font-size: 18px; font-weight: 600; fill: #E7ECF0; text-anchor: middle" }, endText));
@@ -73,7 +76,7 @@ const svgVoll = (inhalt, w, h, label) => E('svg', { width: f(w), height: f(h), v
 
 const WAENDE = 10;
 const schritte = daten.schritte;
-const label = `Innenleben im selben Massstab: links das iPhone SE (2016) mit ${SE_MAH} mAh, rechts der ${name} mit ca. ${daten.mah} mAh. Klinke, SIM-Schlitten und Home-Button fallen weg, der Akku wird grösser.`;
+const label = A.bild(GERAETE.se.name, SE_MAH, name, daten.mah);
 ---
 <section
   class="akku-story"
@@ -88,8 +91,8 @@ const label = `Innenleben im selben Massstab: links das iPhone SE (2016) mit ${S
   data-mitte={`${f(WELT_B / 2 - (geraetX + dw / 2))} ${f(WELT_H / 2 - (OBEN + dh / 2))}`}
 >
   <div class="container kopf">
-    <h2 class="t-1" id={`akku-titel-${modell}`}>Weniger drin.<br />Mehr Akku.</h2>
-    <p class="t-lead t-muted">Das SE von 2016 hatte {SE_MAH} mAh. Der {name} hat {modell === 'k1' ? 'dieselbe Grundfläche, aber fast doppelt so viel' : 'etwas mehr Fläche und mehr als doppelt so viel'}. <span class="nur-scroll">Scroll weiter und schau, woher der Platz kommt.</span></p>
+    <h2 class="t-1" id={`akku-titel-${modell}`}>{A.titel[0]}<br />{A.titel[1]}</h2>
+    <p class="t-lead t-muted">{A.einleitung[modell](SE_MAH, name)} <span class="nur-scroll">{A.scrollWeiter}</span></p>
   </div>
 
   <div class="spur" data-spur>
@@ -98,7 +101,7 @@ const label = `Innenleben im selben Massstab: links das iPhone SE (2016) mit ${S
       <ol class="schritte" role="list">
         {schritte.map((s, i) => (
           <li data-schritt={i} data-von={s.von} data-bis={s.bis}>
-            <span class="nr t-small" aria-hidden="true">{i + 1}/{schritte.length}</span>
+            <span class="nr t-small" aria-hidden="true">{A.nummer(i + 1, schritte.length)}</span>
             <h3 class="t-3">{s.titel}</h3>
             <p class="t-muted">{s.text}</p>
             {s.plus && <span class="plus t-small">{s.plus}</span>}
@@ -111,11 +114,11 @@ const label = `Innenleben im selben Massstab: links das iPhone SE (2016) mit ${S
     <div class="buehne" data-buehne role="img" aria-label={label}>
       <div class="anzeige" aria-hidden="true">
         <p><span class="t-zahl" data-mah-zahl>{daten.mah}</span> <span class="einheit">mAh</span></p>
-        <p class="t-small t-muted">Dicke <span data-dicke>9</span> mm · grobe Schätzung</p>
+        <p class="t-small t-muted">{A.dickeVor}<span data-dicke>9</span>{A.dickeNach}</p>
       </div>
       <div class="welt" style={`width: ${WELT_B}px; height: ${WELT_H}px`} aria-hidden="true" data-welt>
         <div class="vergleich" data-se-vergleich style={`left: ${f(seX)}px; top: ${OBEN}px; width: ${f(sw)}px; height: ${f(sh)}px`}>
-          <p class="name" style={`bottom: calc(100% + 14px)`}><b>iPhone SE (2016)</b><span>{SE_MAH} mAh</span></p>
+          <p class="name" style={`bottom: calc(100% + 14px)`}><b>{GERAETE.se.name}</b><span>{SE_MAH} mAh</span></p>
           <Fragment set:html={svgVoll(seVoll, sw, sh)} />
         </div>
         <p class="name ziel-name" data-ziel-name style={`left: ${f(geraetX)}px; width: ${f(dw)}px; bottom: calc(${WELT_H - OBEN}px + 14px)`}><b>{name}</b><span>{endText}</span></p>

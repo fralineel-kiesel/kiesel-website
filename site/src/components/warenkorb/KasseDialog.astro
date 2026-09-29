@@ -8,22 +8,27 @@
 // aber auch keine falsche Behauptung.
 import Knopf from '../Knopf.astro';
 import { MWST_PROZENT } from '../../data/preise.js';
+import { prozent } from '../../lib/format.js';
+import { texte, spracheVon } from '../../i18n/index.js';
+
+const t = texte(spracheVon(Astro.url));
+const K = t.kasse;
 ---
 <dialog class="kasse" role="dialog" aria-modal="true" aria-labelledby="kasse-titel" aria-describedby="kasse-text" data-kasse>
-  <p class="kicker">Kasse</p>
-  <h2 id="kasse-titel" class="titel">Kiesel gibt es nur in unseren Köpfen.</h2>
-  <p id="kasse-text" class="t-muted text">Bezahlen kannst du darum nichts. <span data-kasse-speicher>Dein Warenkorb bleibt aber gespeichert, falls Cupertino es sich doch noch anders überlegt.</span></p>
+  <p class="kicker">{K.kicker}</p>
+  <h2 id="kasse-titel" class="titel">{K.titel}</h2>
+  <p id="kasse-text" class="t-muted text">{K.bezahlen} <span data-kasse-speicher>{K.speicher.dauerhaft}</span></p>
 
-  <h3 class="unter">Deine Bestellung</h3>
+  <h3 class="unter">{K.bestellung}</h3>
   <ul role="list" class="liste" data-kasse-liste></ul>
   <dl class="summen">
-    <div><dt>davon MwSt. {MWST_PROZENT} %</dt><dd data-kasse-mwst></dd></div>
-    <div class="total"><dt>Total</dt><dd data-kasse-total></dd></div>
+    <div><dt>{t.warenkorb.mwst(prozent(MWST_PROZENT))}</dt><dd data-kasse-mwst></dd></div>
+    <div class="total"><dt>{t.warenkorb.total}</dt><dd data-kasse-total></dd></div>
   </dl>
 
   <div class="knoepfe">
-    <Knopf art="primaer" groesse="l" autofocus data-weitertraeumen>Weiterträumen</Knopf>
-    <Knopf art="sekundaer" groesse="l" data-kasse-leeren>Warenkorb leeren</Knopf>
+    <Knopf art="primaer" groesse="l" autofocus data-weitertraeumen>{K.weitertraeumen}</Knopf>
+    <Knopf art="sekundaer" groesse="l" data-kasse-leeren>{K.leeren}</Knopf>
   </div>
 </dialog>
 
@@ -69,12 +74,7 @@ import { MWST_PROZENT } from '../../data/preise.js';
   import { modal } from '../../scripts/modal.js';
   import { lesen, summen, artikelInfo, leeren, speicherOrt } from '../../scripts/warenkorb.js';
   import { chfRappen } from '../../lib/format.js';
-
-  const SPEICHER_TEXT = {
-    dauerhaft: 'Dein Warenkorb bleibt aber gespeichert, falls Cupertino es sich doch noch anders überlegt.',
-    sitzung: 'Dein Warenkorb bleibt aber da, solange dieser Tab offen ist, falls Cupertino es sich doch noch anders überlegt.',
-    seite: 'Dein Warenkorb bleibt aber da, bis du diese Seite verlässt, falls Cupertino es sich doch noch anders überlegt.',
-  };
+  import { kasse as K, warenkorb as W } from '../../i18n/de.js';
 
   document.querySelectorAll('[data-kasse]').forEach((dialog) => {
     // Nach „Warenkorb leeren“ gibt es „Zur Kasse“ nicht mehr: Fokus auf den Knopf im leeren
@@ -92,7 +92,7 @@ import { MWST_PROZENT } from '../../data/preise.js';
         const was = document.createElement('span');
         was.className = 'was';
         const name = document.createElement('span');
-        name.textContent = `${a.anzahl} × ${info.name}`;
+        name.textContent = W.stueckPreis(a.anzahl, info.name);
         const details = document.createElement('span');
         details.className = 'details';
         details.textContent = info.details; // textContent: eine Gravur wird nie zu HTML
@@ -106,7 +106,7 @@ import { MWST_PROZENT } from '../../data/preise.js';
       const s = summen(liste);
       dialog.querySelector('[data-kasse-mwst]').textContent = chfRappen(s.mwst);
       dialog.querySelector('[data-kasse-total]').textContent = chfRappen(s.total);
-      dialog.querySelector('[data-kasse-speicher]').textContent = SPEICHER_TEXT[speicherOrt()];
+      dialog.querySelector('[data-kasse-speicher]').textContent = K.speicher[speicherOrt()];
     }
 
     document.addEventListener('click', (e) => {

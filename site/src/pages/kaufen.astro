@@ -6,9 +6,10 @@
 // Alle Wahlen sind echte Formular-Elemente (Radio-Knöpfe, Schalter, Textfeld). Die Tastatur
 // funktioniert darum ohne eigenen Code: Tab springt von Gruppe zu Gruppe, Pfeiltasten wählen.
 //
-// Vorwahl per Adresse, z.B. /kaufen/?modell=pro&farbe=Himmelblau&speicher=2tb&huelle=Mattweiss
-// (huelle = Farbe der Hülle, schaltet die Hülle ein). Ungültiges wird ignoriert. Jede Wahl
-// schreibt die Adresse nach (ohne Gravur), neu laden behält also die Auswahl.
+// Vorwahl per Adresse, z.B. /kaufen/?modell=pro&farbe=sky-blue&speicher=2tb&huelle=matte-white
+// (huelle = Farbe der Hülle, schaltet die Hülle ein). Farben als Kennung, alte deutsche Namen
+// (farbe=Himmelblau) gehen auch. Ungültiges wird ignoriert. Jede Wahl schreibt die Adresse nach
+// (ohne Gravur, Farben als Kennung), neu laden behält also die Auswahl.
 //
 // Ohne Adresse: Kiesel 1 Pro, Himmelblau, 512 GB, ohne Hülle (die kommt nur auf Wunsch dazu).
 import BaseLayout from '../layouts/BaseLayout.astro';
@@ -20,32 +21,35 @@ import { handy } from '../lib/kiesel-draw/phone.js';
 import { PREISE, MODELL_IDS, HUELLE_PREIS, abPreis } from '../data/preise.js';
 import { GRAVUR_MAX } from '../lib/gravur.js';
 import { chf } from '../lib/format.js';
+import { texte, spracheVon } from '../i18n/index.js';
 
-const START = { modell: 'pro', farbe: 'Himmelblau', speicher: '512gb', huelleFarbe: 'Mattweiss' };
+const t = texte(spracheVon(Astro.url));
+const K = t.kaufen;
+const START = { modell: 'pro', farbe: 'sky-blue', speicher: '512gb', huelleFarbe: 'matte-white' };
 const startPreis = PREISE[START.modell].speicher.find((s) => s.id === START.speicher);
-const svg = handy({ ansicht: 'hinten', modell: START.modell, farbe: START.farbe, hoehe: null, label: `${PREISE[START.modell].name} in ${START.farbe}, Rückseite` });
+const svg = handy({ ansicht: 'hinten', modell: START.modell, farbe: START.farbe, hoehe: null, label: K.bild({ name: PREISE[START.modell].name, farbe: t.farben[START.farbe] }) });
 ---
-<BaseLayout titel="Kaufen" beschreibung="Kiesel 1 oder Kiesel 1 Pro zusammenstellen: Farbe, Speicher, Hülle und Gravur. Ein Fan-Konzept.">
+<BaseLayout titel={K.seitenTitel} beschreibung={K.beschreibung}>
   <div class="container kaufen" data-kaufen data-start={JSON.stringify(START)}>
-    <h1 class="t-1 titel">Kiesel kaufen</h1>
+    <h1 class="t-1 titel">{K.titel}</h1>
 
     <div class="raster">
       <div class="links">
         <Buehne class="buehne">
           <div class="handy" data-kaufen-handy data-modell={START.modell} set:html={svg} />
         </Buehne>
-        <p class="t-small t-muted lieferung">Lieferumfang: dein Kiesel und ein USB-C-Kabel.</p>
+        <p class="t-small t-muted lieferung">{K.lieferumfang}</p>
       </div>
 
       <form class="wahl" data-kaufen-form novalidate>
         <fieldset class="block block--erstes">
-          <legend class="block-titel">Modell</legend>
+          <legend class="block-titel">{K.modell}</legend>
           <div class="modelle">
             {MODELL_IDS.map((id) => (
               <label class="karte">
                 <input class="vh" type="radio" name="modell" value={id} checked={id === START.modell} />
                 <span class="karte-name">{PREISE[id].name}</span>
-                <span class="karte-sub">{PREISE[id].sub}</span>
+                <span class="karte-sub">{t.preise.unterzeile[id]}</span>
                 <span class="karte-preis">{abPreis(id)}</span>
               </label>
             ))}
@@ -53,11 +57,11 @@ const svg = handy({ ansicht: 'hinten', modell: START.modell, farbe: START.farbe,
         </fieldset>
 
         <div class="block">
-          <Farbwaehler name="farbe" wert={START.farbe} legende="Farbe" class="farbe" />
+          <Farbwaehler name="farbe" wert={START.farbe} legende={K.farbe} class="farbe" />
         </div>
 
         <fieldset class="block">
-          <legend class="block-titel">Speicher</legend>
+          <legend class="block-titel">{K.speicher}</legend>
           <div class="speicher" data-speicher-liste style={`--n: ${PREISE[START.modell].speicher.length}`}>
             {PREISE[START.modell].speicher.map((s) => (
               <label class="karte karte--klein">
@@ -78,29 +82,29 @@ const svg = handy({ ansicht: 'hinten', modell: START.modell, farbe: START.farbe,
         </fieldset>
 
         <div class="block">
-          <h2 class="block-titel">Kiesel-Hülle</h2>
-          <Schalter data-huelle-schalter>Hülle für {chf(HUELLE_PREIS)} dazu</Schalter>
+          <h2 class="block-titel">{K.huelle}</h2>
+          <Schalter data-huelle-schalter>{K.huelleDazu(chf(HUELLE_PREIS))}</Schalter>
           <div class="huelle-farben" data-huelle-farben hidden>
-            <Farbwaehler name="huelle-farbe" wert={START.huelleFarbe} legende="Farbe der Hülle" groesse={30} class="huelle-waehler" />
+            <Farbwaehler name="huelle-farbe" wert={START.huelleFarbe} legende={K.huellenFarbe} groesse={30} class="huelle-waehler" />
           </div>
         </div>
 
         <div class="block">
-          <h2 class="block-titel">Gravur, kostenlos</h2>
-          <label for="gravur" class="t-muted gravur-label"><span class="vh">Gravur. </span>Bis {GRAVUR_MAX} Zeichen, erscheint auf der Rückseite unter dem Kiesel.</label>
-          <input id="gravur" class="gravur" name="gravur" type="text" autocomplete="off" spellcheck="false" placeholder="z.B. Linos Kiesel" aria-invalid="false" aria-describedby="gravur-zaehler" data-gravur />
+          <h2 class="block-titel">{K.gravurTitel}</h2>
+          <label for="gravur" class="t-muted gravur-label"><span class="vh">{K.gravurVh}</span>{K.gravurHinweis(GRAVUR_MAX)}</label>
+          <input id="gravur" class="gravur" name="gravur" type="text" autocomplete="off" spellcheck="false" placeholder={K.gravurBeispiel} aria-invalid="false" aria-describedby="gravur-zaehler" data-gravur />
           <div class="gravur-unten">
             <p id="gravur-fehler" class="fehler" aria-live="polite" data-gravur-fehler></p>
-            <p id="gravur-zaehler" class="zaehler" data-gravur-zaehler>0 von {GRAVUR_MAX} Zeichen</p>
+            <p id="gravur-zaehler" class="zaehler" data-gravur-zaehler>{K.zeichen(0, GRAVUR_MAX)}</p>
           </div>
         </div>
 
         <div class="abschluss">
           <div class="summe" aria-live="polite" aria-atomic="true">
-            <span class="zusammenfassung" data-zusammenfassung>{PREISE[START.modell].name}, {START.farbe}, {startPreis.name}</span>
+            <span class="zusammenfassung" data-zusammenfassung>{PREISE[START.modell].name}, {t.farben[START.farbe]}, {startPreis.name}</span>
             <span class="total" data-total>{chf(startPreis.preis)}</span>
           </div>
-          <Knopf type="submit" art="primaer" groesse="l" data-in-warenkorb>In den Warenkorb</Knopf>
+          <Knopf type="submit" art="primaer" groesse="l" data-in-warenkorb>{K.inWarenkorb}</Knopf>
         </div>
         <p class="vh" aria-live="polite" data-kaufen-ansage></p>
       </form>
@@ -217,12 +221,13 @@ const svg = handy({ ansicht: 'hinten', modell: START.modell, farbe: START.farbe,
 
 <script>
   import { handy } from '../lib/kiesel-draw/phone.js';
-  import { PREISE, HUELLE_PREIS, FARBNAMEN, speicherStufe } from '../data/preise.js';
+  import { PREISE, HUELLE_PREIS, MAX_ANZAHL, speicherStufe } from '../data/preise.js';
+  import { farbId } from '../data/farben.js';
+  import { farben as FARBNAME, kaufen as K } from '../i18n/de.js';
   import { pruefeGravur, saubereGravur, GRAVUR_MAX } from '../lib/gravur.js';
   import { hinzufuegen } from '../scripts/warenkorb.js';
   import { chf } from '../lib/format.js';
 
-  const farbeNormal = (f) => FARBNAMEN.find((n) => n.toLowerCase() === String(f ?? '').toLowerCase());
   // „2 TB“, „2tb“, „512“ → '2tb', '512gb'
   const speicherNormal = (s) => {
     const t = String(s ?? '').toLowerCase().replace(/\s+/g, '');
@@ -250,9 +255,9 @@ const svg = handy({ ansicht: 'hinten', modell: START.modell, farbe: START.farbe,
     // ------------------------------------------------------------ Adresse lesen
     const q = new URLSearchParams(location.search);
     if (PREISE[q.get('modell')]) z.modell = q.get('modell');
-    if (farbeNormal(q.get('farbe'))) z.farbe = farbeNormal(q.get('farbe'));
+    if (farbId(q.get('farbe'))) z.farbe = farbId(q.get('farbe'));
     if (q.has('speicher') && speicherStufe(z.modell, speicherNormal(q.get('speicher')))) z.speicher = z.wunsch = speicherNormal(q.get('speicher'));
-    if (farbeNormal(q.get('huelle'))) { z.huelle = true; z.huelleFarbe = farbeNormal(q.get('huelle')); }
+    if (farbId(q.get('huelle'))) { z.huelle = true; z.huelleFarbe = farbId(q.get('huelle')); }
 
     // ------------------------------------------------------------ Speicher
     const stufen = () => PREISE[z.modell].speicher;
@@ -283,7 +288,7 @@ const svg = handy({ ansicht: 'hinten', modell: START.modell, farbe: START.farbe,
     // ------------------------------------------------------------ Gravur
     function pruefeFeld() {
       const { laenge, fehler: meldung } = pruefeGravur(feld.value);
-      zaehler.textContent = `${laenge} von ${GRAVUR_MAX} Zeichen`;
+      zaehler.textContent = K.zeichen(laenge, GRAVUR_MAX);
       if (fehler.textContent !== (meldung ?? '')) fehler.textContent = meldung ?? '';
       feld.setAttribute('aria-invalid', meldung ? 'true' : 'false');
       feld.setAttribute('aria-describedby', meldung ? 'gravur-fehler gravur-zaehler' : 'gravur-zaehler');
@@ -297,9 +302,7 @@ const svg = handy({ ansicht: 'hinten', modell: START.modell, farbe: START.farbe,
       return speicherStufe(z.modell, z.speicher).preis + (z.huelle ? HUELLE_PREIS : 0);
     }
     function zusammenfassung() {
-      return [PREISE[z.modell].name, z.farbe, speicherStufe(z.modell, z.speicher).name]
-        .concat(z.huelle ? ['mit Hülle'] : [])
-        .concat(z.gravur ? ['mit Gravur'] : []).join(', ');
+      return K.zusammenfassung({ name: PREISE[z.modell].name, farbe: FARBNAME[z.farbe], speicher: speicherStufe(z.modell, z.speicher).name, huelle: z.huelle, gravur: !!z.gravur });
     }
     let letztesBild = '';
     function zeichne() {
@@ -310,7 +313,7 @@ const svg = handy({ ansicht: 'hinten', modell: START.modell, farbe: START.farbe,
         ort.dataset.modell = z.modell;
         ort.innerHTML = handy({
           ansicht: 'hinten', modell: z.modell, farbe: z.farbe, huelle, gravur: z.gravur || null, hoehe: null,
-          label: `${PREISE[z.modell].name} in ${z.farbe}` + (huelle ? ` mit Hülle in ${huelle}` : '') + ', Rückseite' + (z.gravur ? `, Gravur «${z.gravur}»` : ''),
+          label: K.bild({ name: PREISE[z.modell].name, farbe: FARBNAME[z.farbe], huelle: huelle && FARBNAME[huelle], gravur: z.gravur }),
         });
       }
       wurzel.querySelector('[data-zusammenfassung]').textContent = zusammenfassung();
@@ -339,8 +342,8 @@ const svg = handy({ ansicht: 'hinten', modell: START.modell, farbe: START.farbe,
         zeichneSpeicher();
         const wunschStufe = Object.values(PREISE).flatMap((m) => m.speicher).find((s) => s.id === z.wunsch);
         speicherHinweis.textContent = z.speicher !== z.wunsch
-          ? `${wunschStufe.name} gibt es nur beim ${Object.values(PREISE).find((m) => m.speicher.some((s) => s.id === z.wunsch)).name}, darum jetzt ${speicherStufe(z.modell, z.speicher).name}.`
-          : (vorher !== z.speicher ? `Wieder ${speicherStufe(z.modell, z.speicher).name}, wie vorher gewählt.` : '');
+          ? K.speicherNurBeim(wunschStufe.name, Object.values(PREISE).find((m) => m.speicher.some((s) => s.id === z.wunsch)).name, speicherStufe(z.modell, z.speicher).name)
+          : (vorher !== z.speicher ? K.speicherWieder(speicherStufe(z.modell, z.speicher).name) : '');
       } else if (name === 'speicher') {
         z.speicher = z.wunsch = value;
         speicherHinweis.textContent = '';
@@ -360,13 +363,13 @@ const svg = handy({ ansicht: 'hinten', modell: START.modell, farbe: START.farbe,
       e.preventDefault();
       if (!pruefeFeld()) {
         feld.focus();
-        ansage.textContent = `Die Gravur passt noch nicht: ${fehler.textContent}`;
+        ansage.textContent = K.gravurPasstNicht(fehler.textContent);
         return;
       }
-      const handyArtikel = { art: 'handy', modell: z.modell, farbe: z.farbe, speicher: z.speicher, gravur: z.gravur || undefined };
+      const handyArtikel = { art: 'phone', modell: z.modell, farbe: z.farbe, speicher: z.speicher, gravur: z.gravur || undefined };
       const r = hinzufuegen(handyArtikel);
-      if (z.huelle) hinzufuegen({ art: 'huelle', modell: z.modell, farbe: z.huelleFarbe });
-      ansage.textContent = r?.gekappt ? 'Von diesem Kiesel liegen schon 9 im Warenkorb, mehr geht nicht.' : '';
+      if (z.huelle) hinzufuegen({ art: 'case', modell: z.modell, farbe: z.huelleFarbe });
+      ansage.textContent = r?.gekappt ? K.schonVoll(MAX_ANZAHL) : '';
       // Schublade auf; beim Schliessen kommt der Fokus auf diesen Knopf zurück
       window.dispatchEvent(new CustomEvent('kiesel:schublade', { detail: { ausloeser: e.submitter ?? form.querySelector('[data-in-warenkorb]') } }));
     });

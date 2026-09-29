@@ -7,7 +7,11 @@
 //   z      Kamera-Zoom, wie ihn die Kamera-App anzeigt (0.5x … 10x)
 //   Z      Bild-Zoom im Panorama: 1 = ganzes Bild (1600 breit), 8 = 200 breit
 //   linse  'haupt' (Hauptkamera, auch Kiesel 1) oder 'tele' (nur Pro, ab 3x)
-import { LINSEN_NAME, TELE_AB, MAX_ZOOM } from '../data/kamera.js';
+import { TELE_AB, MAX_ZOOM } from '../data/kamera.js';
+import { zahl as zahlFormat } from './format.js';
+import { kamera as DE } from '../i18n/de.js';
+
+// Alle Texte kommen aus der Textdatei (kamera in src/i18n/de.js); T = anderer Sprache übergeben.
 
 // ── Zoom-Umrechnung ──
 // Stützpunkte Kamera-Zoom → Bild-Zoom, dazwischen gleichmässig im Logarithmus.
@@ -26,7 +30,7 @@ export const kameraZoom = (Z) => zwischen(Z, 1, 0);
 
 // Anzeige wie in der Kamera-App: eine Nachkommastelle, ohne „.0“ (2.8x, 3x)
 export const rund = (z) => Math.round(z * 10) / 10;
-export const zahl = (z) => String(rund(z));
+export const zahl = (z, sprache = 'de') => zahlFormat(rund(z), undefined, sprache);
 
 // Unschärfe in px bei 600 px Bildbreite (kamera-zoom.js rechnet auf die echte Breite um)
 //   Hauptkamera (auch Kiesel 1): bis 1x optisch scharf, darüber digital immer weicher.
@@ -46,17 +50,20 @@ export const optisch = (z, linse) => rund(z) <= 1 || (linse === 'tele' && rund(z
 
 // Stufe mit Art: „1x optisch“, „6x digital“. Über dem Maximum des Modells (nur im Vergleich:
 // Kiesel 1 bei 10x) „max. 5x digital“.
-export function stufenText(modell, z, linse = linseBei(modell, z)) {
+export function stufenText(modell, z, linse = linseBei(modell, z), T = DE) {
   const max = MAX_ZOOM[modell];
-  const stufe = rund(z) > max ? `max. ${max}x` : `${zahl(z)}x`;
-  return `${stufe} ${optisch(Math.min(z, max), linse) ? 'optisch' : 'digital'}`;
+  const stufe = rund(z) > max ? T.maximal(max) : T.stufe(zahl(z));
+  return T.stufenText(stufe, optisch(Math.min(z, max), linse));
 }
 
 // Linsen-Label auf dem Bild: „Hauptkamera · 1x optisch“, „Tele · 6x digital“
-export const linsenText = (modell, z, linse = linseBei(modell, z)) => `${LINSEN_NAME[linse]} · ${stufenText(modell, z, linse)}`;
+export const linsenText = (modell, z, linse = linseBei(modell, z), T = DE) => T.linsenText(T.linse[linse], stufenText(modell, z, linse, T));
 
 // Für Screenreader: wie scharf ist das Bild (Unschärfe bei 600 px Breite)?
-export const schaerfeText = (px) => (px < 0.05 ? 'scharf' : px < 1.6 ? 'leicht weich' : 'unscharf');
+export const schaerfeText = (px, T = DE) => T.schaerfe[px < 0.05 ? 'scharf' : px < 1.6 ? 'leicht' : 'unscharf'];
+
+// Bildbeschreibung des Zoom-Bilds: „Alpenpanorama bei 3x, Tele-Linse, scharf“
+export const bildText = (z, linse, T = DE) => T.bild(zahl(z), T.linseLang[linse], schaerfeText(UNSCHAERFE[linse](z), T));
 
 // Texte des Zoom-Vergleichs (Pro-Seite): zwei Chips, lang (Desktop) und kurz (Handy), und
 // die Bildbeschreibung. Links der Kiesel 1 (immer Hauptkamera, max. 5x), rechts der Pro.
@@ -64,15 +71,14 @@ export const schaerfeText = (px) => (px < 0.05 ? 'scharf' : px < 1.6 ? 'leicht w
 // Pro-Chip. Ein Namenswechsel mitten im Linsenwechsel wäre zudem ein harter Textsprung
 // genau dort, wo das Bild weich überblenden soll (pruefe:kamera misst das mit).
 //   allein: Vergleich ausgeschaltet, nur noch der Pro im Bild
-export function vergleichTexte(z, linse = linseBei('pro', z), allein = false) {
-  const stufe = (m) => (rund(z) > MAX_ZOOM[m] ? `max. ${MAX_ZOOM[m]}x` : `${zahl(z)}x`);
-  const pro = `${linse === 'tele' ? 'Tele-Linse' : 'Hauptkamera'}, ${schaerfeText(UNSCHAERFE[linse](z))}`;
+export function vergleichTexte(z, linse = linseBei('pro', z), allein = false, T = DE) {
+  const V = T.vergleich;
+  const stufe = (m) => (rund(z) > MAX_ZOOM[m] ? T.maximal(MAX_ZOOM[m]) : T.stufe(zahl(z)));
+  const pro = V.linseSchaerfe(T.linseLang[linse], schaerfeText(UNSCHAERFE[linse](z), T));
   return {
-    lang: { k1: `Kiesel 1 · ${stufenText('k1', z)}`, pro: `Kiesel 1 Pro · ${stufenText('pro', z, linse)}` },
-    kurz: { k1: `Kiesel 1 · ${stufe('k1')}`, pro: `Pro · ${linse === 'tele' ? 'Tele · ' : ''}${stufe('pro')}` },
-    bild: allein
-      ? `Alpenpanorama bei ${zahl(z)}x: Kiesel 1 Pro, ${pro}`
-      : `Alpenpanorama bei ${zahl(z)}x: links Kiesel 1, ${schaerfeText(UNSCHAERFE.k1(z))}; rechts Kiesel 1 Pro, ${pro}`,
+    lang: { k1: V.k1(stufenText('k1', z, undefined, T)), pro: V.pro(stufenText('pro', z, linse, T)) },
+    kurz: { k1: V.k1(stufe('k1')), pro: V.proKurz(linse === 'tele', stufe('pro')) },
+    bild: allein ? V.bildAllein(zahl(z), pro) : V.bild(zahl(z), schaerfeText(UNSCHAERFE.k1(z), T), pro),
   };
 }
 

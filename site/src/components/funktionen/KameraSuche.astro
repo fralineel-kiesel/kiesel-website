@@ -11,13 +11,15 @@ import LinsenLeiste from '../modell/LinsenLeiste.astro';
 import KameraFunde from './KameraFunde.astro';
 import { panoramaQuelle } from '../../lib/kiesel-draw/index.js';
 import { STUFEN, LINSEN, TELE_AB, MAX_ZOOM } from '../../data/kamera.js';
+import { texte, spracheVon } from '../../i18n/index.js';
 
+const K = texte(spracheVon(Astro.url)).kamera;
 const quelle = panoramaQuelle(); // auch für die Vorschaubilder
 ---
 <div class="kamera-suche" data-kamera data-kamera-suche>
   <Fragment set:html={quelle.svg} />
   <div class="bild"><ZoomBild modell="pro" start={1} blick={[760, 300]} details quelle={quelle} /></div>
-  <ZoomSkala max={MAX_ZOOM.pro} stufen={STUFEN.pro} tele={TELE_AB} label="Zoom" />
+  <ZoomSkala max={MAX_ZOOM.pro} stufen={STUFEN.pro} tele={TELE_AB} label={K.zoom} />
   <LinsenLeiste abschnitte={LINSEN.pro} />
   <KameraFunde quelle={quelle.id} />
   <p class="vh" aria-live="polite" data-ansage></p>

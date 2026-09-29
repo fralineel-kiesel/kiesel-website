@@ -11,11 +11,14 @@ import { MODELS } from '../../lib/kiesel-draw/models.js';
 import { MODELLE } from '../../data/modelle.js';
 import { abPreis } from '../../data/preise.js';
 import { pfad } from '../../lib/pfad.js';
+import { texte, spracheVon } from '../../i18n/index.js';
 
 const { modell } = Astro.props;
 const m = MODELLE[modell];
+const t = texte(spracheVon(Astro.url));
+const S = t.startseite.karte;
 const vbh = MODELS[modell].H + 400; // Höhe der viewBox (siehe handy() in phone.js)
-const svg = handy({ ansicht: 'vorne', modell, farbe: m.karte.farbe, hoehe: null, label: `${m.name} in ${m.karte.farbe}, Vorderseite` });
+const svg = handy({ ansicht: 'vorne', modell, farbe: m.karte.farbe, hoehe: null, label: S.bild(m.name, t.farben[m.karte.farbe]) });
 ---
 <article class="karte">
   <div class="bild" style={`--vbh: ${vbh}`} set:html={svg} />
@@ -26,8 +29,8 @@ const svg = handy({ ansicht: 'vorne', modell, farbe: m.karte.farbe, hoehe: null,
   </ul>
   <p class="preis">{abPreis(modell)}</p>
   <div class="knoepfe">
-    <Knopf art="primaer" href={pfad(m.pfad)}>Mehr erfahren<span class="vh"> über den {m.name}</span></Knopf>
-    <Knopf art="sekundaer" href={pfad(`kaufen/?modell=${modell}&farbe=${m.karte.farbe}`)}>Kaufen<span class="vh">: {m.name}</span></Knopf>
+    <Knopf art="primaer" href={pfad(m.pfad)}>{t.geruest.mehrErfahren}<span class="vh">{S.ueber(m.name)}</span></Knopf>
+    <Knopf art="sekundaer" href={pfad(`kaufen/?modell=${modell}&farbe=${m.karte.farbe}`)}>{t.geruest.kaufen}<span class="vh">: {m.name}</span></Knopf>
   </div>
 </article>
 

@@ -2,34 +2,42 @@
 // /akku-rechner/ nach dem Artboard „Akku-Rechner“ (gen4.py): typischer Tag per Chips oder
 // fünf Reglern, Ergebnis um 23:00 als Akku-Balken, Verlauf über den Tag als Diagramm.
 // Rechnung: lib/akku-rechner.js, Werte: data/akku.js (RECHNER). Der Build rechnet den Tag
-// „Normal“ schon ins HTML, das Skript rechnet bei jeder Änderung neu.
+// „Normal“ schon ins HTML, das Skript rechnet bei jeder Änderung neu. Texte: akkuRechner in
+// src/i18n/de.js (die Tage und Regler haben Kennungen, siehe RECHNER).
 //
 // Die Regler sind echte <input type="range">: Pfeiltasten ±0.5 h, Bild auf/ab in grösseren
 // Schritten (1 h, Skript unten), Pos1/Ende ganz links/rechts. aria-valuetext sagt „3.0 Stunden“ statt „3“.
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Chip from '../components/Chip.astro';
-import { RECHNER, RECHNER_TEXTE } from '../data/akku.js';
+import { RECHNER, rechnerTexte } from '../data/akku.js';
+import { GERAETE } from '../data/geraete.js';
 import { rechne, diagramm, stunden, geschuetzt } from '../lib/akku-rechner.js';
+import { zahl, uhrzeit } from '../lib/format.js';
+import { texte, spracheVon } from '../i18n/index.js';
 
-const erg = rechne(RECHNER.tage[RECHNER.vorgabe]);
-const bild = diagramm(erg);
-const vorlesen = (x) => `${stunden(x).replace(' h', '')} Stunden`;
-const LEGENDE = [['pro', 'Kiesel 1 Pro'], ['k1', 'Kiesel 1'], ['se', 'iPhone SE (2016)']];
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
+const A = t.akkuRechner;
+const erg = rechne(RECHNER.tage[RECHNER.vorgabe], A, sprache);
+const bild = diagramm(erg, 620, sprache);
+const vorlesen = (x) => A.stundenVorlesen(zahl(x, 1, sprache));
+const LEGENDE = ['pro', 'k1', 'se'].map((id) => [id, GERAETE[id].name]);
+const ERKLAERUNG = rechnerTexte(t.akku, sprache);
 ---
-<BaseLayout titel="Akku-Rechner" beschreibung="Wie viel Akku bleibt am Abend? Stell deinen typischen Tag ein und vergleiche Kiesel 1, Kiesel 1 Pro und das iPhone SE von 2016. Ein Fan-Konzept.">
+<BaseLayout titel={A.titel} beschreibung={A.beschreibung}>
   <div class="rechner container" data-akku-rechner>
-    <h1 class="t-display">Akku-Rechner</h1>
-    <p class="t-lead t-muted einleitung">Stell deinen typischen Tag ein. Der Rechner startet um 07:00 mit 100 % und rechnet bis 23:00. Die restliche Zeit liegt das Handy im Standby.</p>
+    <h1 class="t-display">{A.titel}</h1>
+    <p class="t-lead t-muted einleitung">{A.einleitung}</p>
 
     <div class="raster">
       <div class="eingabe">
-        <div class="tage" role="group" aria-label="Typischer Tag">
-          {Object.keys(RECHNER.tage).map((name) => <Chip gedrueckt={name === erg.tag} data-tag={name}>{name}</Chip>)}
+        <div class="tage" role="group" aria-label={A.typischerTag}>
+          {Object.keys(RECHNER.tage).map((id) => <Chip gedrueckt={id === erg.tag} data-tag={id}>{A.tage[id]}</Chip>)}
         </div>
-        {RECHNER.regler.map(([key, label, max]) => (
+        {RECHNER.regler.map(([key, max]) => (
           <div class="regler">
             <div class="kopf">
-              <label for={`sl-${key}`}>{label}</label>
+              <label for={`sl-${key}`}>{A.regler[key]}</label>
               <output for={`sl-${key}`} data-aus={key}>{stunden(erg.werte[key])}</output>
             </div>
             <input type="range" id={`sl-${key}`} data-regler={key} min="0" max={max} step={RECHNER.schritt} value={erg.werte[key]} aria-valuetext={vorlesen(erg.werte[key])} />
@@ -40,7 +48,7 @@ const LEGENDE = [['pro', 'Kiesel 1 Pro'], ['k1', 'Kiesel 1'], ['se', 'iPhone SE 
 
       <div class="ausgabe">
         <section class="karte" aria-labelledby="um-23">
-          <h2 class="t-small t-muted" id="um-23">Um 23:00</h2>
+          <h2 class="t-small t-muted" id="um-23">{A.umTitel(uhrzeit(RECHNER.ende, sprache))}</h2>
           <p class="schlagzeile" data-schlagzeile aria-live="polite">{geschuetzt(erg.schlagzeile)}</p>
           <ul role="list" class="akkus">
             {erg.balken.map((b) => (
@@ -57,7 +65,7 @@ const LEGENDE = [['pro', 'Kiesel 1 Pro'], ['k1', 'Kiesel 1'], ['se', 'iPhone SE 
         </section>
 
         <section class="karte diagramm" aria-labelledby="verlauf">
-          <h2 class="t-text" id="verlauf">Akkustand über den Tag</h2>
+          <h2 class="t-text" id="verlauf">{A.verlauf}</h2>
           <svg viewBox={bild.viewBox} role="img" aria-label={erg.label} data-diagramm set:html={bild.inhalt}></svg>
           <ul role="list" class="legende" aria-hidden="true">
             {LEGENDE.map(([id, name]) => <li><span class:list={['strich', id]}></span>{name}</li>)}
@@ -66,14 +74,14 @@ const LEGENDE = [['pro', 'Kiesel 1 Pro'], ['k1', 'Kiesel 1'], ['se', 'iPhone SE 
       </div>
     </div>
 
-    <section class="erklaerung" aria-label="Erklärungen zum Rechner">
+    <section class="erklaerung" aria-label={A.erklaerungen}>
       <div>
-        <h2 class="t-3">So wird gerechnet</h2>
-        {RECHNER_TEXTE.soWird.map((t) => <p class="t-muted">{geschuetzt(t)}</p>)}
+        <h2 class="t-3">{A.soWird}</h2>
+        {ERKLAERUNG.soWird.map((x) => <p class="t-muted">{geschuetzt(x)}</p>)}
       </div>
       <div>
-        <h2 class="t-3">Gut zu wissen</h2>
-        {RECHNER_TEXTE.gutZuWissen.map((t) => <p class="t-muted">{geschuetzt(t)}</p>)}
+        <h2 class="t-3">{A.gutZuWissen}</h2>
+        {ERKLAERUNG.gutZuWissen.map((x) => <p class="t-muted">{geschuetzt(x)}</p>)}
       </div>
     </section>
   </div>
@@ -163,6 +171,8 @@ const LEGENDE = [['pro', 'Kiesel 1 Pro'], ['k1', 'Kiesel 1'], ['se', 'iPhone SE 
 <script>
   import { rechne, diagramm, stunden, geschuetzt } from '../lib/akku-rechner.js';
   import { RECHNER } from '../data/akku.js';
+  import { zahl } from '../lib/format.js';
+  import { akkuRechner as A } from '../i18n/de.js';
 
   document.querySelectorAll('[data-akku-rechner]').forEach((wurzel) => {
     const $ = (s) => wurzel.querySelector(s);
@@ -178,7 +188,7 @@ const LEGENDE = [['pro', 'Kiesel 1 Pro'], ['k1', 'Kiesel 1'], ['se', 'iPhone SE 
       for (const r of regler) {
         const x = erg.werte[r.dataset.regler];
         if (parseFloat(r.value) !== x) r.value = String(x);
-        r.setAttribute('aria-valuetext', `${stunden(x).replace(' h', '')} Stunden`);
+        r.setAttribute('aria-valuetext', A.stundenVorlesen(zahl(x, 1)));
         $(`[data-aus="${r.dataset.regler}"]`).textContent = stunden(x);
       }
       wurzel.querySelectorAll('[data-tag]').forEach((c) => c.setAttribute('aria-pressed', c.dataset.tag === erg.tag ? 'true' : 'false'));

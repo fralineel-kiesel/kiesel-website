@@ -13,29 +13,34 @@ import Kennzahlen from '../components/startseite/Kennzahlen.astro';
 import ZoomTeaser from '../components/startseite/ZoomTeaser.astro';
 import FunktionsKacheln from '../components/startseite/FunktionsKacheln.astro';
 import HuelleTeaser from '../components/startseite/HuelleTeaser.astro';
-import { FAQ } from '../data/faq.js';
+import { faqFuer } from '../data/faq.js';
 import { abPreis } from '../data/preise.js';
 import { MODELLE } from '../data/modelle.js';
 import { KIESEL_IDS } from '../data/geraete.js';
 import { pfad } from '../lib/pfad.js';
 import { KOPF_SKRIPT, STANDARD } from '../scripts/startmodell.js';
+import { texte, spracheVon } from '../i18n/index.js';
 
-const START_FARBE = 'Himmelblau';
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
+const S = t.startseite;
+const FAQ = faqFuer(t.faqFragen, sprache);
+const START_FARBE = 'sky-blue';
 const kaufen = (id, farbe) => pfad(`kaufen/?modell=${id}&farbe=${encodeURIComponent(farbe)}`);
 ---
 <BaseLayout>
   <script is:inline slot="kopf" set:html={KOPF_SKRIPT} />
   <section class="held container" aria-labelledby="titel">
-    <h1 class="t-display" id="titel">Passt in jede Hand.</h1>
+    <h1 class="t-display" id="titel">{S.titel}</h1>
     <p class="t-lead t-muted einleitung">
-      <span class="lang">Kiesel 1 und Kiesel 1 Pro: zwei kompakte Handys, gebaut um einen Akku, der bis in die Nacht hält.</span>
-      <span class="kurz">Kiesel 1 und Kiesel 1 Pro: zwei kompakte Handys mit Akku bis in die Nacht.</span>
+      <span class="lang">{S.einleitung}</span>
+      <span class="kurz">{S.einleitungKurz}</span>
     </p>
     <div class="knoepfe">
-      {KIESEL_IDS.map((id) => <Knopf art="primaer" groesse="l" href={pfad(MODELLE[id].pfad)} data-nur-modell={id}>{MODELLE[id].name} entdecken</Knopf>)}
+      {KIESEL_IDS.map((id) => <Knopf art="primaer" groesse="l" href={pfad(MODELLE[id].pfad)} data-nur-modell={id}>{S.entdecken(MODELLE[id].name)}</Knopf>)}
       {KIESEL_IDS.map((id) => (
         <Knopf art="sekundaer" groesse="l" href={kaufen(id, START_FARBE)} data-nur-modell={id} data-held-kaufen={id}>
-          Kaufen {abPreis(id)}<span class="vh">: {MODELLE[id].name}</span>
+          {t.geruest.kaufenAb(abPreis(id))}<span class="vh">: {MODELLE[id].name}</span>
         </Knopf>
       ))}
     </div>
@@ -45,15 +50,15 @@ const kaufen = (id, farbe) => pfad(`kaufen/?modell=${id}&farbe=${encodeURICompon
   </section>
 
   <section class="abschnitt container" aria-labelledby="modelle">
-    <h2 class="t-1" id="modelle">Welcher Kiesel passt zu dir?</h2>
-    <p class="t-lead t-muted unter">Beide im echten Massstab zueinander. Gleiche Farben, gleicher Chip. Der Pro hat mehr Fläche, mehr Akku und eine Tele-Kamera.</p>
+    <h2 class="t-1" id="modelle">{S.modelleTitel}</h2>
+    <p class="t-lead t-muted unter">{S.modelleText}</p>
     <div class="karten">
       <ModellKarte modell="k1" />
       <ModellKarte modell="pro" />
     </div>
   </section>
 
-  <section class="abschnitt container" aria-label="Kennzahlen">
+  <section class="abschnitt container" aria-label={S.kennzahlen}>
     <Kennzahlen />
   </section>
 
@@ -62,7 +67,7 @@ const kaufen = (id, farbe) => pfad(`kaufen/?modell=${id}&farbe=${encodeURICompon
   </section>
 
   <section class="abschnitt container" aria-labelledby="funktionen">
-    <h2 class="t-1" id="funktionen">Kleine Ideen, grosse Wirkung.</h2>
+    <h2 class="t-1" id="funktionen">{S.funktionenTitel}</h2>
     <FunktionsKacheln />
   </section>
 
@@ -71,7 +76,7 @@ const kaufen = (id, farbe) => pfad(`kaufen/?modell=${id}&farbe=${encodeURICompon
   </section>
 
   <section class="abschnitt container" aria-labelledby="fragen">
-    <h2 class="t-1" id="fragen">Häufige Fragen</h2>
+    <h2 class="t-1" id="fragen">{S.fragenTitel}</h2>
     <div class="faq">
       <Akkordeon eintraege={FAQ.filter((f) => f.startseite)} offen="kaufen" idVorsilbe="faq" />
     </div>

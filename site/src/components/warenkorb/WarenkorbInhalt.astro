@@ -14,45 +14,48 @@ import Knopf from '../Knopf.astro';
 import Icon from '../Icon.astro';
 import Farbwaehler from '../Farbwaehler.astro';
 import { HUELLE_PREIS, VERSAND, MWST_PROZENT } from '../../data/preise.js';
-import { chf } from '../../lib/format.js';
+import { chf, prozent } from '../../lib/format.js';
 import { pfad } from '../../lib/pfad.js';
+import { texte, spracheVon } from '../../i18n/index.js';
 
 const { art = 'schublade' } = Astro.props;
+const t = texte(spracheVon(Astro.url));
+const W = t.warenkorb;
 const p = `wk-${art}`; // Präfix für ids, damit Schublade und Seite sich nicht in die Quere kommen
 ---
 <div class:list={['wk', `wk--${art}`]} data-warenkorb-inhalt data-art={art}>
   <div class="haupt">
-    <ul role="list" class="liste" aria-label="Artikel im Warenkorb" data-wk-liste></ul>
+    <ul role="list" class="liste" aria-label={W.liste} data-wk-liste></ul>
 
     <div class="leer" data-wk-leer hidden>
-      <p class="leer-titel">Dein Warenkorb ist noch leer.</p>
-      <p class="t-muted">Zwei kleine Handys warten darauf, zusammengestellt zu werden.</p>
-      <Knopf href={pfad('kaufen/')} art="primaer" data-wk-leer-knopf>Kiesel zusammenstellen</Knopf>
+      <p class="leer-titel">{W.leerTitel}</p>
+      <p class="t-muted">{W.leerText}</p>
+      <Knopf href={pfad('kaufen/')} art="primaer" data-wk-leer-knopf>{W.zusammenstellen}</Knopf>
     </div>
 
     <section class="vorschlag" aria-labelledby={`${p}-vorschlag`} data-wk-vorschlag hidden>
       <div class="bild" aria-hidden="true" data-vorschlag-bild></div>
       <div class="vorschlag-text">
-        <h3 id={`${p}-vorschlag`} class="vorschlag-titel">Passende Hülle dazu?</h3>
-        <p class="t-small t-muted">Kiesel-Hülle für <span data-vorschlag-modell>Kiesel 1 Pro</span>, {chf(HUELLE_PREIS)}. Hinten milchig, am Rand griffig.</p>
-        <Farbwaehler name={`${p}-vorschlag-farbe`} wert="Mattweiss" legende="Farbe der Hülle" groesse={26} class="vorschlag-farben" />
-        <Knopf art="sekundaer" groesse="s" data-vorschlag-dazu>Dazulegen<span class="vh" data-vorschlag-vh></span></Knopf>
+        <h3 id={`${p}-vorschlag`} class="vorschlag-titel">{W.vorschlagTitel}</h3>
+        <p class="t-small t-muted">{W.vorschlagVor}<span data-vorschlag-modell>Kiesel 1 Pro</span>{W.vorschlagNach(chf(HUELLE_PREIS))}</p>
+        <Farbwaehler name={`${p}-vorschlag-farbe`} wert="matte-white" legende={W.huellenFarbe} groesse={26} class="vorschlag-farben" />
+        <Knopf art="sekundaer" groesse="s" data-vorschlag-dazu>{W.dazulegen}<span class="vh" data-vorschlag-vh></span></Knopf>
       </div>
     </section>
 
     {art === 'schublade'
-      ? <button type="button" class="weiter" data-wk-weiter>Weiter einkaufen <Icon name="arrow" size={16} /></button>
-      : <a class="weiter" href={pfad('kaufen/')}>Weiter einkaufen <Icon name="arrow" size={16} /></a>}
+      ? <button type="button" class="weiter" data-wk-weiter>{W.weiter} <Icon name="arrow" size={16} /></button>
+      : <a class="weiter" href={pfad('kaufen/')}>{W.weiter} <Icon name="arrow" size={16} /></a>}
   </div>
 
   <div class="fuss" data-wk-fuss hidden>
     <dl class="summen">
-      <div><dt>Zwischensumme</dt><dd data-summe="zwischensumme"></dd></div>
-      <div><dt>Versand</dt><dd data-summe="versand">{VERSAND === 0 ? 'kostenlos' : chf(VERSAND)}</dd></div>
-      <div><dt>davon MwSt. {MWST_PROZENT} %</dt><dd data-summe="mwst"></dd></div>
-      <div class="total"><dt>Total</dt><dd data-summe="total"></dd></div>
+      <div><dt>{W.zwischensumme}</dt><dd data-summe="zwischensumme"></dd></div>
+      <div><dt>{W.versand}</dt><dd data-summe="versand">{VERSAND === 0 ? W.kostenlos : chf(VERSAND)}</dd></div>
+      <div><dt>{W.mwst(prozent(MWST_PROZENT))}</dt><dd data-summe="mwst"></dd></div>
+      <div class="total"><dt>{W.total}</dt><dd data-summe="total"></dd></div>
     </dl>
-    <Knopf art="primaer" groesse="l" breit aria-haspopup="dialog" data-zur-kasse>Zur Kasse</Knopf>
+    <Knopf art="primaer" groesse="l" breit aria-haspopup="dialog" data-zur-kasse>{W.zurKasse}</Knopf>
   </div>
 
   <p class="vh" aria-live="polite" data-wk-ansage></p>
@@ -64,10 +67,10 @@ const p = `wk-${art}`; // Präfix für ids, damit Schublade und Seite sich nicht
         <h3 class="name" tabindex="-1" data-name></h3>
         <p class="details" data-details></p>
         <div class="menge" role="group" data-menge>
-          <button type="button" class="rund" aria-label="Eins weniger" data-minus><Icon name="minus" size={16} /></button>
+          <button type="button" class="rund" aria-label={W.einsWeniger} data-minus><Icon name="minus" size={16} /></button>
           <span class="zahl" data-zahl></span>
-          <button type="button" class="rund" aria-label="Eins mehr" data-plus><Icon name="plus" size={16} /></button>
-          <button type="button" class="entfernen" data-entfernen>Entfernen<span class="vh" data-entfernen-vh></span></button>
+          <button type="button" class="rund" aria-label={W.einsMehr} data-plus><Icon name="plus" size={16} /></button>
+          <button type="button" class="entfernen" data-entfernen>{W.entfernen}<span class="vh" data-entfernen-vh></span></button>
         </div>
       </div>
       <p class="preis"><span data-preis></span><span class="stueck t-muted" data-stueck></span></p>
@@ -226,6 +229,7 @@ const p = `wk-${art}`; // Präfix für ids, damit Schublade und Seite sich nicht
   import { lesen, summen, artikelInfo, setzeAnzahl, entfernen, hinzufuegen, beiAenderung } from '../../scripts/warenkorb.js';
   import { chfRappen } from '../../lib/format.js';
   import { PREISE, MAX_ANZAHL } from '../../data/preise.js';
+  import { farben as FARBNAME, warenkorb as W } from '../../i18n/de.js';
 
   // ── Zeichen-Motor erst bei Bedarf ──
   // Die Vorschaubilder zeichnet der Zeichen-Motor (phone.js, rund 19 KB). Dieses Skript läuft
@@ -265,8 +269,8 @@ const p = `wk-${art}`; // Präfix für ids, damit Schublade und Seite sich nicht
   }
   // [modell, handyfarbe, hülle] für das Vorschaubild einer Zeile
   function bildFuer(a, liste) {
-    if (a.art === 'handy') return [a.modell, a.farbe, null];
-    const handyDrunter = liste.find((b) => b.art === 'handy' && b.modell === a.modell);
+    if (a.art === 'phone') return [a.modell, a.farbe, null];
+    const handyDrunter = liste.find((b) => b.art === 'phone' && b.modell === a.modell);
     return [a.modell, handyDrunter?.farbe ?? a.farbe, a.farbe];
   }
 
@@ -286,12 +290,12 @@ const p = `wk-${art}`; // Präfix für ids, damit Schublade und Seite sich nicht
       li.querySelector('[data-name]').textContent = info.name;
       li.querySelector('[data-details]').textContent = info.details;
       li.querySelector('[data-zahl]').textContent = String(a.anzahl);
-      li.querySelector('[data-menge]').setAttribute('aria-label', `Anzahl: ${wer}`);
+      li.querySelector('[data-menge]').setAttribute('aria-label', W.anzahl(wer));
       li.querySelector('[data-entfernen-vh]').textContent = `: ${wer}`;
       li.querySelector('[data-minus]').setAttribute('aria-disabled', a.anzahl <= 1 ? 'true' : 'false');
       li.querySelector('[data-plus]').setAttribute('aria-disabled', a.anzahl >= MAX_ANZAHL ? 'true' : 'false');
       li.querySelector('[data-preis]').textContent = chfRappen(info.stueck * a.anzahl);
-      li.querySelector('[data-stueck]').textContent = a.anzahl > 1 ? `${a.anzahl} × ${chfRappen(info.stueck)}` : '';
+      li.querySelector('[data-stueck]').textContent = a.anzahl > 1 ? W.stueckPreis(a.anzahl, chfRappen(info.stueck)) : '';
       const bild = bildFuer(a, alle);
       const ort = li.querySelector('[data-bild]');
       const schluessel = bildSchluessel(...bild);
@@ -328,13 +332,13 @@ const p = `wk-${art}`; // Präfix für ids, damit Schublade und Seite sich nicht
     // Hüllen-Vorschlag: ein Handy liegt drin, aber keine Hülle für dieses Modell
     let vorschlagModell = null;
     function zeichneVorschlag(alle) {
-      const ohne = alle.find((a) => a.art === 'handy' && !alle.some((b) => b.art === 'huelle' && b.modell === a.modell));
+      const ohne = alle.find((a) => a.art === 'phone' && !alle.some((b) => b.art === 'case' && b.modell === a.modell));
       vorschlag.hidden = !ohne;
       if (!ohne) { vorschlagModell = null; return; }
       const farbe = vorschlag.querySelector('input[type="radio"]:checked').value;
       vorschlagModell = ohne.modell;
       vorschlag.querySelector('[data-vorschlag-modell]').textContent = PREISE[ohne.modell].name;
-      vorschlag.querySelector('[data-vorschlag-vh]').textContent = `: Kiesel-Hülle für ${PREISE[ohne.modell].name} in ${farbe}`;
+      vorschlag.querySelector('[data-vorschlag-vh]').textContent = `: ${W.huelleFuer(PREISE[ohne.modell].name, FARBNAME[farbe])}`;
       vorschlag.querySelector('[data-vorschlag-bild]').innerHTML = vorschau(ohne.modell, ohne.farbe, farbe) ?? '';
     }
     vorschlag.addEventListener('change', () => zeichneVorschlag(lesen()));
@@ -342,11 +346,11 @@ const p = `wk-${art}`; // Präfix für ids, damit Schublade und Seite sich nicht
       const modell = vorschlagModell;
       if (!modell) return;
       const farbe = vorschlag.querySelector('input[type="radio"]:checked').value;
-      const r = hinzufuegen({ art: 'huelle', modell, farbe });
+      const r = hinzufuegen({ art: 'case', modell, farbe });
       if (!r) return;
       // Der Vorschlag verschwindet jetzt. Fokus auf die neue Zeile, sonst fiele er auf <body>.
       liste.querySelector(`[data-id="${CSS.escape(r.id)}"] [data-name]`)?.focus();
-      sagen(`Kiesel-Hülle für ${PREISE[modell].name} in ${farbe} liegt im Warenkorb.`);
+      sagen(W.huelleDrin(PREISE[modell].name, FARBNAME[farbe]));
     });
 
     // Knöpfe in den Zeilen: ein Zuhörer für alle (auch für Zeilen, die erst später entstehen)
@@ -361,18 +365,18 @@ const p = `wk-${art}`; // Präfix für ids, damit Schublade und Seite sich nicht
       if (knopf.matches('[data-plus], [data-minus]')) {
         const plus = knopf.matches('[data-plus]');
         if (knopf.getAttribute('aria-disabled') === 'true') {
-          sagen(plus ? `Mehr als ${MAX_ANZAHL} Stück gehen nicht.` : 'Weniger als 1 geht nicht. Zum Wegnehmen „Entfernen“ wählen.');
+          sagen(plus ? W.nichtMehr(MAX_ANZAHL) : W.nichtWeniger);
           return;
         }
         const n = setzeAnzahl(id, a.anzahl + (plus ? 1 : -1));
-        sagen(`${name}: ${n} Stück. Total ${chfRappen(summen().total)}.`);
+        sagen(W.neueAnzahl(name, n, chfRappen(summen().total)));
       } else if (knopf.matches('[data-entfernen]')) {
         // Fokus danach auf die nächste Zeile (oder die vorige, oder „Warenkorb leer“)
         const nachbar = li.nextElementSibling ?? li.previousElementSibling;
         entfernen(id);
         if (nachbar?.isConnected) nachbar.querySelector('[data-name]').focus();
         else wurzel.querySelector('[data-wk-leer-knopf]').focus();
-        sagen(`${name} entfernt.`);
+        sagen(W.entfernt(name));
       }
     });
 

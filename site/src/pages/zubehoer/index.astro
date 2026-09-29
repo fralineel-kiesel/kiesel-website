@@ -10,40 +10,44 @@ import Knopf from '../../components/Knopf.astro';
 import Icon from '../../components/Icon.astro';
 import Farbwaehler from '../../components/Farbwaehler.astro';
 import { handy } from '../../lib/kiesel-draw/index.js';
-import { FARBEN, FARBNAMEN } from '../../data/farben.js';
+import { FARBEN, FARB_IDS } from '../../data/farben.js';
 import { HUELLE_PREIS } from '../../data/preise.js';
-import { ZUBEHOER } from '../../data/zubehoer.js';
+import { zubehoerFuer } from '../../data/zubehoer.js';
 import { chf } from '../../lib/format.js';
 import { pfad } from '../../lib/pfad.js';
+import { texte, spracheVon } from '../../i18n/index.js';
 
+const t = texte(spracheVon(Astro.url));
+const Z = t.zubehoer;
+const ZUBEHOER = zubehoerFuer(Z);
 const NAME = { k1: 'Kiesel 1', pro: 'Kiesel 1 Pro' };
 const K = ZUBEHOER.kombi;
-const kombiBild = (farbe, huelle) => handy({ ansicht: 'hinten', modell: 'pro', farbe, huelle, hoehe: null, drehung: -5, label: `Kiesel 1 Pro in ${farbe} mit Hülle in ${huelle}` });
+const kombiBild = (farbe, huelle) => handy({ ansicht: 'hinten', modell: 'pro', farbe, huelle, hoehe: null, drehung: -5, label: Z.bildKombi(t.farben[farbe], t.farben[huelle]) });
 const kaufenLink = (farbe, huelle) => pfad(`kaufen/?modell=pro&farbe=${encodeURIComponent(farbe)}&huelle=${encodeURIComponent(huelle)}`);
 ---
-<BaseLayout titel="Zubehör" beschreibung="Die Kiesel-Hülle für Kiesel 1 und Kiesel 1 Pro, in fünf Farben, frei kombinierbar.">
+<BaseLayout titel={Z.seitenTitel} beschreibung={Z.beschreibung}>
   <section class="kopf container" aria-labelledby="zubehoer-titel">
     <h1 class="t-display" id="zubehoer-titel">{ZUBEHOER.titel}</h1>
     <p class="t-lead t-muted">{ZUBEHOER.einleitung}</p>
-    <div class="filter" role="group" aria-label="Filter">
+    <div class="filter" role="group" aria-label={Z.filterLabel}>
       {ZUBEHOER.filter.map(([wert, text]) => <Chip gruppe="zubehoer-filter" gedrueckt={wert === 'alle'} data-filter={wert}>{text}</Chip>)}
     </div>
   </section>
 
-  <section class="container produkte" aria-label="Produkte" data-produkte>
+  <section class="container produkte" aria-label={Z.produkte} data-produkte>
     {ZUBEHOER.produkte.map((p) => (
       <article class="karte" data-modell={p.modell}>
-        <div class="bild" set:html={handy({ ansicht: 'hinten', modell: p.modell, farbe: p.handy, huelle: p.huelle, hoehe: null, drehung: -6, label: `Kiesel-Hülle in ${p.huelle} auf einem ${NAME[p.modell]} in ${p.handy}` })} />
-        <h2 class="t-3">Kiesel-Hülle</h2>
-        <p class="t-muted fuer">für {NAME[p.modell]}</p>
-        <div class="farben" aria-label="in fünf Farben" role="img">
-          {FARBNAMEN.map((f) => <span style={`--farbe: ${FARBEN[f].frame}`}></span>)}
+        <div class="bild" set:html={handy({ ansicht: 'hinten', modell: p.modell, farbe: p.handy, huelle: p.huelle, hoehe: null, drehung: -6, label: Z.bildKarte(t.farben[p.huelle], NAME[p.modell], t.farben[p.handy]) })} />
+        <h2 class="t-3">{Z.huelle}</h2>
+        <p class="t-muted fuer">{Z.fuer(NAME[p.modell])}</p>
+        <div class="farben" aria-label={Z.fuenfFarben} role="img">
+          {FARB_IDS.map((f) => <span style={`--farbe: ${FARBEN[f].frame}`}></span>)}
         </div>
         <div class="fuss">
           <span class="preis">{chf(HUELLE_PREIS)}</span>
           <div class="knoepfe">
-            <Knopf art="sekundaer" groesse="s" href={pfad(`zubehoer/huelle/?modell=${p.modell}&farbe=${p.huelle}`)}>Ansehen<span class="vh">: Kiesel-Hülle für {NAME[p.modell]}</span></Knopf>
-            <Knopf art="primaer" groesse="s" data-kaufen data-modell={p.modell} data-farbe={p.huelle}><span data-knopftext>In den Warenkorb</span><span class="vh">: Kiesel-Hülle für {NAME[p.modell]} in {p.huelle}</span></Knopf>
+            <Knopf art="sekundaer" groesse="s" href={pfad(`zubehoer/huelle/?modell=${p.modell}&farbe=${p.huelle}`)}>{Z.ansehen}<span class="vh">: {Z.huelleFuer(NAME[p.modell])}</span></Knopf>
+            <Knopf art="primaer" groesse="s" data-kaufen data-modell={p.modell} data-farbe={p.huelle}><span data-knopftext>{t.kaufen.inWarenkorb}</span><span class="vh">: {t.warenkorb.huelleFuer(NAME[p.modell], t.farben[p.huelle])}</span></Knopf>
           </div>
         </div>
       </article>
@@ -62,8 +66,8 @@ const kaufenLink = (farbe, huelle) => pfad(`kaufen/?modell=pro&farbe=${encodeURI
     <div class="kombi-text">
       <h2 class="t-1" id="kombi-titel">{K.titel}</h2>
       <p class="t-lead t-muted">{K.text}</p>
-      <Farbwaehler name="kombi-handy" wert={K.handy} legende="Handy" class="wahl" />
-      <Farbwaehler name="kombi-huelle" wert={K.huelle} legende="Hülle" class="wahl" />
+      <Farbwaehler name="kombi-handy" wert={K.handy} legende={Z.kombi.handy} class="wahl" />
+      <Farbwaehler name="kombi-huelle" wert={K.huelle} legende={Z.kombi.huelle} class="wahl" />
       <div class="kombi-knopf"><Knopf art="primaer" groesse="l" href={kaufenLink(K.handy, K.huelle)} data-kombi-kaufen>{K.knopf}</Knopf></div>
     </div>
   </section>
@@ -141,6 +145,7 @@ const kaufenLink = (farbe, huelle) => pfad(`kaufen/?modell=pro&farbe=${encodeURI
   import { handy } from '../../lib/kiesel-draw/phone.js';
   import { huelleKaufen } from '../../scripts/huelle-kaufen.js';
   import { pfad } from '../../lib/pfad.js';
+  import { farben as FARBNAME, zubehoer as Z } from '../../i18n/de.js';
 
   const ansage = document.querySelector('[data-ansage]');
 
@@ -166,7 +171,7 @@ const kaufenLink = (farbe, huelle) => pfad(`kaufen/?modell=pro&farbe=${encodeURI
       if (e.target.name === 'kombi-handy') wahl.handy = e.target.value;
       else if (e.target.name === 'kombi-huelle') wahl.huelle = e.target.value;
       else return;
-      ort.innerHTML = handy({ ansicht: 'hinten', modell: 'pro', farbe: wahl.handy, huelle: wahl.huelle, hoehe: null, drehung: -5, label: `Kiesel 1 Pro in ${wahl.handy} mit Hülle in ${wahl.huelle}` });
+      ort.innerHTML = handy({ ansicht: 'hinten', modell: 'pro', farbe: wahl.handy, huelle: wahl.huelle, hoehe: null, drehung: -5, label: Z.bildKombi(FARBNAME[wahl.handy], FARBNAME[wahl.huelle]) });
       link.href = pfad(`kaufen/?modell=pro&farbe=${encodeURIComponent(wahl.handy)}&huelle=${encodeURIComponent(wahl.huelle)}`);
     });
   });

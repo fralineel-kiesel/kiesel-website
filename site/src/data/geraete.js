@@ -23,20 +23,19 @@ export const GERAETE = {
 export const KIESEL_IDS = ['k1', 'pro'];
 export const VORBILD = { k1: 'se', pro: 'mini' };
 
-// Zahl im Schweizer Format: Dezimalpunkt, Tausender mit ’ (3’600). stellen = feste Nachkommastellen.
-// Ohne stellen: so viele wie nötig (9 → „9“, 123.8 → „123.8“).
-export function zahl(wert, stellen) {
-  const opt = stellen === undefined ? { maximumFractionDigits: 2 } : { minimumFractionDigits: stellen, maximumFractionDigits: stellen };
-  return wert.toLocaleString('de-CH', opt).replace(/[’']/g, '’');
-}
+// Zahl im Schweizer Format (3’600, 123.8): steht jetzt in lib/format.js, hier weitergereicht,
+// weil viele Dateien sie von hier holen.
+import { zahl } from '../lib/format.js';
+import { geraete as DE } from '../i18n/de.js';
+export { zahl };
 
-// Häufige Texte
-const ca = (g) => (g.geschaetzt ? 'ca. ' : '');
-export const masse = (id) => { const g = GERAETE[id]; return `${zahl(g.hoehe)} × ${zahl(g.breite)} × ${zahl(g.dicke)} mm`; };
-export const gewicht = (id) => `${ca(GERAETE[id])}${GERAETE[id].gewicht} g`;
+// Häufige Texte. T = Abschnitt geraete der Textdatei (Standard: Deutsch), sprache fürs Zahlenformat
+const ca = (g, T) => (g.geschaetzt ? T.ca : '');
+export const masse = (id, T = DE, sprache = 'de') => { const g = GERAETE[id]; return `${zahl(g.hoehe, undefined, sprache)} × ${zahl(g.breite, undefined, sprache)} × ${zahl(g.dicke, undefined, sprache)} mm`; };
+export const gewicht = (id, T = DE) => `${ca(GERAETE[id], T)}${GERAETE[id].gewicht} g`;
 // mAh ohne Tausenderzeichen (4-stellige Zahlen schreibt man zusammen: 3000 mAh)
-export const akku = (id) => `${ca(GERAETE[id])}${GERAETE[id].akku} mAh`;
-export const zoll = (id) => `${ca(GERAETE[id])}${zahl(GERAETE[id].display)}″`;
+export const akku = (id, T = DE) => `${ca(GERAETE[id], T)}${GERAETE[id].akku} mAh`;
+export const zoll = (id, T = DE, sprache = 'de') => `${ca(GERAETE[id], T)}${zahl(GERAETE[id].display, undefined, sprache)}″`;
 
 // Mehr Akku als das Vorbild, in Prozent (gerundet): Kiesel 1 gegen SE → 85
 export const akkuPlus = (id, gegen = VORBILD[id]) => Math.round((GERAETE[id].akku / GERAETE[gegen].akku - 1) * 100);

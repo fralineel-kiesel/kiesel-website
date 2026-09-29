@@ -8,14 +8,13 @@
 // Beim Laden setzt ein Mini-Skript im <head> (BaseLayout) data-theme, bevor die Seite
 // gezeichnet wird. Sonst würde kurz das falsche Thema aufblitzen.
 // Technik wie beim Farbwähler: echte Radio-Knöpfe, damit Tastatur und Screenreader passen.
-const OPTIONEN = [
-  { wert: 'auto', text: 'Auto' },
-  { wert: 'light', text: 'Hell' },
-  { wert: 'dark', text: 'Dunkel' },
-];
+import { texte, spracheVon } from '../i18n/index.js';
+
+const t = texte(spracheVon(Astro.url));
+const OPTIONEN = ['auto', 'light', 'dark'].map((wert) => ({ wert, text: t.geruest.thema[wert] }));
 ---
 <fieldset class="thema" data-thema-umschalter>
-  <legend>Thema</legend>
+  <legend>{t.geruest.thema.legende}</legend>
   <div class="optionen">
     {OPTIONEN.map((o) => (
       <label>

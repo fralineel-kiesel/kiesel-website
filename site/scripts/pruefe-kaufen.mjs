@@ -76,11 +76,11 @@ pruefe('Aufräumen: Rand-Leerzeichen weg, doppelte zu einem', saubereGravur('  L
 console.log('\n── Einträge aufräumen ──');
 pruefe('Unbekannte Farbe fällt weg', bereinige(H('pro', 'Lila', '2tb')) === null);
 pruefe('Kiesel 1 mit 2 TB fällt weg', bereinige(H('k1', 'Mattweiss', '2tb')) === null);
-pruefe('Farbe in Kleinbuchstaben wird korrigiert', bereinige(H('pro', 'mattschwarz', '2tb'))?.farbe === 'Mattschwarz');
+pruefe('Alter Farbname (auch klein) wird zur Kennung', bereinige(H('pro', 'mattschwarz', '2tb'))?.farbe === 'matte-black');
 pruefe('Anzahl 42 → 9, 0 → 1, „abc“ → 1', bereinige(U('pro', 'Titangrau', 42)).anzahl === 9 && bereinige(U('pro', 'Titangrau', 0)).anzahl === 1 && bereinige(U('pro', 'Titangrau', 'abc')).anzahl === 1);
 pruefe('Gravur mit <img …> fällt weg (nie als HTML)', bereinige(H('pro', 'Himmelblau', '512gb', 1, '<img src=x onerror=alert(1)>')) === null);
 const alt = bereinige({ id: 'huelle-k1-mattweiss', art: 'huelle', name: 'Kiesel-Hülle', modell: 'k1', farbe: 'Mattweiss', preis: 1, anzahl: 1 });
-pruefe('Altes Format aus Etappe 5 wird übernommen, sein Preis ignoriert', alt?.art === 'huelle' && summen([alt]).total === HUELLE_PREIS * 100);
+pruefe('Altes Format aus Etappe 5 wird übernommen (als case), sein Preis ignoriert', alt?.art === 'case' && summen([alt]).total === HUELLE_PREIS * 100);
 
 console.log('\n── Preise nur in data/preise.js ──');
 {
@@ -158,7 +158,7 @@ try {
     const { seite, ctx, status } = await oeffne('kaufen/');
     const gewaehlt = (name) => seite.locator(`input[name="${name}"]:checked`).getAttribute('value');
     pruefe('Start: Pro, Himmelblau, 512 GB, ohne Hülle, CHF 1’700.–',
-      (await gewaehlt('modell')) === 'pro' && (await gewaehlt('farbe')) === 'Himmelblau' && (await gewaehlt('speicher')) === '512gb'
+      (await gewaehlt('modell')) === 'pro' && (await gewaehlt('farbe')) === 'sky-blue' && (await gewaehlt('speicher')) === '512gb'
       && (await seite.locator('[data-huelle-schalter]').getAttribute('aria-checked')) === 'false' && (await total(seite)) === 'CHF 1’700.–', await total(seite));
 
     await seite.locator('label[title="Mattschwarz"]').first().click();
@@ -174,7 +174,7 @@ try {
     const bild = await handySvg(seite);
     pruefe('Hülle an, Titangrau: CHF 2’359.–, Handy mit Hülle', (await total(seite)) === 'CHF 2’359.–' && bild.label.includes('mit Hülle in Titangrau'), `${await total(seite)} ${bild.label}`);
     pruefe('Zusammenfassung', (await seite.locator('[data-zusammenfassung]').textContent()) === 'Kiesel 1 Pro, Mattschwarz, 2 TB, mit Hülle, mit Gravur');
-    pruefe('Adresse nachgeführt (ohne Gravur)', new URL(seite.url()).search === '?modell=pro&farbe=Mattschwarz&speicher=2tb&huelle=Titangrau', seite.url());
+    pruefe('Adresse nachgeführt (ohne Gravur)', new URL(seite.url()).search === '?modell=pro&farbe=matte-black&speicher=2tb&huelle=titanium-gray', seite.url());
 
     await seite.locator('[data-in-warenkorb]').click();
     await seite.waitForFunction(() => document.querySelector('[data-schublade]').open);
@@ -200,7 +200,7 @@ try {
 
     await seite.reload({ waitUntil: 'load' });
     pruefe('Neu geladen: Zähler 2, Speicher unverändert', (await zaehler(seite)) === '2' && (await speicher(seite)).length === 1);
-    pruefe('Neu geladen: Auswahl aus der Adresse wieder da', (await gewaehlt('speicher')) === '2tb' && (await gewaehlt('farbe')) === 'Mattschwarz' && (await total(seite)) === 'CHF 2’359.–', await total(seite));
+    pruefe('Neu geladen: Auswahl aus der Adresse wieder da', (await gewaehlt('speicher')) === '2tb' && (await gewaehlt('farbe')) === 'matte-black' && (await total(seite)) === 'CHF 2’359.–', await total(seite));
 
     await seite.locator('button[data-warenkorb-knopf]').click();
     await seite.waitForFunction(() => document.querySelector('[data-schublade]').open);
@@ -244,7 +244,7 @@ try {
     pruefe('Pfeiltasten: Kiesel 1 und zurück zum Pro', (await seite.locator('input[name="modell"]:checked').getAttribute('value')) === 'pro');
     pruefe('Tab → Farbe (Himmelblau), → rechts = Mattschwarz', await tabBis(() => document.activeElement.name === 'farbe'));
     await k.press('ArrowRight');
-    pruefe('Farbe Mattschwarz', (await seite.locator('input[name="farbe"]:checked').getAttribute('value')) === 'Mattschwarz');
+    pruefe('Farbe Mattschwarz', (await seite.locator('input[name="farbe"]:checked').getAttribute('value')) === 'matte-black');
     await tabBis(() => document.activeElement.name === 'speicher');
     await k.press('ArrowRight');
     await k.press('ArrowRight');
@@ -253,7 +253,7 @@ try {
     await k.press('Space');
     await tabBis(() => document.activeElement.name === 'huelle-farbe');
     await k.press('ArrowLeft');
-    pruefe('Hülle per Leertaste an, Farbe per Pfeiltaste: Titangrau', (await seite.locator('[data-huelle-schalter]').getAttribute('aria-checked')) === 'true' && (await seite.locator('input[name="huelle-farbe"]:checked').getAttribute('value')) === 'Titangrau');
+    pruefe('Hülle per Leertaste an, Farbe per Pfeiltaste: Titangrau', (await seite.locator('[data-huelle-schalter]').getAttribute('aria-checked')) === 'true' && (await seite.locator('input[name="huelle-farbe"]:checked').getAttribute('value')) === 'titanium-gray');
     await tabBis(() => document.activeElement.id === 'gravur');
     await k.type('Linos Kiesel');
     pruefe('Gravur getippt, Preis CHF 2’359.–', (await handySvg(seite)).gravur === 'Linos Kiesel' && (await total(seite)) === 'CHF 2’359.–');
@@ -286,7 +286,7 @@ try {
     let f = await fokus(seite);
     pruefe('„Eins mehr“ mit Enter: Menge 2, Fokus bleibt auf dem Knopf', (await zeilen(seite))[0].anzahl === '2' && f.daten.includes('plus'), JSON.stringify(f));
     // von „+“ der ersten Zeile per Tab zu „Entfernen“ der zweiten (Hülle)
-    await tabBis(() => document.activeElement.matches('[data-entfernen]') && document.activeElement.closest('li').dataset.id.startsWith('huelle'));
+    await tabBis(() => document.activeElement.matches('[data-entfernen]') && document.activeElement.closest('li').dataset.id.startsWith('case'));
     await k.press('Enter');
     f = await fokus(seite);
     pruefe('Hülle mit Enter entfernt, Fokus auf der verbleibenden Zeile', (await zeilen(seite)).length === 1 && f.text === 'Kiesel 1 Pro', JSON.stringify(f));
@@ -380,10 +380,10 @@ try {
   // ==================================================================== 4. Randfälle
   console.log('\n── Adresse ──');
   for (const [adresse, erwartung, titel] of [
-    ['kaufen/?modell=k1&farbe=KIESELBEIGE&speicher=1TB&huelle=mattschwarz', ['k1', 'Kieselbeige', '1tb', 'true', 'CHF 1’659.–'], 'gültig (Gross/Klein egal, „1TB“)'],
-    ['kaufen/?modell=k1&farbe=Himmelblau&speicher=2tb&huelle=Lila', ['k1', 'Himmelblau', '512gb', 'false', 'CHF 1’400.–'], 'Kiesel 1 mit 2 TB, Hülle „Lila“ → ignoriert'],
-    ['kaufen/?modell=xyz&farbe=%3Cscript%3Ealert(1)%3C/script%3E&speicher=-5&huelle=', ['pro', 'Himmelblau', '512gb', 'false', 'CHF 1’700.–'], 'Unsinn → Vorgabe'],
-    ['kaufen/?speicher=256', ['pro', 'Himmelblau', '256gb', 'false', 'CHF 1’500.–'], 'nur Speicher „256“'],
+    ['kaufen/?modell=k1&farbe=KIESELBEIGE&speicher=1TB&huelle=mattschwarz', ['k1', 'pebble-beige', '1tb', 'true', 'CHF 1’659.–'], 'gültig (alte Farbnamen, Gross/Klein egal, „1TB“)'],
+    ['kaufen/?modell=k1&farbe=Himmelblau&speicher=2tb&huelle=Lila', ['k1', 'sky-blue', '512gb', 'false', 'CHF 1’400.–'], 'Kiesel 1 mit 2 TB, Hülle „Lila“ → ignoriert'],
+    ['kaufen/?modell=xyz&farbe=%3Cscript%3Ealert(1)%3C/script%3E&speicher=-5&huelle=', ['pro', 'sky-blue', '512gb', 'false', 'CHF 1’700.–'], 'Unsinn → Vorgabe'],
+    ['kaufen/?speicher=256', ['pro', 'sky-blue', '256gb', 'false', 'CHF 1’500.–'], 'nur Speicher „256“'],
   ]) {
     const { seite, ctx, status } = await oeffne(adresse);
     const ist = [
@@ -494,10 +494,10 @@ try {
   {
     const { seite, ctx } = await oeffne('');
     const links = await seite.evaluate(() => [...document.querySelectorAll('a[href*="kaufen/?"]')].map((a) => a.getAttribute('href').split('kaufen/')[1]));
-    pruefe('Startseite: Modellkarten übergeben Modell und Farbe', links.includes('?modell=k1&farbe=Kieselbeige') && links.includes('?modell=pro&farbe=Himmelblau'), links.join(', '));
+    pruefe('Startseite: Modellkarten übergeben Modell und Farbe', links.includes('?modell=k1&farbe=pebble-beige') && links.includes('?modell=pro&farbe=sky-blue'), links.join(', '));
     await seite.locator('[data-teaser-huelle]').click();
-    pruefe('Startseite: Hülle kommt wirklich in den Warenkorb (Pro, Mattweiss)', JSON.stringify(await speicher(seite)) === JSON.stringify([{ art: 'huelle', modell: 'pro', farbe: 'Mattweiss', anzahl: 1 }]), JSON.stringify(await speicher(seite)));
-    const K1 = '?modell=k1&farbe=Kieselbeige', PRO = '?modell=pro&farbe=Himmelblau';
+    pruefe('Startseite: Hülle kommt wirklich in den Warenkorb (Pro, Mattweiss)', JSON.stringify(await speicher(seite)) === JSON.stringify([{ art: 'case', modell: 'pro', farbe: 'matte-white', anzahl: 1 }]), JSON.stringify(await speicher(seite)));
+    const K1 = '?modell=k1&farbe=pebble-beige', PRO = '?modell=pro&farbe=sky-blue';
     for (const [adresse, erwartet, anderes] of [['kiesel-1/', K1], ['kiesel-1-pro/', PRO], ['kiesel-1/technik/', K1, PRO], ['kiesel-1-pro/technik/', PRO, K1]]) {
       await seite.goto(basis + adresse, { waitUntil: 'load' });
       const hrefs = await seite.evaluate(() => [...document.querySelectorAll('main a[href*="kaufen/"], .unterleiste a[href*="kaufen/"]')].map((a) => a.getAttribute('href').split('kaufen/')[1]));
@@ -510,8 +510,8 @@ try {
     await seite.waitForURL(/kaufen/);
     await seite.waitForLoadState('load');
     pruefe('Zubehör „Diese Kombination kaufen“: Pro, Himmelblau, Hülle Mattweiss vorgewählt',
-      (await seite.locator('input[name="farbe"]:checked').getAttribute('value')) === 'Himmelblau' && (await seite.locator('[data-huelle-schalter]').getAttribute('aria-checked')) === 'true'
-      && (await seite.locator('input[name="huelle-farbe"]:checked').getAttribute('value')) === 'Mattweiss' && (await total(seite)) === 'CHF 1’759.–', await total(seite));
+      (await seite.locator('input[name="farbe"]:checked').getAttribute('value')) === 'sky-blue' && (await seite.locator('[data-huelle-schalter]').getAttribute('aria-checked')) === 'true'
+      && (await seite.locator('input[name="huelle-farbe"]:checked').getAttribute('value')) === 'matte-white' && (await total(seite)) === 'CHF 1’759.–', await total(seite));
     await seite.goto(basis + 'warenkorb/', { waitUntil: 'load' });
     const w = await seite.evaluate(() => ({ schublade: !!document.querySelector('[data-schublade]'), link: document.querySelector('[data-warenkorb-knopf]').tagName + ':' + document.querySelector('[data-warenkorb-knopf]').getAttribute('aria-current'), platzhalter: document.body.innerText.includes('Inhalt folgt') }));
     pruefe('/warenkorb/: keine Schublade, Knopf oben ist Link mit aria-current, kein Platzhalter', !w.schublade && w.link === 'A:page' && !w.platzhalter, JSON.stringify(w));

@@ -7,10 +7,13 @@
 // Jede Farbe hat sieben Töne:
 //   frame = Rahmen, hi/lo = helle/dunkle Kante, back = Rücken,
 //   backHi/backLo = Verlauf auf dem Rücken, logo = eingeprägter Kiesel
-import { FARBEN, FARBNAMEN } from '../../data/farben.js';
+import { FARBEN, FARB_IDS, farbId } from '../../data/farben.js';
+import { zeichnung as DE_Z } from '../../i18n/de.js';
 
+// Schlüssel = Farbkennung ('sky-blue' …). Die Python-Vorlagen kennen die deutschen Namen,
+// palette() nimmt darum auch die an (farbId).
 export const PAL = FARBEN;
-export const FARBNAMEN_PAL = FARBNAMEN;
+export const FARBNAMEN_PAL = FARB_IDS;
 export const TOENE = ['frame', 'hi', 'lo', 'back', 'backHi', 'backLo', 'logo'];
 
 // ---------------------------------------------------------------------------
@@ -67,7 +70,7 @@ function lchZuHex([L, C, h]) {
 }
 
 // Einmal ausrechnen: Abstände jedes Tons zum Rahmen, pro PAL-Farbe
-const VORLAGEN = FARBNAMEN.map((name) => {
+const VORLAGEN = FARB_IDS.map((name) => {
   const p = PAL[name];
   const lab = hexZuLab(p.frame);
   const [L, C] = zuLch(lab);
@@ -82,9 +85,10 @@ const VORLAGEN = FARBNAMEN.map((name) => {
 export function palette(farbe) {
   // Name einer Produktfarbe oder schon eine fertige Palette? Dann direkt zurück.
   if (typeof farbe === 'object') return farbe;
-  if (PAL[farbe]) return PAL[farbe];
+  const id = farbId(farbe);
+  if (id) return PAL[id];
   const hex = normHex(farbe);
-  const genau = FARBNAMEN.find((n) => PAL[n].frame.toUpperCase() === hex);
+  const genau = FARB_IDS.find((n) => PAL[n].frame.toUpperCase() === hex);
   if (genau) return { ...PAL[genau] };
 
   const lab = hexZuLab(hex);
@@ -125,10 +129,8 @@ export const LED_FARBEN = {
   call: '#3D8BFF', msg: '#A77BFF', charge: '#35D07F', full: '#35D07F',
   low: '#FF4B4B', privacy: '#FF9A2E', flash: '#FFFFFF',
 };
-export const LED_NAMEN = {
-  off: 'Aus', call: 'Anruf', msg: 'Nachricht', charge: 'Lädt', full: 'Voll geladen',
-  low: 'Akku unter 10 %', privacy: 'Privacy-Modus', flash: 'Fotoblitz',
-};
+// Namen der Zustände (Spielwiese): Abschnitt zeichnung.led der Textdatei
+export const LED_NAMEN = DE_Z.led;
 
 // Zwei Farben mischen: t = 0 → a, t = 1 → b
 export function mische(a, b, t) {

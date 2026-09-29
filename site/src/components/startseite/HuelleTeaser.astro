@@ -8,22 +8,26 @@ import { handy } from '../../lib/kiesel-draw/phone.js';
 import { HUELLE_PREIS } from '../../data/preise.js';
 import { chf } from '../../lib/format.js';
 import { pfad } from '../../lib/pfad.js';
+import { texte, spracheVon } from '../../i18n/index.js';
+
+const t = texte(spracheVon(Astro.url));
+const H = t.startseite.huelle;
 
 const svg = handy({
-  ansicht: 'hinten', modell: 'pro', farbe: 'Himmelblau', huelle: 'Mattweiss', drehung: -6, hoehe: null,
-  label: 'Kiesel 1 Pro in Himmelblau mit der Kiesel-Hülle in Mattweiss, Rückseite',
+  ansicht: 'hinten', modell: 'pro', farbe: 'sky-blue', huelle: 'matte-white', drehung: -6, hoehe: null,
+  label: H.bild('Kiesel 1 Pro', t.farben['sky-blue'], t.farben['matte-white']),
 });
 ---
 <div class="huelle">
   <Buehne radius="l" class="huelle-buehne"><div class="handy" set:html={svg} /></Buehne>
   <div class="text">
-    <h2 class="t-1">Die Kiesel-Hülle</h2>
-    <p class="t-lead t-muted">Hinten milchig, damit Farbe und Kiesel durchschimmern. Am Rand fest und griffig. In denselben fünf Farben wie die Handys, für beide Modelle.</p>
+    <h2 class="t-1">{H.titel}</h2>
+    <p class="t-lead t-muted">{H.text}</p>
     <p class="preis">{chf(HUELLE_PREIS)}</p>
     <div class="knoepfe">
-      <Knopf art="sekundaer" href={pfad('zubehoer/')}>Zum Zubehör</Knopf>
+      <Knopf art="sekundaer" href={pfad('zubehoer/')}>{H.zumZubehoer}</Knopf>
       {/* Legt genau die abgebildete Hülle hinein: für den Pro, in Mattweiss */}
-      <Knopf art="primaer" data-teaser-huelle data-modell="pro" data-farbe="Mattweiss"><span data-knopftext>In den Warenkorb</span><span class="vh">: Kiesel-Hülle für Kiesel 1 Pro in Mattweiss</span></Knopf>
+      <Knopf art="primaer" data-teaser-huelle data-modell="pro" data-farbe="matte-white"><span data-knopftext>{t.kaufen.inWarenkorb}</span><span class="vh">: {t.warenkorb.huelleFuer('Kiesel 1 Pro', t.farben['matte-white'])}</span></Knopf>
       <p class="vh" aria-live="polite" data-ansage></p>
     </div>
   </div>

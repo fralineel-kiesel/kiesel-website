@@ -7,18 +7,20 @@
 //   quelle: id der Szene (panoramaQuelle)
 import { ZOOM_TARGETS } from '../../lib/kiesel-draw/ausschnitt.js';
 import { panoramaAnsicht } from '../../lib/kiesel-draw/scene.js';
+import { texte, spracheVon } from '../../i18n/index.js';
 
 const { quelle } = Astro.props;
+const D = texte(spracheVon(Astro.url)).kamera.details;
 ---
-<ul class="funde" aria-label="Versteckte Details">
-  {ZOOM_TARGETS.map(([name, x, y], i) => (
+<ul class="funde" aria-label={D.liste}>
+  {ZOOM_TARGETS.map(([id, x, y], i) => (
     <li>
-      <button type="button" class="fund" data-detail={i} data-name={name} aria-label={`Noch versteckt, Detail ${i + 1} von ${ZOOM_TARGETS.length}: hinzoomen`}>
+      <button type="button" class="fund" data-detail={i} data-detail-id={id} aria-label={D.verstecktLabel(i + 1, ZOOM_TARGETS.length)}>
         <span class="bild">
           <span class="vorschau" set:html={panoramaAnsicht(quelle, { zoom: 8, cx: x, cy: y })} />
           <span class="frage" aria-hidden="true">?</span>
         </span>
-        <span class="name" aria-hidden="true" data-fundname>Noch versteckt</span>
+        <span class="name" aria-hidden="true" data-fundname>{D.versteckt}</span>
       </button>
     </li>
   ))}

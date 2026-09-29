@@ -23,14 +23,18 @@
     "fotos:funktionen": "astro build && node scripts/fotografiere-funktionen.mjs",
     "fotos:privacy": "astro build && node scripts/fotografiere-privacy.mjs",
     "pruefe:kaufen": "astro build && node scripts/pruefe-kaufen.mjs",
+    "pruefe:kennungen": "astro build && node scripts/pruefe-kennungen.mjs",
     "fotos:kaufen": "astro build && node scripts/fotografiere-kaufen.mjs",
     "pruefe:vergleichen": "astro build && node scripts/pruefe-vergleichen.mjs",
     "pruefe:akku-rechner": "astro build && node scripts/pruefe-akku-rechner.mjs",
     "pruefe:faq": "astro build && node scripts/pruefe-faq.mjs",
     "pruefe:ganz": "astro build && node scripts/pruefe-ganz.mjs",
+    "pruefe:texte": "node scripts/pruefe-texte.mjs",
+    "fotos:pseudo": "node scripts/fotografiere-pseudo.mjs",
     "pruefe:laden": "astro build && node scripts/pruefe-laden.mjs",
     "fotos:ganz": "astro build && node scripts/fotografiere-ganz.mjs",
-    "lighthouse": "astro build && node scripts/lighthouse.mjs"
+    "lighthouse": "astro build && node scripts/lighthouse.mjs",
+    "vergleiche:html": "node scripts/vergleiche-html.mjs"
   },
   "dependencies": {
     "astro": "^7.3.5",

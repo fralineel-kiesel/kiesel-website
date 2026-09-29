@@ -5,19 +5,29 @@
 // Körperliche Werte (Masse, Gewicht, Akku, Display) kommen aus geraete.js, Speicher und Preise
 // aus preise.js, Farbnamen aus farben.js. Was sonst an mehreren Stellen vorkommt (RAM, Watt,
 // Updates …), steht einmal in WERTE. Alle Kiesel-Werte sind Konzept-Schätzungen.
+//
+// Die Texte (Gruppen, Merkmale, Werte in Worten) stehen in der Textdatei (technik in
+// src/i18n/de.js). Jede Zeile hat eine Kennung (ram, kuehlung …), damit man sie unabhängig von
+// der Sprache finden kann: technik('ram', 'pro'). technikTabelle(T) baut die Tabelle in einer
+// anderen Sprache; TECHNIK ist die deutsche (so vergleicht pruefe:vergleichen mit SPEC).
 import { masse, gewicht, akku, zoll } from './geraete.js';
 import { PREISE } from './preise.js';
 import { FARBEN_TEXT } from './farben.js';
+import { farben as FARBNAME, technik as DE, geraete as GERAETE_T } from '../i18n/de.js';
 import { chf } from '../lib/format.js';
 
 export const WERTE = {
   ramGb: 12,             // Arbeitsspeicher, beide Modelle
   megapixel: 50,         // jede Kamera, auch das Tele des Pro
+  brennweite: [13, 26],  // Hauptkamera, variable Linse 0.5x bis 1x (mm, ca.)
+  nm: 2,                 // Chip: Fertigung
+  ghz: 4,                // Chip: höchster Takt
+  fps: { video: 120, zeitlupe: 240 },  // 4K bzw. 2K
   wattKabel: 45,         // Laden mit Kabel (ca.)
   wattKabellos: 25,      // MagSafe und Qi
   updateJahre: 7,        // mindestens
   schutz: 'IP68',
-  hertz: '1 bis 90 Hz',
+  hertz: [1, 90],        // Bildrate des Displays: von, bis (Text: technik.hertz in der Textdatei)
   tele: 3,               // Pro: optischer Zoom
   teleMm: 78,
   zoomDigital: { k1: 5, pro: 10 },
@@ -26,82 +36,94 @@ export const WERTE = {
 };
 const W = WERTE;
 
-// Speicher und Preis aus preise.js
-const stufen = (m) => PREISE[m].speicher;
-const speicher = (m) => stufen(m).map((s) => s.name).join(', ');
-const ab = (m) => { const s = stufen(m)[0]; return `${chf(s.preis)} (${s.name})`; };
-const bis = (m) => { const s = stufen(m).at(-1); return `${chf(s.preis)} (${s.name})`; };
-const farben = FARBEN_TEXT.join(', ');
-const beide = (text) => [text, text];
+// „1 bis 90 Hz“ in der Sprache der Texte
+export const hertzText = (T = DE) => T.hertz(...W.hertz);
 
-// Gruppen: { titel, zeilen: [[Merkmal, Kiesel 1, Kiesel 1 Pro], …] }
-export const TECHNIK = [
-  { titel: 'Design und Masse', zeilen: [
-    ['Masse', masse('k1'), masse('pro')],
-    ['Gewicht', gewicht('k1'), gewicht('pro')],
-    ['Rahmen', ...beide('Titan, matt')],
-    ['Farben', ...beide(farben)],
-    ['Wasser und Staub', ...beide(W.schutz)],
-  ] },
-  { titel: 'Display', zeilen: [
-    ['Grösse', `${zoll('k1')} OLED, randlos`, `${zoll('pro')} OLED, randlos`],
-    ['Bildrate', ...beide(`LTPO, ${W.hertz}`)],
-    ['Entsperren', ...beide('Face ID in der Dynamic Island')],
-  ] },
-  { titel: 'Chip und Speicher', zeilen: [
-    ['Chip', ...beide('A20 Pro abgespeckt, 2 nm')],
-    ['CPU', ...beide('1 Super-Kern + 3 Effizienz-Kerne, max. 4 GHz')],
-    ['GPU', ...beide('ca. 4 Kerne')],
-    ['Arbeitsspeicher', ...beide(`${W.ramGb} GB RAM`)],
-    ['Speicher', speicher('k1'), speicher('pro')],
-    ['Kühlung', 'passiv über die Rückseite', 'Mini-Vapor-Chamber plus Rückseite'],
-  ] },
-  { titel: 'Kameras', zeilen: [
-    ['Hauptkamera', ...beide(`${W.megapixel} MP, variable Linse 0.5x bis 1x (ca. 13 bis 26 mm)`)],
-    ['Tele', '–', `${W.megapixel} MP, ${W.tele}x (ca. ${W.teleMm} mm), optischer Bildstabilisator`],
-    ['Zoom', `digital bis ${W.zoomDigital.k1}x`, `optisch ${W.tele}x, digital bis ${W.zoomDigital.pro}x`],
-    ['Nahaufnahmen', 'Makro über 0.5x', `Makro über 0.5x, Tele-Nahfokus ab ca. ${W.nahfokusCm} cm`],
-    ['Blitz', ...beide('RGB-LED mit Benachrichtigungen')],
-  ] },
-  { titel: 'Video', zeilen: [
-    ['Maximal', ...beide('4K mit 120 fps')],
-    ['Zeitlupe', ...beide('2K mit 240 fps')],
-  ] },
-  { titel: 'Akku und Laden', zeilen: [
-    ['Akku', `${akku('k1')}, Silizium-Kohlenstoff`, `${akku('pro')}, Silizium-Kohlenstoff`],
-    ['Mit Kabel', ...beide(`ca. ${W.wattKabel} W über USB-C`)],
-    ['Kabellos', ...beide(`${W.wattKabellos} W über MagSafe und Qi`)],
-  ] },
-  { titel: 'Verbindungen', zeilen: [
-    ['Anschluss', ...beide('USB-C')],
-    ['SIM', ...beide('nur eSIM')],
-    ['Mobilfunk', ...beide('4G als Standard, 5G nur bei hoher Datenlast')],
-  ] },
-  { titel: 'Software und Funktionen', zeilen: [
-    ['System', ...beide(`${W.system} mit schlankem Look`)],
-    ['Updates', ...beide(`mindestens ${W.updateJahre} Jahre System- und Sicherheitsupdates`)],
-    ['Tasten', ...beide('Action-Button, Kamera-Knopf, Lautstärke, Seitentaste')],
-    ['Extras', ...beide('Zen-Modus, Privacy-Modus mit Hardware-Trennung in zwei Stufen (Sensoren, Funkstille)')],
-  ] },
-  { titel: 'Preis', zeilen: [
-    ['Ab', ab('k1'), ab('pro')],
-    ['Bis', bis('k1'), bis('pro')],
-  ] },
-];
+// Gruppen: { id, titel, zeilen: [[kennung, Merkmal, Kiesel 1, Kiesel 1 Pro], …] }
+function gruppen(T = DE, farbname = FARBNAME, G = GERAETE_T) {
+  const V = T.werte;
+  const stufen = (m) => PREISE[m].speicher;
+  const speicher = (m) => stufen(m).map((s) => s.name).join(', ');
+  const preisStufe = (s) => V.preisStufe(chf(s.preis), s.name);
+  const farben = FARBEN_TEXT.map((f) => farbname[f]).join(', ');
+  const hertz = hertzText(T);
+  const beide = (text) => [text, text];
+  const z = (id, ...werte) => [id, T.merkmale[id], ...werte];
+  const g = (id, zeilen) => ({ id, titel: T.gruppen[id], zeilen });
+  return [
+    g('design', [
+      z('masse', masse('k1', G), masse('pro', G)),
+      z('gewicht', gewicht('k1', G), gewicht('pro', G)),
+      z('rahmen', ...beide(V.rahmen)),
+      z('farben', ...beide(farben)),
+      z('wasser', ...beide(W.schutz)),
+    ]),
+    g('display', [
+      z('groesse', V.display(zoll('k1', G)), V.display(zoll('pro', G))),
+      z('bildrate', ...beide(V.bildrate(hertz))),
+      z('entsperren', ...beide(V.entsperren)),
+    ]),
+    g('chip', [
+      z('chip', ...beide(V.chip(W.nm))),
+      z('cpu', ...beide(V.cpu(W.ghz))),
+      z('gpu', ...beide(V.gpu)),
+      z('ram', ...beide(V.ram(W.ramGb))),
+      z('speicher', speicher('k1'), speicher('pro')),
+      z('kuehlung', V.kuehlung.k1, V.kuehlung.pro),
+    ]),
+    g('kameras', [
+      z('hauptkamera', ...beide(V.hauptkamera(W.megapixel, ...W.brennweite))),
+      z('tele', V.keine, V.tele(W.megapixel, W.tele, W.teleMm)),
+      z('zoom', V.zoomK1(W.zoomDigital.k1), V.zoomPro(W.tele, W.zoomDigital.pro)),
+      z('nah', V.nahK1, V.nahPro(W.nahfokusCm)),
+      z('blitz', ...beide(V.blitz)),
+    ]),
+    g('video', [
+      z('maximal', ...beide(V.videoMaximal(W.fps.video))),
+      z('zeitlupe', ...beide(V.zeitlupe(W.fps.zeitlupe))),
+    ]),
+    g('akku', [
+      z('akku', V.akku(akku('k1', G)), V.akku(akku('pro', G))),
+      z('kabel', ...beide(V.kabel(W.wattKabel))),
+      z('kabellos', ...beide(V.kabellos(W.wattKabellos))),
+    ]),
+    g('verbindungen', [
+      z('anschluss', ...beide(V.anschluss)),
+      z('sim', ...beide(V.sim)),
+      z('mobilfunk', ...beide(V.mobilfunk)),
+    ]),
+    g('software', [
+      z('system', ...beide(V.system(W.system))),
+      z('updates', ...beide(V.updates(W.updateJahre))),
+      z('tasten', ...beide(V.tasten)),
+      z('extras', ...beide(V.extras)),
+    ]),
+    g('preis', [
+      z('ab', preisStufe(stufen('k1')[0]), preisStufe(stufen('pro')[0])),
+      z('bis', preisStufe(stufen('k1').at(-1)), preisStufe(stufen('pro').at(-1))),
+    ]),
+  ];
+}
+
+// Tabelle wie SPEC in gen4.py: { titel, zeilen: [[Merkmal, Kiesel 1, Kiesel 1 Pro], …] }
+export const technikTabelle = (T = DE, farbname = FARBNAME) =>
+  gruppen(T, farbname).map((g) => ({ titel: g.titel, zeilen: g.zeilen.map(([, ...rest]) => rest) }));
+export const TECHNIK = technikTabelle();
 
 // Vier Kennzahlen oben auf der Technik-Seite (key_nums in gen4.py)
-export const TECHNIK_KENNZAHLEN = [
-  { zahl: `${W.ramGb} GB`, titel: 'Arbeitsspeicher', text: 'in beiden Modellen' },
-  { zahl: `${W.megapixel} MP`, titel: 'bei jeder Kamera', text: 'auch beim Tele des Pro' },
-  { zahl: `${W.wattKabel} W`, titel: 'mit Kabel', text: `${W.wattKabellos} W kabellos über MagSafe` },
-  { zahl: `${W.updateJahre} Jahre`, titel: 'Updates', text: 'mindestens, für System und Sicherheit' },
+export const technikKennzahlen = (T = DE) => [
+  { zahl: `${W.ramGb} GB`, ...T.kennzahlen.ram },
+  { zahl: `${W.megapixel} MP`, ...T.kennzahlen.kamera },
+  { zahl: `${W.wattKabel} W`, titel: T.kennzahlen.laden.titel, text: T.kennzahlen.laden.text(W.wattKabellos) },
+  { zahl: T.kennzahlen.jahre(W.updateJahre), ...T.kennzahlen.updates },
 ];
+export const TECHNIK_KENNZAHLEN = technikKennzahlen();
 
-// Wert einer Zeile für ein Modell: technik('Arbeitsspeicher', 'pro') → '12 GB RAM'
-export function technik(merkmal, modell) {
-  for (const g of TECHNIK) {
-    const z = g.zeilen.find((r) => r[0] === merkmal);
-    if (z) return z[modell === 'pro' ? 2 : 1];
+// Wert einer Zeile für ein Modell: technik('ram', 'pro') → '12 GB RAM'
+export function technik(kennung, modell, T = DE) {
+  for (const g of gruppen(T)) {
+    const z = g.zeilen.find((r) => r[0] === kennung);
+    if (z) return z[modell === 'pro' ? 3 : 2];
   }
-  throw new Error(`Technik: Merkmal „${merkmal}“ gibt es nicht`);
+  throw new Error(`Technik: Merkmal „${kennung}“ gibt es nicht`);
 }

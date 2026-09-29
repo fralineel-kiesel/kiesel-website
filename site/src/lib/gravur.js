@@ -2,6 +2,7 @@
 //
 //   pruefeGravur('Linos Kiesel') → { text: 'Linos Kiesel', laenge: 12, fehler: null }
 //   pruefeGravur('Hallo @Welt')  → { …, fehler: '«@» geht nicht auf die Gravur. Erlaubt sind …' }
+//   Die Meldungen stehen in der Textdatei (gravur in src/i18n/de.js), zweiter Parameter = andere Sprache.
 //
 // Erlaubt: Buchstaben der lateinischen Schrift (auch Umlaute und Akzente: ä, é, ñ, ł, ß),
 // Ziffern, Leerzeichen und . , ' ’ & ! ? + -
@@ -11,31 +12,31 @@
 // normalize('NFC'): Ein „é“ kann als ein Zeichen (U+00E9) oder als „e“ + Akzent (U+0065 U+0301)
 // ankommen, z.B. aus macOS. NFC fasst beides zum einen Zeichen zusammen, dann zählt es als 1.
 
+import { gravur as T } from '../i18n/de.js';
+
 export const GRAVUR_MAX = 18;
-export const GRAVUR_ERLAUBT = "Buchstaben, Zahlen, Leerzeichen und . , ' ’ & ! ? + -";
 
 // \p{Script=Latin} = alle lateinischen Buchstaben, \p{M} = Akzente, die übrig bleiben
 // (z.B. ein Akzent, den es nicht als fertiges Zeichen gibt), \p{Nd} = Ziffern 0–9
 const ZEICHEN = /[\p{Script=Latin}\p{M}\p{Nd} .,'’&!?+\-]/u;
 
 // Unsichtbares oder Verwechselbares für die Fehlermeldung lesbar machen
-function zeige(z) {
-  if (z === '\t') return 'Tabulator';
-  if (/\s/u.test(z)) return 'Sonder-Leerzeichen';
-  return `«${z}»`;
+function zeige(z, texte) {
+  if (z === '\t') return texte.tabulator;
+  if (/\s/u.test(z)) return texte.sonderLeerzeichen;
+  return texte.zeichen(z);
 }
 
-export function pruefeGravur(eingabe = '') {
+export function pruefeGravur(eingabe = '', texte = T) {
   const text = String(eingabe).normalize('NFC');
   const zeichen = [...text]; // [...] zählt Zeichen, nicht UTF-16-Hälften (wichtig bei Emojis)
   const falsch = [...new Set(zeichen.filter((z) => !ZEICHEN.test(z)))];
   let fehler = null;
   if (falsch.length) {
-    const liste = falsch.slice(0, 3).map(zeige).join(', ') + (falsch.length > 3 ? ' …' : '');
-    fehler = `${liste} ${falsch.length === 1 ? 'geht' : 'gehen'} nicht auf die Gravur. Erlaubt sind ${GRAVUR_ERLAUBT}`;
+    const liste = falsch.slice(0, 3).map((z) => zeige(z, texte)).join(', ') + (falsch.length > 3 ? ' …' : '');
+    fehler = texte.nichtErlaubt(liste, falsch.length);
   } else if (zeichen.length > GRAVUR_MAX) {
-    const zuviel = zeichen.length - GRAVUR_MAX;
-    fehler = `Höchstens ${GRAVUR_MAX} Zeichen, das ${zuviel === 1 ? 'ist 1' : `sind ${zuviel}`} zu viel.`;
+    fehler = texte.zuLang(GRAVUR_MAX, zeichen.length - GRAVUR_MAX);
   }
   return { text, laenge: zeichen.length, fehler };
 }

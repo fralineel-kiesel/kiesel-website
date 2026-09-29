@@ -1,32 +1,33 @@
 // Alle Menüs an einem Ort. Pfade sind relativ zur Startseite, pfad() setzt den base-Pfad davor.
 // Wer eine Seite umbenennt, muss nur hier nachziehen.
+// text = Schlüssel in navigation (src/i18n/de.js); Gerätenamen (name) sind Eigennamen.
 
 // Hauptmenü in der Kopfzeile. „Handys“ ist kein Link, sondern öffnet das Aufklappmenü.
 export const HAUPTMENUE = [
-  { name: 'Handys', menue: true, bereich: ['kiesel-1/', 'kiesel-1-pro/', 'akku-rechner/'] },
-  { name: 'Funktionen', pfad: 'funktionen/' },
-  { name: 'Zubehör', pfad: 'zubehoer/' },
-  { name: 'Vergleichen', pfad: 'vergleichen/' },
-  { name: 'FAQ', pfad: 'faq/' },
+  { text: 'handys', menue: true, bereich: ['kiesel-1/', 'kiesel-1-pro/', 'akku-rechner/'] },
+  { text: 'funktionen', pfad: 'funktionen/' },
+  { text: 'zubehoer', pfad: 'zubehoer/' },
+  { text: 'vergleichen', pfad: 'vergleichen/' },
+  { text: 'faq', pfad: 'faq/' },
 ];
 
 // Die zwei Linkspalten im aufgeklappten Menü „Handys“
 export const HANDYS_SPALTEN = [
   {
-    titel: 'Mehr zu den Handys',
+    titel: 'mehrZuDenHandys',
     links: [
-      { name: 'Vergleichen', pfad: 'vergleichen/' },
-      { name: 'Technische Daten', pfad: 'kiesel-1-pro/technik/' },
-      { name: 'Akku-Rechner', pfad: 'akku-rechner/' },
-      { name: 'Farben', pfad: 'kaufen/' },
+      { text: 'vergleichen', pfad: 'vergleichen/' },
+      { text: 'technik', pfad: 'kiesel-1-pro/technik/' },
+      { text: 'akkuRechner', pfad: 'akku-rechner/' },
+      { text: 'farben', pfad: 'kaufen/' },
     ],
   },
   {
-    titel: 'Beliebt',
+    titel: 'beliebt',
     links: [
-      { name: 'Kiesel-Hülle', pfad: 'zubehoer/huelle/' },
-      { name: 'Funktionen ausprobieren', pfad: 'funktionen/' },
-      { name: 'Kaufen', pfad: 'kaufen/' },
+      { text: 'huelle', pfad: 'zubehoer/huelle/' },
+      { text: 'funktionenAusprobieren', pfad: 'funktionen/' },
+      { text: 'kaufen', pfad: 'kaufen/' },
     ],
   },
 ];
@@ -34,34 +35,37 @@ export const HANDYS_SPALTEN = [
 // Seitenübersicht im Footer
 export const FOOTER_SPALTEN = [
   {
-    titel: 'Handys',
+    titel: 'handys',
     links: [
       { name: 'Kiesel 1', pfad: 'kiesel-1/' },
       { name: 'Kiesel 1 Pro', pfad: 'kiesel-1-pro/' },
-      { name: 'Vergleichen', pfad: 'vergleichen/' },
+      { text: 'vergleichen', pfad: 'vergleichen/' },
     ],
   },
   {
-    titel: 'Entdecken',
+    titel: 'entdecken',
     links: [
-      { name: 'Funktionen', pfad: 'funktionen/' },
-      { name: 'Technische Daten', pfad: 'kiesel-1-pro/technik/' },
-      { name: 'Akku-Rechner', pfad: 'akku-rechner/' },
+      { text: 'funktionen', pfad: 'funktionen/' },
+      { text: 'technik', pfad: 'kiesel-1-pro/technik/' },
+      { text: 'akkuRechner', pfad: 'akku-rechner/' },
     ],
   },
   {
-    titel: 'Shop',
+    titel: 'shop',
     links: [
-      { name: 'Kaufen', pfad: 'kaufen/' },
-      { name: 'Zubehör', pfad: 'zubehoer/' },
-      { name: 'Warenkorb', pfad: 'warenkorb/' },
+      { text: 'kaufen', pfad: 'kaufen/' },
+      { text: 'zubehoer', pfad: 'zubehoer/' },
+      { text: 'warenkorb', pfad: 'warenkorb/' },
     ],
   },
   {
-    titel: 'Hilfe',
+    titel: 'hilfe',
     links: [
-      { name: 'FAQ', pfad: 'faq/' },
-      { name: 'Über das Konzept', pfad: 'faq/#konzept' },
+      { text: 'faq', pfad: 'faq/' },
+      { text: 'konzept', pfad: 'faq/#konzept' },
     ],
   },
 ];
+
+// Anzeigename eines Menüpunkts: Eigenname oder Text aus der Textdatei (t = texte(sprache))
+export const linkName = (eintrag, t) => eintrag.name ?? t.navigation[eintrag.text];

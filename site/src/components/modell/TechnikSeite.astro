@@ -15,14 +15,18 @@ import Knopf from '../Knopf.astro';
 import Schalter from '../Schalter.astro';
 import Kennzahlen from '../startseite/Kennzahlen.astro';
 import { MODELLE } from '../../data/modelle.js';
-import { TECHNIK, TECHNIK_KENNZAHLEN } from '../../data/technik.js';
+import { technikTabelle, technikKennzahlen } from '../../data/technik.js';
 import { abPreis } from '../../data/preise.js';
 import { handy, MODELS } from '../../lib/kiesel-draw/index.js';
+import { texte, spracheVon } from '../../i18n/index.js';
 import { pfad } from '../../lib/pfad.js';
 
 const { modell } = Astro.props;
 const anderes = modell === 'pro' ? 'k1' : 'pro';
 const reihe = [modell, anderes];
+const t = texte(spracheVon(Astro.url));
+const TS = t.technikSeite;
+const TECHNIK = technikTabelle(t.technik, t.farben);
 const spalte = { k1: 1, pro: 2 };
 const m = MODELLE[modell];
 const o = MODELLE[anderes];
@@ -33,7 +37,7 @@ const kopf = reihe.map((id) => {
   const hoch = id === 'pro' ? 170 : 160;
   const H = MODELS[id].H;
   const rand = Math.round(hoch * 200 / H);
-  const svg = handy({ ansicht: 'vorne', modell: id, farbe: MODELLE[id].seite.farbe, hoehe: hoch + 2 * rand, boden: false, label: `${MODELLE[id].name}, Vorderseite in ${MODELLE[id].seite.farbe}` });
+  const svg = handy({ ansicht: 'vorne', modell: id, farbe: MODELLE[id].seite.farbe, hoehe: hoch + 2 * rand, boden: false, label: t.modellseite.bildVorne(MODELLE[id].name, t.farben[MODELLE[id].seite.farbe]) });
   return { id, svg, rand, name: MODELLE[id].name, preis: abPreis(id), kaufen: pfad(`kaufen/?modell=${id}&farbe=${MODELLE[id].seite.farbe}`) };
 });
 
@@ -47,19 +51,19 @@ const gruppen = TECHNIK.map((g, i) => ({
 }));
 
 // Kennzahlen: Kennzahlen.astro erwartet Titel und Text als [lang, kurz]
-const kennzahlen = TECHNIK_KENNZAHLEN.map((k) => ({ zahl: k.zahl, titel: [k.titel], text: [k.text] }));
+const kennzahlen = technikKennzahlen(t.technik).map((k) => ({ zahl: k.zahl, titel: [k.titel], text: [k.text] }));
 ---
-<BaseLayout titel={`${m.name} · Technische Daten`} beschreibung={`Alle technischen Daten des ${m.name} im Vergleich zum ${o.name}. Ein Fan-Konzept, alle Werte sind Schätzungen.`} unterleiste={modell}>
+<BaseLayout titel={TS.seitenTitel(m.name)} beschreibung={TS.beschreibung(m.name, o.name)} unterleiste={modell}>
   <div class="technik container" data-technik>
-    <h1 class="t-display">Technische Daten</h1>
-    <p class="t-lead t-muted einleitung">{m.name} und {o.name} nebeneinander. Blau markiert, was beim {o.name} anders ist.</p>
+    <h1 class="t-display">{TS.titel}</h1>
+    <p class="t-lead t-muted einleitung">{TS.einleitung(m.name, o.name)}</p>
 
-    <section class="kennzahlen" aria-label="Kennzahlen">
+    <section class="kennzahlen" aria-label={t.startseite.kennzahlen}>
       <Kennzahlen zahlen={kennzahlen} />
     </section>
 
     <div class="schalter-zeile">
-      <Schalter data-nur-unterschiede aria-controls={gruppen.map((g) => g.id).join(' ')}>Nur Unterschiede zeigen</Schalter>
+      <Schalter data-nur-unterschiede aria-controls={gruppen.map((g) => g.id).join(' ')}>{TS.nurUnterschiede}</Schalter>
     </div>
 
     <div class="kopf">
@@ -70,7 +74,7 @@ const kennzahlen = TECHNIK_KENNZAHLEN.map((k) => ({ zahl: k.zahl, titel: [k.tite
           <div class="info">
             <p class="name">{k.name}</p>
             <p class="t-small t-muted">{k.preis}</p>
-            <Knopf art="primaer" groesse="s" href={k.kaufen} aria-label={`${k.name} kaufen`}>Kaufen</Knopf>
+            <Knopf art="primaer" groesse="s" href={k.kaufen} aria-label={t.modellseite.kaufen(k.name)}>{t.geruest.kaufen}</Knopf>
           </div>
         </div>
       ))}
@@ -82,7 +86,7 @@ const kennzahlen = TECHNIK_KENNZAHLEN.map((k) => ({ zahl: k.zahl, titel: [k.tite
         <table role="table" aria-labelledby={`${g.id}-titel`}>
           <thead class="vh" role="rowgroup">
             <tr role="row">
-              <th scope="col" role="columnheader">Merkmal</th>
+              <th scope="col" role="columnheader">{TS.merkmal}</th>
               <th scope="col" role="columnheader">{m.name}</th>
               <th scope="col" role="columnheader">{o.name}</th>
             </tr>
@@ -92,7 +96,7 @@ const kennzahlen = TECHNIK_KENNZAHLEN.map((k) => ({ zahl: k.zahl, titel: [k.tite
               <tr role="row" data-gleich={z.anders ? undefined : ''}>
                 <th scope="row" role="rowheader">{z.merkmal}</th>
                 <td role="cell"><span class="wer" aria-hidden="true">{m.name}</span>{z.a}</td>
-                <td role="cell" class:list={{ anders: z.anders }}><span class="wer" aria-hidden="true">{o.name}</span>{z.b}{z.anders && <span class="vh"> (anders)</span>}</td>
+                <td role="cell" class:list={{ anders: z.anders }}><span class="wer" aria-hidden="true">{o.name}</span>{z.b}{z.anders && <span class="vh">{TS.anders}</span>}</td>
               </tr>
             ))}
           </tbody>
@@ -100,8 +104,8 @@ const kennzahlen = TECHNIK_KENNZAHLEN.map((k) => ({ zahl: k.zahl, titel: [k.tite
       </section>
     ))}
 
-    <p class="t-small t-muted hinweis" data-hinweis-leer hidden>Keine Unterschiede in dieser Ansicht.</p>
-    <p class="t-small t-muted hinweis">Alle Werte sind Konzept-Angaben und teilweise geschätzt. Kiesel ist kein echtes Produkt.</p>
+    <p class="t-small t-muted hinweis" data-hinweis-leer hidden>{TS.keineUnterschiede}</p>
+    <p class="t-small t-muted hinweis">{TS.hinweis}</p>
   </div>
 </BaseLayout>
 

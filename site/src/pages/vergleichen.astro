@@ -12,36 +12,40 @@ import Chip from '../components/Chip.astro';
 import { GERAETE, KIESEL_IDS } from '../data/geraete.js';
 import { vergleich, BUEHNE, GEGNER } from '../lib/vergleich.js';
 import { frontSvg, palette, uid } from '../lib/kiesel-draw/index.js';
+import { texte, spracheVon } from '../i18n/index.js';
 
-const v = vergleich({ kiesel: 'k1', gegen: 'pmax', modus: 'side' });
-const kiesel = KIESEL_IDS.map((id) => ({ id, svg: frontSvg(id, palette('Himmelblau'), uid('v')) }));
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
+const V = t.vergleich;
+const v = vergleich({ kiesel: 'k1', gegen: 'pmax', modus: 'side', T: V, G: t.geraete, sprache });
+const kiesel = KIESEL_IDS.map((id) => ({ id, svg: frontSvg(id, palette('sky-blue'), uid('v')) }));
 const gegner = [...GEGNER, 'anderer'];
 const gegnerName = (id) => GERAETE[id === 'anderer' ? v.anderer : id].name;
 const pt = (x) => String(x);
 ---
-<BaseLayout titel="Vergleichen" beschreibung="Kiesel 1 und Kiesel 1 Pro im echten Massstab neben iPhone SE, 13 mini, 18 Pro und 18 Pro Max. Ein Fan-Konzept.">
+<BaseLayout titel={V.titel} beschreibung={V.beschreibung}>
   <div class="vergleichen container" data-vergleichen>
-    <h1 class="t-display">Vergleichen</h1>
-    <p class="t-lead t-muted einleitung">Alle Geräte im echten Massstab zueinander. Stell deinen Kiesel neben ein iPhone 18 Pro Max, und du siehst sofort, was «kompakt» wirklich heisst.</p>
+    <h1 class="t-display">{V.titel}</h1>
+    <p class="t-lead t-muted einleitung">{V.einleitung}</p>
 
     <div class="steuerung">
       <div class="zeile">
         <div class="gruppe" role="group" aria-labelledby="v-kiesel">
-          <span class="t-muted beschriftung" id="v-kiesel">Dein Kiesel</span>
+          <span class="t-muted beschriftung" id="v-kiesel">{V.deinKiesel}</span>
           {KIESEL_IDS.map((id) => <Chip gedrueckt={id === v.kiesel} data-kiesel={id}>{GERAETE[id].name}</Chip>)}
         </div>
         <div class="gruppe" role="group" aria-labelledby="v-gegen">
-          <span class="t-muted beschriftung" id="v-gegen">gegen</span>
+          <span class="t-muted beschriftung" id="v-gegen">{V.gegen}</span>
           {gegner.map((id) => <Chip gedrueckt={id === v.gegen} data-gegen={id}>{gegnerName(id)}</Chip>)}
         </div>
       </div>
       <div class="zeile">
         <div class="gruppe" role="group" aria-labelledby="v-ansicht">
-          <span class="t-muted beschriftung" id="v-ansicht">Ansicht</span>
-          <Chip gedrueckt data-modus="side">Nebeneinander</Chip>
-          <Chip data-modus="over">Übereinander</Chip>
+          <span class="t-muted beschriftung" id="v-ansicht">{V.ansicht}</span>
+          <Chip gedrueckt data-modus="side">{V.nebeneinander}</Chip>
+          <Chip data-modus="over">{V.uebereinander}</Chip>
         </div>
-        <Chip data-karte>Kreditkarte einblenden</Chip>
+        <Chip data-karte>{V.karteEinblenden}</Chip>
       </div>
     </div>
 
@@ -68,7 +72,7 @@ const pt = (x) => String(x);
         </g>
         <g class="karte" data-kreditkarte>
           <rect x={pt(v.karte.x)} y={pt(v.karte.y)} width={pt(v.karte.w)} height={pt(v.karte.h)} rx="10" />
-          <text x={pt(v.karte.cx)} y={pt(v.karte.ty)}>Kreditkarte</text>
+          <text x={pt(v.karte.cx)} y={pt(v.karte.ty)}>{V.kreditkarte}</text>
         </g>
       </svg>
     </div>
@@ -76,7 +80,7 @@ const pt = (x) => String(x);
     <p class="satz" data-satz aria-live="polite">{v.satz}</p>
 
     <table class="tabelle">
-      <caption class="vh" data-caption>{v.kz.name} und {v.o.name} in Zahlen</caption>
+      <caption class="vh" data-caption>{V.caption(v.kz.name, v.o.name)}</caption>
       <thead>
         <tr>
           <td></td>
@@ -100,7 +104,7 @@ const pt = (x) => String(x);
         ))}
       </tbody>
     </table>
-    <p class="t-small t-muted hinweis">Kiesel-Werte sind Schätzungen aus dem Konzept. iPhone-Werte laut Hersteller und Presseberichten, beim iPhone 18 Pro Max weichen die Quellen bei Dicke und Akku leicht voneinander ab.</p>
+    <p class="t-small t-muted hinweis">{V.quellen}</p>
   </div>
 </BaseLayout>
 
@@ -204,6 +208,7 @@ const pt = (x) => String(x);
 <script>
   import { vergleich, BUEHNE, BUEHNE_SCHMAL } from '../lib/vergleich.js';
   import { GERAETE, KIESEL_IDS } from '../data/geraete.js';
+  import { vergleich as V } from '../i18n/de.js';
 
   const gueltig = (id, liste) => (liste.includes(id) ? id : null);
 
@@ -218,7 +223,8 @@ const pt = (x) => String(x);
     const zustand = {
       kiesel: gueltig(q.get('kiesel')?.toLowerCase(), KIESEL_IDS) ?? 'k1',
       gegen: gueltig(q.get('gegen')?.toLowerCase(), Object.keys(GERAETE)) ?? 'pmax',
-      modus: q.get('ansicht') === 'uebereinander' ? 'over' : 'side',
+      // Kennung 'overlay'; bis Etappe 8 hiess sie 'uebereinander' (alte Links gehen weiter)
+      modus: ['overlay', 'uebereinander'].includes(q.get('ansicht')?.toLowerCase()) ? 'over' : 'side',
       karte: q.get('karte') === '1',
     };
 
@@ -258,11 +264,11 @@ const pt = (x) => String(x);
       setze(karte.querySelector('rect'), { x: v.karte.x, y: v.karte.y });
       setze(karte.querySelector('text'), { x: v.karte.cx, y: v.karte.ty });
       $('[data-legende]').textContent = v.legende;
-      svg.setAttribute('aria-label', v.label + (zustand.karte ? ', mit Kreditkarte zum Grössenvergleich' : ''));
+      svg.setAttribute('aria-label', v.label + (zustand.karte ? V.mitKarte : ''));
       // Satz und Tabelle
       const satz = $('[data-satz]');
       if (satz.textContent !== v.satz) satz.textContent = v.satz;
-      $('[data-caption]').textContent = `${k.name} und ${o.name} in Zahlen`;
+      $('[data-caption]').textContent = V.caption(k.name, o.name);
       v.zeilen.forEach((z, i) => {
         const tr = $(`[data-zeile="${i}"]`);
         tr.querySelector('[data-a]').textContent = z.a;
@@ -273,7 +279,7 @@ const pt = (x) => String(x);
       // Adresse nachführen (teilbar, Zurück-Knopf bleibt unberührt)
       const p = new URLSearchParams(location.search);
       p.set('kiesel', v.kiesel); p.set('gegen', v.gegen);
-      if (v.ueber) p.set('ansicht', 'uebereinander'); else p.delete('ansicht');
+      if (v.ueber) p.set('ansicht', 'overlay'); else p.delete('ansicht');
       if (zustand.karte) p.set('karte', '1'); else p.delete('karte');
       history.replaceState(history.state, '', `${location.pathname}?${p}${location.hash}`);
     }

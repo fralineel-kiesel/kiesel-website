@@ -6,13 +6,15 @@
 import Knopf from '../Knopf.astro';
 import { MODELLE } from '../../data/modelle.js';
 import { pfad } from '../../lib/pfad.js';
+import { texte, spracheVon } from '../../i18n/index.js';
 
 const { modell } = Astro.props;
 const m = MODELLE[modell];
+const t = texte(spracheVon(Astro.url));
 ---
 <div class="kopf">
-  <h2 class="t-1" id={`eckdaten-${modell}`}>Das Wichtigste auf einen Blick</h2>
-  <Knopf art="text" icon="arrow" href={pfad(`${m.pfad}technik/`)}>Alle technischen Daten</Knopf>
+  <h2 class="t-1" id={`eckdaten-${modell}`}>{t.modellseite.eckdatenTitel}</h2>
+  <Knopf art="text" icon="arrow" href={pfad(`${m.pfad}technik/`)}>{t.modellseite.alleDaten}</Knopf>
 </div>
 <table class="eckdaten" role="table" aria-labelledby={`eckdaten-${modell}`}>
   <tbody role="rowgroup">

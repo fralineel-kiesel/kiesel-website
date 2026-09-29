@@ -24,15 +24,17 @@ import Icon from '../Icon.astro';
 import FokusRing from '../funktionen/FokusRing.astro';
 import FundZaehler from '../funktionen/FundZaehler.astro';
 import { panoramaQuelle, panoramaAnsicht } from '../../lib/kiesel-draw/index.js';
-import { bildZoom, linseBei, linsenText, schaerfeText, UNSCHAERFE, zahl } from '../../lib/kamera.js';
+import { bildZoom, linseBei, linsenText, bildText } from '../../lib/kamera.js';
+import { texte, spracheVon } from '../../i18n/index.js';
 
 const { modell = 'pro', start, blick, details = false, vergleich = false, chip = true, klein = false, quelle: q, bildtext } = Astro.props;
+const K = texte(spracheVon(Astro.url)).kamera;
 const eigeneQuelle = !q;
 const quelle = q ?? panoramaQuelle();
 const ansicht = () => panoramaAnsicht(quelle.id, { zoom: bildZoom(start), cx: blick[0], cy: blick[1] });
 const linse = linseBei(modell, start);
 const ebenen = ['haupt', ...(modell === 'pro' ? ['tele'] : []), ...(vergleich ? ['k1'] : [])];
-const text = bildtext ?? `Alpenpanorama bei ${zahl(start)}x, ${linse === 'tele' ? 'Tele-Linse' : 'Hauptkamera'}, ${schaerfeText(UNSCHAERFE[linse](start))}`;
+const text = bildtext ?? bildText(start, linse, K);
 ---
 {eigeneQuelle && <Fragment set:html={quelle.svg} />}
 <div
@@ -53,7 +55,7 @@ const text = bildtext ?? `Alpenpanorama bei ${zahl(start)}x, ${linse === 'tele' 
   {details && <FokusRing />}
   {chip && (
     <div class="chip-linse">
-      <GlasChip><span class="punkt"><Icon name="dot" size={16} /></span><span data-linsen-text>{linsenText(modell, start)}</span></GlasChip>
+      <GlasChip><span class="punkt"><Icon name="dot" size={16} /></span><span data-linsen-text>{linsenText(modell, start, undefined, K)}</span></GlasChip>
     </div>
   )}
   {details && <div class="chip-zaehler"><FundZaehler /></div>}

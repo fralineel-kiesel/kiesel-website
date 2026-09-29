@@ -6,14 +6,17 @@
 import Knopf from './Knopf.astro';
 import { MODELLE } from '../data/modelle.js';
 import { pfad, istAktiv } from '../lib/pfad.js';
+import { texte, spracheVon } from '../i18n/index.js';
 
 const { modell } = Astro.props;
 const m = MODELLE[modell];
+const t = texte(spracheVon(Astro.url));
+const U = t.geruest.unterleiste;
 const aktuell = Astro.url.pathname;
 const links = [
-  { name: 'Übersicht', pfad: m.pfad },
-  { name: 'Technische Daten', pfad: `${m.pfad}technik/` },
-  { name: 'Vergleichen', pfad: `vergleichen/?kiesel=${modell}` },
+  { name: U.uebersicht, pfad: m.pfad },
+  { name: U.technik, pfad: `${m.pfad}technik/` },
+  { name: U.vergleichen, pfad: `vergleichen/?kiesel=${modell}` },
 ];
 ---
 <nav class="unterleiste" aria-label={m.name}>
@@ -24,7 +27,7 @@ const links = [
         <li><a href={pfad(l.pfad)} aria-current={istAktiv(aktuell, l.pfad) ? 'page' : undefined}>{l.name}</a></li>
       ))}
     </ul>
-    <Knopf href={pfad(`kaufen/?modell=${modell}&farbe=${m.seite.farbe}`)} art="primaer" groesse="s" class="kaufen">Kaufen</Knopf>
+    <Knopf href={pfad(`kaufen/?modell=${modell}&farbe=${m.seite.farbe}`)} art="primaer" groesse="s" class="kaufen">{t.geruest.kaufen}</Knopf>
   </div>
 </nav>
 

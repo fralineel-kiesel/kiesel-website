@@ -11,6 +11,7 @@
 import { E, stop, f, py, pts, uid } from './svg.js';
 import { PyRandom } from './zufall.js';
 import { crop, begrenze, ZOOM_TARGETS } from './ausschnitt.js';
+import { panoramaDetails as DETAIL_NAMEN, zeichnung as DE_Z } from '../../i18n/de.js';
 
 // ------------------------------------------------------------------
 // ALPENPANORAMA 1600 × 1000
@@ -199,9 +200,11 @@ export { crop, begrenze };
 
 // Die Markierungen der Zoom-Ziele (Kreis + Name), wie im Artboard „Alpenpanorama“.
 // massstab verkleinert sie beim Reinzoomen (1 = wie in gen2.py).
-export function zoomPunkte(massstab = 1) {
+// namen: Kennung → Name (Standard: Deutsch aus der Textdatei)
+export function zoomPunkte(massstab = 1, namen = DETAIL_NAMEN) {
   let s = '';
-  for (const [name, x, y] of ZOOM_TARGETS) {
+  for (const [id, x, y] of ZOOM_TARGETS) {
+    const name = namen[id];
     s += E('circle', { cx: f(x), cy: f(y), r: f(22 * massstab), style: `fill: none; stroke: #FF8A5E; stroke-width: ${f(2.5 * massstab)}` });
     s += E('text', { x: f(x + 28 * massstab), y: f(y + 5 * massstab), style: `font-family: 'Instrument Sans', sans-serif; font-size: ${f(16 * massstab)}px; font-weight: 600; fill: #FFFFFF; paint-order: stroke; stroke: #0C1116; stroke-width: ${f(4 * massstab)}` }, name);
   }
@@ -213,12 +216,12 @@ export function zoomPunkte(massstab = 1) {
 //   zoom: 1…10   cx, cy: Mittelpunkt im 1600 × 1000-Bild   breite/hoehe: px (null = CSS)
 //   punkte: Zoom-Ziele markieren   begrenzen: Ausschnitt im Bild halten
 export function panorama({ zoom = 1, cx = 800, cy = 500, breite = 800, hoehe = 500, punkte = false,
-  begrenzen = true, label = 'Alpenpanorama', pid = null } = {}) {
+  begrenzen = true, label = DE_Z.panorama, pid = null, namen = DETAIL_NAMEN } = {}) {
   pid = pid ?? uid('al');
   const ratio = breite && hoehe ? breite / hoehe : 1.6;
   if (begrenzen) [cx, cy] = begrenze(cx, cy, zoom, ratio);
   const groesse = breite && hoehe ? { width: f(breite), height: f(hoehe) } : {};
-  const inhalt = alpen(pid) + (punkte ? E('g', { 'data-zoompunkte': '' }, zoomPunkte(1 / Math.sqrt(zoom))) : '');
+  const inhalt = alpen(pid) + (punkte ? E('g', { 'data-zoompunkte': '' }, zoomPunkte(1 / Math.sqrt(zoom), namen)) : '');
   return E('svg', { ...groesse, viewBox: crop(cx, cy, zoom, ratio), preserveAspectRatio: 'xMidYMid slice', role: 'img', 'aria-label': label, style: 'display: block' }, inhalt);
 }
 
@@ -250,12 +253,14 @@ export function panoramaAnsicht(quelle, { zoom = 1, cx = 800, cy = 500, ratio = 
 // Tiefenschärfe heisst: Nur was in der Schärfeebene liegt, bleibt scharf.
 export const BLUR = { b0: 0.01, b1: 2, b2: 5, b3: 10, b4: 18 };
 
-// Die vier Vorgaben aus dem Artboard „Blume“ (gen2.py)
+// Die vier Vorgaben aus dem Artboard „Blume“ (gen2.py). Kennungen statt der Namen aus gen2.py
+// („Blume (3x Tele)“, „Biene“, „Makro (alles nah)“, „Alles scharf“, die stehen in der
+// Textdatei: blumeFokus in src/i18n/de.js).
 export const BLUME_FOKUS = {
-  'Blume (3x Tele)': { bg: 'b3', fl: 'b0', fg: 'b4', bee: 'b2' },
-  'Biene': { bg: 'b4', fl: 'b2', fg: 'b4', bee: 'b0' },
-  'Makro (alles nah)': { bg: 'b1', fl: 'b0', fg: 'b2', bee: 'b1' },
-  'Alles scharf': { bg: 'b0', fl: 'b0', fg: 'b0', bee: 'b0' },
+  tele: { bg: 'b3', fl: 'b0', fg: 'b4', bee: 'b2' },
+  bee: { bg: 'b4', fl: 'b2', fg: 'b4', bee: 'b0' },
+  macro: { bg: 'b1', fl: 'b0', fg: 'b2', bee: 'b1' },
+  all: { bg: 'b0', fl: 'b0', fg: 'b0', bee: 'b0' },
 };
 
 export function blume(p, bgf, flf, fgf, bef) {
@@ -351,10 +356,10 @@ export function blumeUnschaerfe(fokus, staerke = 24) {
 }
 
 // Fertiges <svg> der Blume.
-//   fokus: Name einer Vorgabe (BLUME_FOKUS) oder Zahl 0…1 (stufenlos, siehe oben)
+//   fokus: Kennung einer Vorgabe (BLUME_FOKUS) oder Zahl 0…1 (stufenlos, siehe oben)
 //   staerke: nur bei Zahl: wie schnell die Unschärfe zunimmt (grosse Blende = viel)
-export function blumeBild({ fokus = 'Blume (3x Tele)', staerke = 24, breite = 600, hoehe = 400,
-  label = 'Blume mit Tautropfen, Biene und Wiese', pid = null } = {}) {
+export function blumeBild({ fokus = 'tele', staerke = 24, breite = 600, hoehe = 400,
+  label = DE_Z.blume, pid = null } = {}) {
   pid = pid ?? uid('bl');
   const groesse = breite && hoehe ? { width: f(breite), height: f(hoehe) } : {};
   let inhalt;
@@ -405,14 +410,18 @@ export function chip(x, y, w, h, fill, label = null) {
   return g;
 }
 
-// Privacy-Schalter auf der Platine (Kiesel 1 und Pro): y in mm je Reihe (Stufe 1, Stufe 2)
-// und der Name in der Legende. innenteile.js zeichnet dieselben Schalter als ein Teil.
+// Privacy-Schalter auf der Platine (Kiesel 1 und Pro): y in mm je Reihe (Stufe 1, Stufe 2).
+// innenteile.js zeichnet dieselben Schalter als ein Teil. Name in der Legende: zeichnung.legende.privacy
 export const PRIVACY_REIHEN = [30, 24.5];
-export const PRIVACY_LEGENDE = 'Privacy-Schalter: Sensoren (Stufe 1) und Funk (Stufe 2)';
 
 // kind: 'se' | 'k1' | 'pro'; ox, oy = Ecke oben links; s = px pro mm.
+// T = Texte (Abschnitt zeichnung der Textdatei, Standard Deutsch = wie in scene.py)
 // Rückgabe wie in Python: [SVG-Text, Legende als [[Nummer, Name, fälltWeg], …]]
-export function phoneOpen(kind, ox, oy, s) {
+// Auflösung der Kameras in der Legende (Zeichnungswerte aus scene.py: iPhone SE, Kiesel)
+const MEGAPIXEL = { se: 12, kiesel: 50 };
+
+export function phoneOpen(kind, ox, oy, s, T = DE_Z) {
+  const N = T.legende;
   const [W, H, R] = kind !== 'pro' ? [58.6, 123.8, 8.6] : [64.2, 131.5, 10.6];
   const X = (mm) => ox + mm * s;
   const Y = (mm) => oy + mm * s;
@@ -424,24 +433,24 @@ export function phoneOpen(kind, ox, oy, s) {
   if (kind === 'se') {
     g += E('rect', { x: f(X(4)), y: f(Y(5)), width: f(50 * s), height: f(42 * s), rx: '6', style: 'fill: #1E3A2F; stroke: #2F5646; stroke-width: 1' });
     g += chip(X(18), Y(14), 14 * s, 14 * s, '#2B3138', 'A9') + chip(X(35), Y(14), 9 * s, 9 * s, '#3A424B') + chip(X(35), Y(27), 12 * s, 7 * s, '#3A424B');
-    g += comp(L('Platine mit A9-Chip'), '', X(10), Y(38));
+    g += comp(L(N.platineA9), '', X(10), Y(38));
     g += E('circle', { cx: f(X(8.5)), cy: f(Y(9)), r: f(3.6 * s), style: 'fill: #0A0E13; stroke: #56626E; stroke-width: 1.5' });
-    g += comp(L('Kamera (12 MP)'), '', X(8.5), Y(9) - 26);
+    g += comp(L(N.kameraSe(MEGAPIXEL.se)), '', X(8.5), Y(9) - 26);
     g += E('rect', { x: f(X(6)), y: f(Y(50)), width: f(46 * s), height: f(47 * s), rx: '6', style: 'fill: #3B4C5A; stroke: #4E6272' });
-    g += E('text', { x: f(X(29)), y: f(Y(75)), style: "font-family: 'Unbounded', sans-serif; font-size: 18px; font-weight: 600; fill: #E7ECF0; text-anchor: middle" }, '1624 mAh');
-    g += comp(L('Akku'), '', X(10), Y(55));
+    g += E('text', { x: f(X(29)), y: f(Y(75)), style: "font-family: 'Unbounded', sans-serif; font-size: 18px; font-weight: 600; fill: #E7ECF0; text-anchor: middle" }, T.mah('1624'));
+    g += comp(L(N.akkuSe), '', X(10), Y(55));
     g += E('rect', { x: f(X(52.5)), y: f(Y(58)), width: f(4.8 * s), height: f(22 * s), rx: '3', style: 'fill: none; stroke: #FF8A5E; stroke-width: 2; stroke-dasharray: 5 4' });
-    g += comp(L('SIM-Schlitten', true), '', X(55), Y(84) + 14);
+    g += comp(L(N.sim, true), '', X(55), Y(84) + 14);
     g += E('rect', { x: f(X(6)), y: f(Y(101)), width: f(14 * s), height: f(8 * s), rx: '3', style: 'fill: #5A6570' });
-    g += comp(L('Vibrationsmotor'), '', X(13), Y(105));
+    g += comp(L(N.vibration), '', X(13), Y(105));
     g += speaker(X(37), Y(103), 15 * s, 12 * s, s);
-    g += comp(L('Lautsprecher'), '', X(44.5), Y(109));
+    g += comp(L(N.lautsprecher), '', X(44.5), Y(109));
     g += E('circle', { cx: f(X(29.3)), cy: f(Y(112)), r: f(5.4 * s), style: 'fill: none; stroke: #FF8A5E; stroke-width: 2; stroke-dasharray: 5 4' });
-    g += comp(L('Home-Button', true), '', X(29.3), Y(112));
+    g += comp(L(N.home, true), '', X(29.3), Y(112));
     g += E('rect', { x: f(X(7)), y: f(Y(112)), width: f(8 * s), height: f(8 * s), rx: '3', style: 'fill: none; stroke: #FF8A5E; stroke-width: 2; stroke-dasharray: 5 4' });
-    g += comp(L('Kopfhörerbuchse', true), '', X(11), Y(116));
+    g += comp(L(N.klinke, true), '', X(11), Y(116));
     g += E('rect', { x: f(X(25)), y: f(Y(120)), width: f(8.6 * s), height: f(2.6 * s), rx: '3', style: 'fill: #9AA3AD' });
-    g += comp(L('Lightning'), '', X(40), Y(121.5));
+    g += comp(L(N.lightning), '', X(40), Y(121.5));
   } else {
     const pro = kind === 'pro';
     g += E('rect', { x: f(X(4)), y: f(Y(4.5)), width: f((W - 8) * s), height: f(34 * s), rx: '6', style: 'fill: #1E3A2F; stroke: #2F5646; stroke-width: 1' });
@@ -454,48 +463,48 @@ export function phoneOpen(kind, ox, oy, s) {
         g += E('rect', { x: f(X(W - 16 + i * 3.4)), y: f(Y(y)), width: f(2.4 * s), height: f(4 * s), rx: '1.5', style: 'fill: #FF9A2E' });
       }
     }
-    g += comp(L('Platine mit A20 Pro (abgespeckt)'), '', X(W / 2), Y(31));
-    g += comp(L(PRIVACY_LEGENDE), '', X(W - 16) - 16, Y(29.25));
+    g += comp(L(N.platineA20), '', X(W / 2), Y(31));
+    g += comp(L(N.privacy), '', X(W - 16) - 16, Y(29.25));
     if (pro) {
       g += E('rect', { x: f(X(W / 2 - 12)), y: f(Y(8)), width: f(24 * s), height: f(24 * s), rx: '8', style: 'fill: #CF8E5F; opacity: 0.35; stroke: #CF8E5F; stroke-width: 2; stroke-dasharray: 6 4' });
-      g += comp(L('Mini-Vapor-Chamber'), '', X(W / 2 - 12), Y(8));
+      g += comp(L(N.vapor), '', X(W / 2 - 12), Y(8));
     }
     const camR = 6.4;
     const cm = !pro ? 9.6 : 10.6;
     g += E('circle', { cx: f(X(cm)), cy: f(Y(cm)), r: f(camR * s), style: 'fill: #0A0E13; stroke: #56626E; stroke-width: 1.5' });
-    g += comp(L('Kamera 0.5x bis 1x (50 MP)'), '', X(cm), Y(cm));
+    g += comp(L(N.kamera(MEGAPIXEL.kiesel)), '', X(cm), Y(cm));
     if (pro) {
       g += E('circle', { cx: f(X(27)), cy: f(Y(10.6)), r: f(6 * s), style: 'fill: #0A0E13; stroke: #56626E; stroke-width: 1.5' });
-      g += comp(L('3x-Tele mit OIS'), '', X(27), Y(10.6));
+      g += comp(L(N.tele), '', X(27), Y(10.6));
     }
     const fx = X(!pro ? 23.6 : 40.8);
     g += E('circle', { cx: f(fx), cy: f(Y(cm)), r: f(2.4 * s), style: 'fill: #F3EEDF; stroke: #56626E; stroke-width: 1' });
-    g += comp(L('RGB-Blitz'), '', fx + 22, Y(cm));
+    g += comp(L(N.blitz), '', fx + 22, Y(cm));
     g += E('rect', { x: f(X(W / 2 - 9)), y: f(Y(1.6)), width: f(18 * s), height: f(4.4 * s), rx: f(2.2 * s), style: 'fill: none; stroke: #97A4B0; stroke-width: 1.5; stroke-dasharray: 4 3' });
-    g += comp(L('Face ID (Vorderseite)'), '', X(W / 2 + 13), Y(3.8));
+    g += comp(L(N.faceId), '', X(W / 2 + 13), Y(3.8));
     const top = 41, bot = H - 16;
     g += E('rect', { x: f(X(5)), y: f(Y(top)), width: f((W - 10) * s), height: f((bot - top) * s), rx: '8', style: 'fill: #3B4C5A; stroke: #4E6272' });
     g += E('circle', { cx: f(X(W / 2)), cy: f(Y(top + (bot - top) * 0.42)), r: f(18 * s), style: 'fill: none; stroke: #C98A5B; stroke-width: 5' });
     g += E('circle', { cx: f(X(W / 2)), cy: f(Y(top + (bot - top) * 0.42)), r: f(13 * s), style: 'fill: none; stroke: #C98A5B; stroke-width: 3' });
-    g += E('text', { x: f(X(W / 2)), y: f(Y(bot - 9)), style: "font-family: 'Unbounded', sans-serif; font-size: 18px; font-weight: 600; fill: #E7ECF0; text-anchor: middle" }, pro ? 'ca. 3600 mAh' : 'ca. 3000 mAh');
-    g += comp(L('Akku, Silizium-Kohlenstoff'), '', X(10), Y(top + 5));
-    g += comp(L('MagSafe-Spule'), '', X(W / 2 + 18) + 8, Y(top + (bot - top) * 0.42));
+    g += E('text', { x: f(X(W / 2)), y: f(Y(bot - 9)), style: "font-family: 'Unbounded', sans-serif; font-size: 18px; font-weight: 600; fill: #E7ECF0; text-anchor: middle" }, T.mahCa(pro ? '3600' : '3000'));
+    g += comp(L(N.akku), '', X(10), Y(top + 5));
+    g += comp(L(N.magsafe), '', X(W / 2 + 18) + 8, Y(top + (bot - top) * 0.42));
     g += E('rect', { x: f(X(6)), y: f(Y(H - 13)), width: f(15 * s), height: f(7 * s), rx: '3', style: 'fill: #5A6570' });
-    g += comp(L('Vibrationsmotor'), '', X(13.5), Y(H - 9.5));
+    g += comp(L(N.vibration), '', X(13.5), Y(H - 9.5));
     g += speaker(X(W - 21), Y(H - 13.5), 15 * s, 9 * s, s);
-    g += comp(L('Lautsprecher'), '', X(W - 13.5), Y(H - 9));
+    g += comp(L(N.lautsprecher), '', X(W - 13.5), Y(H - 9));
     g += E('rect', { x: f(X(W / 2 - 4.5)), y: f(Y(H - 3.4)), width: f(9 * s), height: f(2.8 * s), rx: '3', style: 'fill: #9AA3AD' });
-    g += comp(L('USB-C'), '', X(W / 2 + 10), Y(H - 2));
+    g += comp(L(N.usbc), '', X(W / 2 + 10), Y(H - 2));
   }
   return [g, legend];
 }
 
 // Fertiges <svg> fürs Innenleben, wie im Artboard (380 × 520, Massstab 3.4 px pro mm).
 // Rückgabe: { svg, legende: [{ nr, name, faelltWeg }] }
-export function innenleben({ modell = 'pro', massstab = 3.4, breite = 380, hoehe = 520, label = null } = {}) {
+export function innenleben({ modell = 'pro', massstab = 3.4, breite = 380, hoehe = 520, label = null, texte = DE_Z } = {}) {
   const W = modell === 'pro' ? 64.2 : 58.6;
-  const [g, leg] = phoneOpen(modell, (breite - W * massstab) / 2, 30, massstab);
+  const [g, leg] = phoneOpen(modell, (breite - W * massstab) / 2, 30, massstab, texte);
   const name = { se: 'iPhone SE (2016)', k1: 'Kiesel 1', pro: 'Kiesel 1 Pro' }[modell];
-  const svg = E('svg', { width: f(breite), height: f(hoehe), viewBox: `0 0 ${f(breite)} ${f(hoehe)}`, role: 'img', 'aria-label': label ?? `Innenleben ${name}`, style: 'display: block' }, g);
+  const svg = E('svg', { width: f(breite), height: f(hoehe), viewBox: `0 0 ${f(breite)} ${f(hoehe)}`, role: 'img', 'aria-label': label ?? texte.innenleben(name), style: 'display: block' }, g);
   return { svg, legende: leg.map(([nr, n, heat]) => ({ nr, name: n, faelltWeg: heat })) };
 }

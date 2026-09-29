@@ -1,46 +1,60 @@
-// Texte und Zahlen der Akku-Story auf den Modellseiten (AkkuStory.astro).
+// Zahlen der Akku-Story auf den Modellseiten (AkkuStory.astro) und des Akku-Rechners.
 // Beide Seiten erzählen vom iPhone SE (2016) aus: Nur dort gab es Klinke, SIM-Schlitten
 // und Home-Button, die beim Kiesel wegfallen.
 //
 // Die Schritte laufen beim Scrollen nacheinander ab. von/bis = Anteil der Scroll-Strecke
 // (0 = Anfang, 1 = Ende), muss zum Drehbuch in src/scripts/akku-story.js passen.
+//
+// Die Texte stehen in der Textdatei (akku in src/i18n/de.js). akkuFuer(T) und rechnerTexte(T)
+// bauen sie mit den Zahlen von hier zusammen; AKKU und RECHNER_TEXTE sind die deutsche Fassung.
+// /* @__PURE__ */ sagt dem Bundler: Wer nur RECHNER braucht (Akku-Rechner im Browser), bekommt
+// die Texte nicht mitgeliefert.
 
 import { GERAETE, dickePlus } from './geraete.js';
+import { akku as DE } from '../i18n/de.js';
+import { prozent } from '../lib/format.js';
 
 // mAh aus geraete.js (dort und nur dort stehen die Werte)
 export const SE_MAH = GERAETE.se.akku;
 const K1 = GERAETE.k1.akku, PRO = GERAETE.pro.akku, MINI = GERAETE.mini.akku;
 
-const gemeinsam = [
-  { von: 0, bis: 0.145, titel: '2016: das Original', text: `Das iPhone SE hatte ${SE_MAH} mAh. Der Akku teilte sich den Platz mit Kopfhörerbuchse, SIM-Schlitten und Home-Button.` },
-  { von: 0.145, bis: 0.3, titel: 'Klinke raus', text: 'Die Buchse unten links fällt weg, samt Elektronik dahinter. Wer Kabel will, nimmt USB-C.', plus: '+ Platz unten' },
-  { von: 0.3, bis: 0.46, titel: 'SIM-Schlitten raus', text: 'Nur noch eSIM. Kein Schlitten, keine Feder, kein Auswurfloch an der Seite.', plus: '+ Platz an der Seite' },
-  { von: 0.46, bis: 0.6, titel: 'Home-Button raus', text: 'Face ID übernimmt. Die Mechanik unten verschwindet, das Display darf bis an den Rand.', plus: '+ Platz unten' },
-];
+// Schrittgrenzen der Story: vier gemeinsame, dann zwei je Modell
+const GRENZEN = [[0, 0.145], [0.145, 0.3], [0.3, 0.46], [0.46, 0.6], [0.6, 0.84], [0.84, 1]];
 
-export const AKKU = {
-  k1: {
-    mah: K1,
-    schritte: [
-      ...gemeinsam,
-      { von: 0.6, bis: 0.84, titel: 'Der Akku wächst', text: `Die Platine wird kompakter, Motor und Lautsprecher rutschen nach unten. Dazu ${dickePlus('k1')} mm mehr Dicke und Zellen aus Silizium-Kohlenstoff.`, plus: `ca. ${K1} mAh` },
-      { von: 0.84, bis: 1, titel: 'Nebeneinander', text: 'Links das SE von 2016, rechts der Kiesel 1, im selben Massstab. Gleiche Grundfläche, fast doppelt so viel Akku.' },
-    ],
-    // Abschnitt nach der Story (Artboard: „Mehr Akku. Gleiche Hand.“)
-    fazit: `Kein Klinkenstecker, kein SIM-Schlitten, kein Home-Button. Dazu eine Zelle aus Silizium-Kohlenstoff und ${dickePlus('k1')} mm mehr Dicke. So passen rund ${K1} mAh in die Grundfläche des SE.`,
-    balken: [[GERAETE.se.name, SE_MAH], [GERAETE.k1.name, K1]],
-  },
-  pro: {
-    mah: PRO,
-    schritte: [
-      ...gemeinsam,
-      { von: 0.6, bis: 0.84, titel: 'Der Akku wächst', text: `Das Gehäuse wächst auf die Grösse des 13 mini, die Platine wird kompakter. Dazu ${dickePlus('pro', 'se')} mm mehr Dicke als das SE und Zellen aus Silizium-Kohlenstoff.`, plus: `ca. ${PRO} mAh` },
-      { von: 0.84, bis: 1, titel: 'Nebeneinander', text: 'Links das SE von 2016, rechts der Kiesel 1 Pro, im selben Massstab. Etwas grösser, mehr als doppelt so viel Akku.' },
-    ],
-    fazit: `Kein SIM-Schlitten, eine Zelle aus Silizium-Kohlenstoff und ${dickePlus('pro')} mm mehr Dicke. So passen rund ${PRO} mAh in die Grundfläche des 13 mini.`,
-    balken: [[GERAETE.se.name, SE_MAH], [GERAETE.mini.name, MINI], [GERAETE.pro.name, PRO]],
-  },
-};
+export function akkuFuer(T = DE) {
+  const S = T.story;
+  const schritt = (i, text) => ({ von: GRENZEN[i][0], bis: GRENZEN[i][1], ...text });
+  const gemeinsam = [
+    schritt(0, { titel: S.original.titel, text: S.original.text(SE_MAH) }),
+    schritt(1, S.klinke),
+    schritt(2, S.sim),
+    schritt(3, S.home),
+  ];
+  return {
+    k1: {
+      mah: K1,
+      schritte: [
+        ...gemeinsam,
+        schritt(4, { titel: S.waechst.titel, text: S.waechst.k1(dickePlus('k1')), plus: S.waechst.plus(K1) }),
+        schritt(5, S.nebeneinander.k1),
+      ],
+      // Abschnitt nach der Story (Artboard: „Mehr Akku. Gleiche Hand.“)
+      fazit: T.fazit.k1(dickePlus('k1'), K1),
+      balken: [[GERAETE.se.name, SE_MAH], [GERAETE.k1.name, K1]],
+    },
+    pro: {
+      mah: PRO,
+      schritte: [
+        ...gemeinsam,
+        schritt(4, { titel: S.waechst.titel, text: S.waechst.pro(dickePlus('pro', 'se')), plus: S.waechst.plus(PRO) }),
+        schritt(5, S.nebeneinander.pro),
+      ],
+      fazit: T.fazit.pro(dickePlus('pro'), PRO),
+      balken: [[GERAETE.se.name, SE_MAH], [GERAETE.mini.name, MINI], [GERAETE.pro.name, PRO]],
+    },
+  };
+}
+export const AKKU = /* @__PURE__ */ akkuFuer();
 
 // ---------------------------------------------------------------------------------------------
 // Akku-Rechner (/akku-rechner/, akku_js in design/generator/gen4.py, Werte 1:1 übernommen).
@@ -56,30 +70,34 @@ export const RECHNER = {
   proFaktor: { surf: 0.8, video: 0.8, music: 0.8, cam: 0.72, game: 0.75, idle: 0.8 },
   // iPhone SE (2016): rund 46 % weniger Akku, darum 1.85-facher Verbrauch
   seFaktor: 1.85,
-  // Regler: [Schlüssel, Beschriftung, Maximum in Stunden], Schritt 0.5 h
-  regler: [['surf', 'Surfen und Social Media', 10], ['video', 'Video', 6], ['music', 'Musik und Podcasts', 8], ['cam', 'Kamera und Navigation', 5], ['game', 'Spielen', 4]],
+  // Regler: [Schlüssel, Maximum in Stunden], Schritt 0.5 h. Beschriftung: akkuRechner.regler
+  regler: [['surf', 10], ['video', 6], ['music', 8], ['cam', 5], ['game', 4]],
   schritt: 0.5,
-  // Typische Tage (Stunden pro Tätigkeit). „Normal“ ist die Vorgabe.
+  // Typische Tage (Stunden pro Tätigkeit), Kennung → Werte. „normal“ ist die Vorgabe.
+  // Namen („Ruhiger Tag“ …): akkuRechner.tage in der Textdatei
   tage: {
-    'Ruhiger Tag': { surf: 1.5, video: 0.5, music: 0.5, cam: 0, game: 0 },
-    'Normal': { surf: 3, video: 1.5, music: 1, cam: 0.5, game: 0 },
-    'Viel unterwegs': { surf: 5, video: 2.5, music: 1.5, cam: 1, game: 1 },
-    'Ferientag': { surf: 2, video: 1, music: 1, cam: 3, game: 0 },
+    quiet: { surf: 1.5, video: 0.5, music: 0.5, cam: 0, game: 0 },
+    normal: { surf: 3, video: 1.5, music: 1, cam: 0.5, game: 0 },
+    busy: { surf: 5, video: 2.5, music: 1.5, cam: 1, game: 1 },
+    holiday: { surf: 2, video: 1, music: 1, cam: 3, game: 0 },
   },
-  vorgabe: 'Normal',
+  vorgabe: 'normal',
 };
 
 // Texte unter dem Rechner (Artboard „Akku-Rechner“), aus den Zahlen oben zusammengesetzt
-const R = RECHNER;
-const prozent = (x) => `${x} %`;
-const weniger = (f) => Math.round((1 - f) * 100);
-export const RECHNER_TEXTE = {
-  soWird: [
-    `Verbrauch pro Stunde beim Kiesel 1: Surfen ${prozent(R.verbrauch.surf)}, Video ${prozent(R.verbrauch.video)}, Musik ${prozent(R.verbrauch.music)}, Kamera und Navigation ${prozent(R.verbrauch.cam)}, Spielen ${prozent(R.verbrauch.game)}, Standby ${prozent(R.standby)}. Die Stunden verteilen sich gleichmässig über den Tag.`,
-    `Der Pro hat ${Math.round((GERAETE.pro.akku / GERAETE.k1.akku - 1) * 100)} % mehr Akku. Sein grösseres Display kostet etwas, dafür arbeitet der Chip dank Vapor Chamber bei Kamera und Spielen kühler und effizienter. Unterm Strich braucht er ${weniger(R.proFaktor.surf)} % weniger pro Stunde, bei Kamera ${weniger(R.proFaktor.cam)} % und bei Spielen ${weniger(R.proFaktor.game)} % weniger.`,
-  ],
-  gutZuWissen: [
-    'Je mehr du das Handy nutzt, desto grösser wird der Vorsprung des Pro. An einem ruhigen Tag liegen beide nah beieinander, an einem langen Ferientag zählt jedes Prozent.',
-    `Das SE von 2016 dient als Vergleich. Es hat rund ${Math.round((1 - SE_MAH / K1) * 100)} % weniger Akku als der Kiesel 1, das Modell rechnet es deshalb mit ${R.seFaktor}-fachem Verbrauch.`,
-  ],
-};
+export function rechnerTexte(T = DE, sprache = 'de') {
+  const R = RECHNER;
+  const p = (x) => prozent(x, sprache);
+  const weniger = (f) => Math.round((1 - f) * 100);
+  return {
+    soWird: [
+      T.rechner.verbrauch({ surf: p(R.verbrauch.surf), video: p(R.verbrauch.video), music: p(R.verbrauch.music), cam: p(R.verbrauch.cam), game: p(R.verbrauch.game), standby: p(R.standby) }),
+      T.rechner.pro({ mehr: p(Math.round((GERAETE.pro.akku / GERAETE.k1.akku - 1) * 100)), surf: p(weniger(R.proFaktor.surf)), cam: p(weniger(R.proFaktor.cam)), game: p(weniger(R.proFaktor.game)) }),
+    ],
+    gutZuWissen: [
+      T.rechner.vorsprung,
+      T.rechner.se(p(Math.round((1 - SE_MAH / K1) * 100)), R.seFaktor),
+    ],
+  };
+}
+export const RECHNER_TEXTE = /* @__PURE__ */ rechnerTexte();

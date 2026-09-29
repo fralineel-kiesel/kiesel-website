@@ -1,7 +1,8 @@
 ---
 // Akkordeon (Artboard „Startseite Desktop“ › Häufige Fragen, Artboard „FAQ“): Frage anklicken,
 // Antwort klappt auf.
-//   eintraege: [{ id, frage, antwort, thema?, link? }]   offen: id des anfangs offenen Eintrags (oder null)
+//   eintraege: [{ id, frage, antwort, thema?, themaName?, link? }]  thema = Kennung (data-thema),
+//              themaName = angezeigter Name   offen: id des anfangs offenen Eintrags (oder null)
 //   ebene:     Überschriften-Ebene der Fragen (3 = <h3>, passend unter einer <h2>)
 //   anker:     true = jeder Eintrag bekommt id={e.id} als Sprungziel (nur auf der FAQ-Seite)
 //   thema:     true = Thema klein über der Frage zeigen (FAQ-Seite)
@@ -34,7 +35,7 @@ const teile = (e) => {
         <H class="frage">
           <button type="button" class="t-4" id={`${idVorsilbe}-${e.id}-knopf`} aria-expanded={auf ? 'true' : 'false'} aria-controls={`${idVorsilbe}-${e.id}`}>
             <span class="text">
-              {thema && e.thema && <span class="thema">{e.thema}</span>}
+              {thema && e.themaName && <span class="thema">{e.themaName}</span>}
               <span class="f">{e.frage}</span>
             </span>
             <Icon name="plus" size={22} class="plus" />

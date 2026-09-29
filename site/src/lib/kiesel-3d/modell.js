@@ -65,7 +65,8 @@ function linsenRing(r, h) {
 }
 
 // plan = bauplan('k1'|'pro'). Liefert { handy, boden, masse, plan, setzeFarbe(), dispose() }.
-export async function baueKiesel(plan, { farbe = 'Himmelblau', maxAniso = 1 } = {}) {
+// sperr = Texte auf dem Sperrbildschirm ({ datum, uhrzeit }, Standard: Deutsch)
+export async function baueKiesel(plan, { farbe = 'sky-blue', maxAniso = 1, sperr } = {}) {
   const { W, H, R, D, zeichnung: z } = plan;
   let col = palette(farbe);
 
@@ -101,7 +102,7 @@ export async function baueKiesel(plan, { farbe = 'Himmelblau', maxAniso = 1 } = 
   // Vorderseite: schwarzes Glas. Der Bildschirm leuchtet selbst (emissiveMap), unabhängig
   // vom Licht. clearcoat 1 mit fast 0 Rauheit = Spiegelung auf dem Deckglas.
   const schirmBild = leinwand(z.W, z.H);
-  await zeichneBildschirm(schirmBild, z);
+  await zeichneBildschirm(schirmBild, z, sperr);
   const schirmTex = merke(new CanvasTexture(schirmBild));
   schirmTex.colorSpace = SRGBColorSpace;
   schirmTex.anisotropy = maxAniso;

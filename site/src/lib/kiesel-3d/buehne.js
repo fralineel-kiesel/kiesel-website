@@ -51,7 +51,7 @@ const ABSTAND_NACH_H = Math.max(...KIESEL_IDS.map((id) => GERAETE[id].hoehe)); /
 // einzige lange Aufgabe, während der die Seite nicht reagiert.
 const luftholen = () => new Promise((r) => setTimeout(r, 0));
 
-export async function starte3D({ ziel, modell = 'pro', farbe = 'Himmelblau', label = '', beiAbbruch = () => {}, waechter: mitWaechter = true, gerade = false, freiOben = () => 0 }) {
+export async function starte3D({ ziel, modell = 'pro', farbe = 'sky-blue', label = '', sperr, beiAbbruch = () => {}, waechter: mitWaechter = true, gerade = false, freiOben = () => 0 }) {
   const leinwand = document.createElement('canvas');
   leinwand.className = 'leinwand-3d';
   leinwand.setAttribute('role', 'img');
@@ -133,7 +133,7 @@ export async function starte3D({ ziel, modell = 'pro', farbe = 'Himmelblau', lab
   async function baue(id) {
     // Farbe vorher festhalten: Wählt jemand während des Bauens eine andere, holt zeige() das nach
     const farbeBeimBau = farbeJetzt;
-    const k = await baueKiesel(bauplan(id), { farbe: farbeBeimBau, maxAniso });
+    const k = await baueKiesel(bauplan(id), { farbe: farbeBeimBau, maxAniso, sperr });
     if (beendet) { k.dispose(); return null; }
     aufraeumen.push(() => k.dispose());
     farbeVon.set(id, farbeBeimBau);

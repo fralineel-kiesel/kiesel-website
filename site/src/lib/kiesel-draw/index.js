@@ -9,4 +9,5 @@ export * from './models.js';
 export * from './phone.js';
 export * from './scene.js';
 export * from './innenteile.js';
+export * from './sperrbildschirm.js';
 export { PyRandom } from './zufall.js';

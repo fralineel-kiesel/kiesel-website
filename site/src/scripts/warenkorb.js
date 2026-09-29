@@ -1,18 +1,24 @@
 // Der Warenkorb: speichern, lesen, ändern, rechnen. Kein HTML, das macht warenkorb-ansicht.js.
 //
 // Gespeichert wird nur, WAS jemand gewählt hat, nie ein Preis:
-//   [{ "art": "handy", "modell": "pro", "farbe": "Mattschwarz", "speicher": "2tb", "gravur": "Linos Kiesel", "anzahl": 1 },
-//    { "art": "huelle", "modell": "pro", "farbe": "Titangrau", "anzahl": 2 }]
+//   [{ "art": "phone", "modell": "pro", "farbe": "matte-black", "speicher": "2tb", "gravur": "Linos Kiesel", "anzahl": 1 },
+//    { "art": "case", "modell": "pro", "farbe": "titanium-gray", "anzahl": 2 }]
 // Preis und Name kommen beim Anzeigen immer frisch aus data/preise.js. So kann ein alter oder
 // von Hand verbogener Eintrag nie einen falschen Preis zeigen.
+//
+// Alle gespeicherten Werte sind sprachneutrale Kennungen (Etappe 9a). Bis Etappe 8 standen dort
+// deutsche Wörter (art 'handy'/'huelle', farbe 'Mattschwarz'). bereinige() nimmt beides an und
+// liefert immer das neue Format; beim nächsten Speichern steht dann nur noch das neue im Speicher.
 //
 // Wo gespeichert wird (jeder Zugriff in try/catch, nie eine Fehlermeldung):
 //   1. localStorage   bleibt auch nach dem Schliessen des Browsers
 //   2. sessionStorage wenn localStorage gesperrt ist: bleibt, solange der Tab offen ist
 //   3. Variable       wenn beides gesperrt ist: bleibt nur auf dieser Seite
 // speicherOrt() sagt, welche Ebene gerade gilt ('dauerhaft' | 'sitzung' | 'seite').
-import { PREISE, HUELLE_PREIS, VERSAND, MWST_PROZENT, MAX_ANZAHL, FARBNAMEN, speicherStufe } from '../data/preise.js';
+import { PREISE, HUELLE_PREIS, VERSAND, MWST_PROZENT, MAX_ANZAHL, speicherStufe } from '../data/preise.js';
+import { farbId } from '../data/farben.js';
 import { saubereGravur } from '../lib/gravur.js';
+import { farben as FARBNAME, warenkorbArtikel as T } from '../i18n/de.js';
 
 const SCHLUESSEL = 'kiesel-warenkorb';
 export const EREIGNIS = 'kiesel:warenkorb'; // wird ausgelöst, wenn sich der Inhalt ändert
@@ -70,34 +76,38 @@ export function speicherOrt() {
 }
 
 // ---------------------------------------------------------------- Einträge prüfen
-const farbeNormal = (farbe) => FARBNAMEN.find((n) => n.toLowerCase() === String(farbe ?? '').toLowerCase());
+// Art des Artikels: Kennung, dazu die alten deutschen Wörter bis Etappe 8.
+// Object.hasOwn statt ARTEN[x]: sonst gäbe z.B. art "constructor" eine Funktion zurück.
+const ARTEN = { phone: 'phone', case: 'case', handy: 'phone', huelle: 'case' };
+export const artId = (art) => { const a = String(art ?? '').toLowerCase(); return Object.hasOwn(ARTEN, a) ? ARTEN[a] : null; };
 
 // Gleicher Artikel = gleiche id. Die id entsteht aus der Wahl, darum fassen sich z.B. zwei
 // gleiche Handys mit gleicher Gravur automatisch zu einer Zeile zusammen.
 export function artikelId(a) {
-  return a.art === 'huelle'
-    ? ['huelle', a.modell, a.farbe].join('|')
-    : ['handy', a.modell, a.farbe, a.speicher, a.gravur ?? ''].join('|');
+  return a.art === 'case'
+    ? ['case', a.modell, a.farbe].join('|')
+    : ['phone', a.modell, a.farbe, a.speicher, a.gravur ?? ''].join('|');
 }
 
 // Einen Eintrag prüfen und aufräumen. Unbrauchbares → null (fällt weg).
-// Nimmt auch das alte Format aus Etappe 5 an ({ id, art: 'huelle', name, preis, … }):
-// Die Felder id, name und preis werden einfach ignoriert.
+// Nimmt auch die alten Formate an: Etappe 5 ({ id, art: 'huelle', name, preis, … }, die Felder
+// id, name und preis werden einfach ignoriert) und Etappe 6 bis 8 (deutsche Art und Farbe).
 export function bereinige(roh) {
   if (!roh || typeof roh !== 'object') return null;
   const modell = PREISE[roh.modell] ? roh.modell : null;
-  const farbe = farbeNormal(roh.farbe);
+  const farbe = farbId(roh.farbe);
+  const art = artId(roh.art);
   if (!modell || !farbe) return null;
   const n = Math.floor(Number(roh.anzahl));
   const anzahl = Number.isFinite(n) ? Math.min(MAX_ANZAHL, Math.max(1, n)) : 1;
   let a;
-  if (roh.art === 'huelle') {
-    a = { art: 'huelle', modell, farbe, anzahl };
-  } else if (roh.art === 'handy') {
+  if (art === 'case') {
+    a = { art: 'case', modell, farbe, anzahl };
+  } else if (art === 'phone') {
     if (!speicherStufe(modell, roh.speicher)) return null;
     const gravur = roh.gravur ? saubereGravur(roh.gravur) : '';
     if (gravur === null) return null; // ungültige Gravur: lieber weg als falsch graviert
-    a = { art: 'handy', modell, farbe, speicher: roh.speicher, anzahl };
+    a = { art: 'phone', modell, farbe, speicher: roh.speicher, anzahl };
     if (gravur) a.gravur = gravur;
   } else {
     return null;
@@ -120,9 +130,24 @@ function bereinigeListe(liste) {
 }
 
 // ---------------------------------------------------------------- Lesen und Ändern
+// Beim ersten Lesen auf einer Seite: Liegt noch ein alter Warenkorb im Speicher (deutsche
+// Kennungen, aufgeräumte Einträge), wird er einmal im neuen Format zurückgeschrieben. Still:
+// kein Ereignis, denn für die Seite ändert sich nichts. Kaputtes JSON bleibt unangetastet.
+let migriert = false;
+function migriere(roh, liste) {
+  migriert = true;
+  const neu = JSON.stringify(liste.map(({ id, ...rest }) => rest));
+  if (neu !== roh) {
+    try { rohSchreiben(neu); } catch { /* egal, beim nächsten Speichern klappt es */ }
+  }
+}
+
 export function lesen() {
   try {
-    return bereinigeListe(JSON.parse(rohLesen()));
+    const roh = rohLesen();
+    const liste = bereinigeListe(JSON.parse(roh));
+    if (!migriert) migriere(roh, liste);
+    return liste;
   } catch {
     return []; // kein gültiges JSON: leer (beim nächsten Speichern wird es überschrieben)
   }
@@ -138,7 +163,7 @@ function speichern(liste) {
   window.dispatchEvent(new CustomEvent(EREIGNIS));
 }
 
-// Artikel hinzufügen, z.B. hinzufuegen({ art: 'handy', modell: 'pro', farbe: 'Himmelblau', speicher: '512gb' })
+// Artikel hinzufügen, z.B. hinzufuegen({ art: 'phone', modell: 'pro', farbe: 'sky-blue', speicher: '512gb' })
 // Gleicher Artikel schon drin: Anzahl erhöhen, höchstens MAX_ANZAHL.
 // Rückgabe: { id, anzahl, gekappt } oder null, wenn der Artikel ungültig ist.
 //   gekappt = true, wenn nicht alles dazukam (schon 9 Stück)
@@ -186,16 +211,18 @@ export function beiAenderung(rueckruf) {
 
 // ---------------------------------------------------------------- Anzeigen und Rechnen
 // Name, Beschreibung und Stückpreis (in Rappen) eines Eintrags
-export function artikelInfo(a) {
+// Texte (T, FARBNAME) als Parameter: Standard Deutsch, Etappe 9b übergibt die englischen.
+export function artikelInfo(a, texte = { T, FARBNAME }) {
   const modellName = PREISE[a.modell].name;
-  if (a.art === 'huelle') {
-    return { name: 'Kiesel-Hülle', details: `für ${modellName}, ${a.farbe}`, stueck: HUELLE_PREIS * 100 };
+  const farbe = texte.FARBNAME[a.farbe];
+  if (a.art === 'case') {
+    return { name: texte.T.huelle, details: texte.T.huelleDetails(modellName, farbe), stueck: HUELLE_PREIS * 100 };
   }
   const s = speicherStufe(a.modell, a.speicher);
   return {
     name: modellName,
-    // Geschützte Leerzeichen (\u00A0): „Gravur «Linos Kiesel»“ bricht nicht mitten im Namen um
-    details: `${a.farbe}, ${s.name}` + (a.gravur ? `, Gravur\u00A0«${a.gravur.replace(/ /g, '\u00A0')}»` : ''),
+    // Geschützte Leerzeichen (\u00A0) in der Gravur: „Linos Kiesel“ bricht nicht mitten im Namen um
+    details: texte.T.handyDetails(farbe, s.name, a.gravur ? a.gravur.replace(/ /g, '\u00A0') : null),
     stueck: s.preis * 100,
   };
 }

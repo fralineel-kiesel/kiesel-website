@@ -4,31 +4,34 @@
 // Warum: Der Browser erledigt dann die Tastatur (Tab in die Gruppe, Pfeiltasten wechseln)
 // und Screenreader sagen „Himmelblau, Optionsfeld, 1 von 5“. Das müssten wir sonst nachbauen.
 //   name:    eindeutiger Name der Gruppe auf der Seite (Pflicht, wenn es mehrere gibt)
-//   wert:    anfangs gewählte Farbe
+//   wert:    anfangs gewählte Farbe (Kennung wie 'sky-blue', siehe data/farben.js)
 //   legende: Beschriftung; zeigeName: gewählte Farbe daneben anzeigen
 //   groesse: Durchmesser des Farbpunkts (34 = 44 px Tippfläche, 28 auf dem Handy)
 //   zeile:   Beschriftung nur für Screenreader, Farbname sichtbar rechts neben den Punkten
 //            (z.B. auf der 3D-Bühne). Farben von aussen über --fw-ink (Text und Ring).
-// Meldet jede Wahl als Ereignis „kiesel:farbe“ (detail.farbe = Name).
-import { FARBEN, FARBNAMEN } from '../data/farben.js';
+// Meldet jede Wahl als Ereignis „kiesel:farbe“ (detail.farbe = Kennung).
+// Wert der Radio-Knöpfe = Kennung, angezeigt wird der Name aus der Textdatei.
+import { FARBEN, FARB_IDS } from '../data/farben.js';
+import { texte, spracheVon } from '../i18n/index.js';
 
-const { name = 'farbe', wert = 'Himmelblau', legende = 'Farbe', zeigeName = true, groesse = 34, zeile = false, class: klasse } = Astro.props;
+const t = texte(spracheVon(Astro.url));
+const { name = 'farbe', wert = 'sky-blue', legende = t.kaufen.farbe, zeigeName = true, groesse = 34, zeile = false, class: klasse } = Astro.props;
 ---
 <fieldset class:list={['farbwaehler', { 'farbwaehler--zeile': zeile }, klasse]} style={`--punkt: ${groesse}px`} data-farbwaehler>
   {zeile
     ? <legend class="vh">{legende}</legend>
-    : <legend class:list={[{ vh: !zeigeName }]}>{legende}{zeigeName && <>: <span data-farbname>{wert}</span></>}</legend>}
+    : <legend class:list={[{ vh: !zeigeName }]}>{legende}{zeigeName && <>: <span data-farbname>{t.farben[wert]}</span></>}</legend>}
   <div class="punkte">
-    {FARBNAMEN.map((farbe) => (
-      <label title={farbe}>
+    {FARB_IDS.map((farbe) => (
+      <label title={t.farben[farbe]}>
         <input class="vh" type="radio" name={name} value={farbe} checked={farbe === wert} />
         <span class="ring"><span class="punkt" style={`--farbe: ${FARBEN[farbe].frame}`}></span></span>
-        <span class="vh">{farbe}</span>
+        <span class="vh">{t.farben[farbe]}</span>
       </label>
     ))}
   </div>
   {/* Der Screenreader sagt die gewählte Farbe schon beim Radio-Knopf, darum aria-hidden */}
-  {zeile && zeigeName && <span class="name" aria-hidden="true" data-farbname>{wert}</span>}
+  {zeile && zeigeName && <span class="name" aria-hidden="true" data-farbname>{t.farben[wert]}</span>}
 </fieldset>
 
 <style>
@@ -68,10 +71,12 @@ const { name = 'farbe', wert = 'Himmelblau', legende = 'Farbe', zeigeName = true
 </style>
 
 <script>
-  // Gewählten Farbnamen in der Beschriftung nachführen und ein Ereignis melden
+  // Gewählten Farbnamen in der Beschriftung nachführen und ein Ereignis melden.
+  // Den Namen in der Sprache der Seite trägt schon das title des Labels.
   document.querySelectorAll('[data-farbwaehler]').forEach((gruppe) => {
     gruppe.addEventListener('change', (e) => {
-      gruppe.querySelectorAll('[data-farbname]').forEach((anzeige) => { anzeige.textContent = e.target.value; });
+      const name = e.target.closest('label').title;
+      gruppe.querySelectorAll('[data-farbname]').forEach((anzeige) => { anzeige.textContent = name; });
       gruppe.dispatchEvent(new CustomEvent('kiesel:farbe', { bubbles: true, detail: { farbe: e.target.value } }));
     });
   });

@@ -4,16 +4,15 @@
 //
 // Preise in ganzen Franken. Gerechnet wird im Warenkorb in Rappen (siehe summen() in
 // scripts/warenkorb.js), weil Kommazahlen im Computer nicht exakt sind: 0.1 + 0.2 = 0.30000000000000004.
-import { FARBNAMEN } from './farben.js';
 import { chf } from '../lib/format.js';
+import { preise as T } from '../i18n/de.js';
 
-export { FARBNAMEN };
-
-// Speicherstufen: id (für Adresse und Warenkorb), Anzeigename, Preis
+// Speicherstufen: id (für Adresse und Warenkorb), Anzeigename, Preis.
+// name = Eigenname, name der Speicherstufe = Einheit (in jeder Sprache gleich). Die Unterzeile
+// der Modelle („SE-Grösse“) steht in der Textdatei (preise.unterzeile in src/i18n/de.js).
 export const PREISE = {
   k1: {
     name: 'Kiesel 1',
-    sub: 'SE-Grösse',
     speicher: [
       { id: '256gb', name: '256 GB', preis: 1200 },
       { id: '512gb', name: '512 GB', preis: 1400 },
@@ -22,7 +21,6 @@ export const PREISE = {
   },
   pro: {
     name: 'Kiesel 1 Pro',
-    sub: '13-mini-Grösse, 3x-Tele',
     speicher: [
       { id: '256gb', name: '256 GB', preis: 1500 },
       { id: '512gb', name: '512 GB', preis: 1700 },
@@ -50,11 +48,11 @@ export const speicherStufe = (modell, id) => PREISE[modell]?.speicher.find((s) =
 // Kleinster und grösster Preis eines Modells
 export const minPreis = (modell) => Math.min(...PREISE[modell].speicher.map((s) => s.preis));
 
-// „ab CHF 1’200.–“
-export const abPreis = (modell) => 'ab ' + chf(minPreis(modell));
+// „ab CHF 1’200.–“. Texte als Parameter (Standard: Deutsch), sprache für das Zahlenformat.
+export const abPreis = (modell, texte = T, sprache = 'de') => texte.ab(chf(minPreis(modell), sprache));
 
 // Speicherbereich als Text: „256 GB bis 2 TB“
-export function speicherBereich(modell) {
+export function speicherBereich(modell, texte = T) {
   const s = PREISE[modell].speicher;
-  return `${s[0].name} bis ${s[s.length - 1].name}`;
+  return texte.bereich(s[0].name, s[s.length - 1].name);
 }

@@ -13,6 +13,7 @@ import { chromium } from 'playwright';
 import { starteServer } from './dist-server.mjs';
 import { referenz } from './gen4-referenz.mjs';
 import { FAQ, THEMEN } from '../src/data/faq.js';
+import { faqThemen } from '../src/i18n/de.js';
 import { faqMitAbweichungen, FAQ_ABWEICHUNGEN } from './abweichungen.mjs';
 
 let fehler = 0;
@@ -24,10 +25,11 @@ function pruefe(name, ok, info = '') {
 console.log('── Daten ──');
 // Vorlage plus die bewussten Änderungen aus abweichungen.mjs (Etappe 8b: Privacy, Notruf)
 const ref = faqMitAbweichungen(referenz().daten.FAQ);
-const unsere = FAQ.map((f) => [f.thema, f.frage, f.antwort]);
+// Themen sind Kennungen (Etappe 9a), das Artboard kennt nur die deutschen Namen
+const unsere = FAQ.map((f) => [faqThemen[f.thema], f.frage, f.antwort]);
 const abw = ref.map((r, i) => (JSON.stringify(r) === JSON.stringify(unsere[i]) ? null : `${i}: ${JSON.stringify(r)} ≠ ${JSON.stringify(unsere[i])}`)).filter(Boolean);
 pruefe(`faq.js = FAQ aus gen4.py + ${FAQ_ABWEICHUNGEN.length} Abweichungen (${ref.length} Fragen, Zeichen für Zeichen)`, abw.length === 0 && ref.length === FAQ.length, abw[0] ?? '');
-pruefe('Themen wie im Artboard', JSON.stringify(THEMEN) === JSON.stringify([...new Set(ref.map((r) => r[0]))]));
+pruefe('Themen wie im Artboard', JSON.stringify(THEMEN.map((id) => faqThemen[id])) === JSON.stringify([...new Set(ref.map((r) => r[0]))]));
 pruefe('IDs eindeutig', new Set(FAQ.map((f) => f.id)).size === FAQ.length);
 
 console.log('\n── Seite /faq/ ──');
@@ -82,12 +84,12 @@ try {
   await suche(seite, '');
   await seite.getByRole('button', { name: 'Handys', exact: true }).last().click();
   const handys = await sichtbar(seite);
-  const soll = FAQ.filter((f) => f.thema === 'Handys').map((f) => f.id);
-  pruefe(`Chip „Handys“: ${soll.length} Fragen, Chip gedrückt`, JSON.stringify(handys) === JSON.stringify(soll) && (await seite.locator('[data-thema-wahl="Handys"]').getAttribute('aria-pressed')) === 'true', handys.join(', '));
+  const soll = FAQ.filter((f) => f.thema === 'phones').map((f) => f.id);
+  pruefe(`Chip „Handys“: ${soll.length} Fragen, Chip gedrückt`, JSON.stringify(handys) === JSON.stringify(soll) && (await seite.locator('[data-thema-wahl="phones"]').getAttribute('aria-pressed')) === 'true', handys.join(', '));
   await suche(seite, 'akku');
   const kombi = await sichtbar(seite);
   pruefe('Thema und Suche zusammen: „Handys“ + „akku“', kombi.length > 0 && kombi.every((id) => soll.includes(id)), kombi.join(', '));
-  await seite.locator('[data-thema-wahl="Alle"]').click();
+  await seite.locator('[data-thema-wahl="alle"]').click();
   await suche(seite, '');
   pruefe('„Alle“ zeigt wieder alles, keine Ansage', (await sichtbar(seite)).length === FAQ.length && (await seite.locator('[data-anzahl]').textContent()) === '');
 

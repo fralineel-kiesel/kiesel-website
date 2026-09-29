@@ -3,18 +3,19 @@
 // Browser ändern kann, ohne den ganzen Panorama-Zeichner (scene.js) mitzuladen.
 import { f } from './svg.js';
 
-// Die acht versteckten Details: [Name, x, y] im 1600 × 1000-Bild, 1:1 aus scene.py.
+// Die acht versteckten Details: [Kennung, x, y] im 1600 × 1000-Bild, Lage 1:1 aus scene.py.
 // Steht hier (und nicht in scene.js), damit die Kamera-Demos sie im Browser kennen, ohne
 // den ganzen Panorama-Zeichner zu laden. scene.js reicht sie weiter.
+// Die Namen („Gipfelkreuz“ …) stehen in der Textdatei: panoramaDetails in src/i18n/de.js.
 export const ZOOM_TARGETS = [
-  ['Gipfelkreuz', 760, 214],
-  ['Seilschaft auf dem Grat', 716, 242],
-  ['Steinbock', 846, 331],
-  ['SAC-Hütte mit Fahne', 616, 369],
-  ['Gondelbahn', 452, 500],
-  ['Gleitschirm', 1060, 306],
-  ['Segelboot', 1122, 770],
-  ['Dorf mit Kirche', 262, 668],
+  ['summit-cross', 760, 214],
+  ['rope-team', 716, 242],
+  ['ibex', 846, 331],
+  ['mountain-hut', 616, 369],
+  ['gondola', 452, 500],
+  ['paraglider', 1060, 306],
+  ['sailboat', 1122, 770],
+  ['village', 262, 668],
 ];
 
 // Bildausschnitt als viewBox: zoom 1 = ganzes Bild (1600 breit), zoom 8 = 200 breit.

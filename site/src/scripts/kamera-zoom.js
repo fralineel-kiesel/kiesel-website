@@ -42,8 +42,9 @@
 // schwenkt dorthin, mit der Maus ziehen verschiebt, mit dem Finger waagrecht ziehen auch
 // (senkrecht scrollt die Seite).
 import { crop, begrenze, ZOOM_TARGETS } from '../lib/kiesel-draw/ausschnitt.js';
-import { bildZoom, kameraZoom, rund, zahl, UNSCHAERFE, linseBei, linsenText, schaerfeText } from '../lib/kamera.js';
-import { MAX_ZOOM } from '../data/kamera.js';
+import { panoramaDetails as DETAIL_NAMEN, kamera as K } from '../i18n/de.js';
+import { bildZoom, kameraZoom, rund, zahl, UNSCHAERFE, linseBei, linsenText, bildText } from '../lib/kamera.js';
+import { MAX_ZOOM, TELE_AB } from '../data/kamera.js';
 
 // Für bestehende Skripte, die die Rechnung von hier holen
 export { bildZoom, kameraZoom, rund, zahl, UNSCHAERFE };
@@ -159,7 +160,7 @@ export function starteKamera(fenster) {
       else {
         linse = soll;
         wechsel = { von: mix, nach: soll === 'tele' ? 1 : 0, t0: jetzt };
-        sage(soll === 'tele' ? 'Wechsel auf die Tele-Linse, 3-fach optisch' : 'Wechsel zurück auf die Hauptkamera');
+        sage(soll === 'tele' ? K.wechselTele(TELE_AB) : K.wechselHaupt);
       }
     }
     let fokus = 0; // 1 = neue Linse ganz unscharf, 0 = eingerastet
@@ -236,11 +237,11 @@ export function starteKamera(fenster) {
     const aktiv = abschnitte.filter((a) => r >= Number(a.dataset.ab)).pop();
     abschnitte.forEach((a) => a.toggleAttribute('data-aktiv', a === aktiv));
     if (linsenFeld) linsenFeld.textContent = linsenText(modell, r, linse);
-    bildtext?.setAttribute('aria-label', `Alpenpanorama bei ${zahl(r)}x, ${linse === 'tele' ? 'Tele-Linse' : 'Hauptkamera'}, ${schaerfeText(UNSCHAERFE[linse](r))}`);
+    bildtext?.setAttribute('aria-label', bildText(r, linse));
     regler?.setAttribute('aria-valuetext', ansagetext());
     fenster.dispatchEvent(new CustomEvent('kiesel:kamera', { bubbles: true, detail: { z: r, linse } }));
   }
-  const ansagetext = () => `${zahl(z)}-fach, ${linse === 'tele' ? 'Tele-Linse' : 'Hauptkamera'}`;
+  const ansagetext = () => K.ansage(zahl(z), K.linseLang[linse]);
 
   function setzeZoom(zz) {
     bedient = true;
@@ -267,7 +268,8 @@ export function starteKamera(fenster) {
   // Flug zu einem Detail: kurz rauszoomen, falls das Ziel weit weg ist, schwenken, rein
   function fliegeZu(i) {
     bedient = true;
-    const [name, tx, ty] = ZOOM_TARGETS[i];
+    const [id, tx, ty] = ZOOM_TARGETS[i];
+    const name = DETAIL_NAMEN[id];
     const Z0 = bildZoom(z), Z1 = bildZoom(ZIEL_ZOOM);
     const [x0, y0] = begrenze(blick[0], blick[1], Z0);
     const abstand = Math.hypot(tx - x0, ty - y0);
@@ -285,7 +287,7 @@ export function starteKamera(fenster) {
       },
       fertig: () => entdecke(i, true),
     };
-    sage(`Fliege zu: ${name}`);
+    sage(K.details.fliegeZu(name));
     plane();
   }
 
@@ -330,33 +332,33 @@ export function starteKamera(fenster) {
     fokus.style.opacity = Math.min(1, (Z - RING_AB) / (FUND_AB - RING_AB)).toFixed(3);
     if (fokus.dataset.detail !== String(ring.i)) {
       fokus.dataset.detail = String(ring.i);
-      fokustext.textContent = `${ZOOM_TARGETS[ring.i][0]} entdeckt`;
+      fokustext.textContent = K.details.entdeckt(DETAIL_NAMEN[ZOOM_TARGETS[ring.i][0]]);
     }
   }
 
   function entdecke(i, angeflogen = false) {
     if (entdeckt.has(i)) {
-      if (angeflogen) sage(`${ZOOM_TARGETS[i][0]}, ${zahl(z)}-fach`);
+      if (angeflogen) sage(K.details.angeflogen(DETAIL_NAMEN[ZOOM_TARGETS[i][0]], zahl(z)));
       return;
     }
     entdeckt.add(i);
     neuster = i;
-    const name = ZOOM_TARGETS[i][0];
+    const name = DETAIL_NAMEN[ZOOM_TARGETS[i][0]];
     kacheln.filter((k) => k.dataset.detail === String(i)).forEach((k) => {
       k.setAttribute('data-gefunden', '');
-      k.setAttribute('aria-label', `${name}: hinzoomen`);
+      k.setAttribute('aria-label', K.details.hinzoomen(name));
       k.querySelector('[data-fundname]').textContent = name;
     });
     const n = entdeckt.size, alle = ZOOM_TARGETS.length;
     fundpunkte.forEach((p, j) => p.toggleAttribute('data-an', j < n));
-    if (zaehler) zaehler.textContent = n === alle ? `Alle ${alle} entdeckt` : `${n} von ${alle} entdeckt`;
+    if (zaehler) zaehler.textContent = K.details.zaehler(n, alle);
     if (fokus) {
       // Ring zieht sich einmal zusammen (Animation neu starten)
       fokus.removeAttribute('data-neu');
       void fokus.offsetWidth;
       fokus.setAttribute('data-neu', '');
     }
-    sage(`${name} entdeckt. ${n} von ${alle}.`);
+    sage(K.details.gefunden(name, n, alle));
   }
 
   // ── Ereignisse ──

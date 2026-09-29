@@ -7,10 +7,13 @@ import ZoomBild from './ZoomBild.astro';
 import ZoomSkala from './ZoomSkala.astro';
 import LinsenLeiste from './LinsenLeiste.astro';
 import { STUFEN, LINSEN, MAX_ZOOM } from '../../data/kamera.js';
+import { texte, spracheVon } from '../../i18n/index.js';
+
+const t = texte(spracheVon(Astro.url));
 ---
 <div class="zoom-demo" data-kamera data-zoom-demo>
   <ZoomBild modell="k1" start={1} blick={[756, 246]} />
-  <ZoomSkala max={MAX_ZOOM.k1} stufen={STUFEN.k1} label="Zoom" />
+  <ZoomSkala max={MAX_ZOOM.k1} stufen={STUFEN.k1} label={t.kamera.zoom} />
   <LinsenLeiste abschnitte={LINSEN.k1} />
   <p class="vh" aria-live="polite" data-ansage></p>
 </div>

@@ -11,8 +11,13 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import Akkordeon from '../components/Akkordeon.astro';
 import Chip from '../components/Chip.astro';
 import Knopf from '../components/Knopf.astro';
-import { FAQ, THEMEN, FRAGE_STELLEN } from '../data/faq.js';
+import { faqFuer, THEMEN, FRAGE_STELLEN_ADRESSE } from '../data/faq.js';
+import { texte, spracheVon } from '../i18n/index.js';
 
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
+const F = t.faqSeite;
+const FAQ = faqFuer(t.faqFragen, sprache);
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'FAQPage',
@@ -25,34 +30,34 @@ const jsonLd = {
 // „</script>“ in einem Text würde das Skript-Element vorzeitig beenden: < darum als < schreiben
 const ld = JSON.stringify(jsonLd).replace(/</g, '\\u003c');
 ---
-<BaseLayout titel="Häufige Fragen" beschreibung="Antworten rund um Kiesel 1 und Kiesel 1 Pro: Konzept, Grösse, Akku, Laden, Funktionen und Kaufen. Ein Fan-Konzept.">
+<BaseLayout titel={F.titel} beschreibung={F.beschreibung}>
   <script type="application/ld+json" slot="kopf" set:html={ld} />
 
   <div class="faq container" data-faq>
-    <h1 class="t-display">Häufige Fragen</h1>
-    <p class="t-lead t-muted einleitung">Alles, was man über den Kiesel wissen will. Und die eine Frage, die alle zuerst stellen.</p>
+    <h1 class="t-display">{F.titel}</h1>
+    <p class="t-lead t-muted einleitung">{F.einleitung}</p>
 
     <div class="suche">
-      <label for="faqsuche">Suchen</label>
-      <input id="faqsuche" type="search" placeholder="z.B. Akku, Hülle, Updates" autocomplete="off" data-suche />
+      <label for="faqsuche">{F.suchen}</label>
+      <input id="faqsuche" type="search" placeholder={F.suchBeispiel} autocomplete="off" data-suche />
     </div>
 
-    <div class="themen" role="group" aria-label="Themen">
-      {['Alle', ...THEMEN].map((t) => <Chip gedrueckt={t === 'Alle'} data-thema-wahl={t}>{t}</Chip>)}
+    <div class="themen" role="group" aria-label={F.themen}>
+      {['alle', ...THEMEN].map((id) => <Chip gedrueckt={id === 'alle'} data-thema-wahl={id}>{t.faqThemen[id]}</Chip>)}
     </div>
 
     <div class="liste">
-      <Akkordeon eintraege={FAQ} offen="kaufen" ebene={2} idVorsilbe="faq" anker thema />
-      <p class="nichts t-muted" data-nichts hidden>Nichts gefunden. Probier ein anderes Wort oder wähl «Alle».</p>
+      <Akkordeon eintraege={FAQ.map((e) => ({ ...e, themaName: t.faqThemen[e.thema] }))} offen="kaufen" ebene={2} idVorsilbe="faq" anker thema />
+      <p class="nichts t-muted" data-nichts hidden>{F.nichts}</p>
       <p class="vh" aria-live="polite" data-anzahl></p>
     </div>
 
     <section class="frage-stellen" aria-labelledby="frage-titel">
       <div>
-        <h2 class="t-3" id="frage-titel">{FRAGE_STELLEN.titel}</h2>
-        <p class="t-muted">{FRAGE_STELLEN.text}</p>
+        <h2 class="t-3" id="frage-titel">{F.frageTitel}</h2>
+        <p class="t-muted">{F.frageText}</p>
       </div>
-      <Knopf art="sekundaer" href={FRAGE_STELLEN.adresse} target="_blank" rel="noopener">{FRAGE_STELLEN.knopf}<span class="vh"> (öffnet in neuem Tab)</span></Knopf>
+      <Knopf art="sekundaer" href={FRAGE_STELLEN_ADRESSE} target="_blank" rel="noopener">{F.frageKnopf}<span class="vh">{t.bausteine.neuerTab}</span></Knopf>
     </section>
   </div>
 </BaseLayout>
@@ -101,13 +106,15 @@ const ld = JSON.stringify(jsonLd).replace(/</g, '\\u003c');
 </style>
 
 <script>
+  import { faqSeite as F } from '../i18n/de.js';
+
   document.querySelectorAll('[data-faq]').forEach((wurzel) => {
     const suche = wurzel.querySelector('[data-suche]');
     const chips = [...wurzel.querySelectorAll('[data-thema-wahl]')];
     const eintraege = [...wurzel.querySelectorAll('[data-eintrag]')];
     const nichts = wurzel.querySelector('[data-nichts]');
     const anzahl = wurzel.querySelector('[data-anzahl]');
-    let thema = 'Alle';
+    let thema = 'alle';
 
     // Klein und ohne Akzente vergleichen: „hulle“ findet „Hülle“
     const einfach = (s) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
@@ -117,14 +124,14 @@ const ld = JSON.stringify(jsonLd).replace(/</g, '\\u003c');
       const q = einfach(suche.value.trim());
       let n = 0;
       for (const e of eintraege) {
-        const zeigen = (thema === 'Alle' || e.dataset.thema === thema) && (!q || texte.get(e).includes(q));
+        const zeigen = (thema === 'alle' || e.dataset.thema === thema) && (!q || texte.get(e).includes(q));
         e.hidden = !zeigen;
         if (zeigen) n++;
       }
       nichts.hidden = n > 0;
       chips.forEach((c) => c.setAttribute('aria-pressed', c.dataset.themaWahl === thema ? 'true' : 'false'));
       // Für Screenreader: wie viele Fragen stehen jetzt da? (nur wenn gefiltert wird)
-      anzahl.textContent = q || thema !== 'Alle' ? (n === 1 ? '1 Frage' : `${n} Fragen`) : '';
+      anzahl.textContent = q || thema !== 'alle' ? F.anzahl(n) : '';
     }
 
     suche.addEventListener('input', filtere);
@@ -139,7 +146,7 @@ const ld = JSON.stringify(jsonLd).replace(/</g, '\\u003c');
     function oeffneAnker() {
       const ziel = eintraege.find((e) => e.id && `#${e.id}` === decodeURIComponent(location.hash));
       if (!ziel) return;
-      thema = 'Alle';
+      thema = 'alle';
       suche.value = '';
       filtere();
       const knopf = ziel.querySelector('button[aria-controls]');

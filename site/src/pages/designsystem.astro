@@ -18,7 +18,8 @@ import Zaehler from '../components/Zaehler.astro';
 import Feld from '../components/Feld.astro';
 import Akkordeon from '../components/Akkordeon.astro';
 import Buehne from '../components/Buehne.astro';
-import { FARBEN, FARBNAMEN } from '../data/farben.js';
+import { FARBEN, FARB_IDS } from '../data/farben.js';
+import { farben as FARBNAME } from '../i18n/de.js';
 
 const TOKENS = [
   ['bg', 'Seitenhintergrund'], ['surface', 'Karten, Leisten'], ['raised', 'Aktive Menüpunkte'],
@@ -73,14 +74,14 @@ const RADIEN = [['s', '8 · klein'], ['m', '16 · Felder'], ['l', '24 · Karten'
       <h2 class="t-2">Produktfarben</h2>
       <p class="t-muted">Aus <code>src/data/farben.js</code>, in beiden Themen gleich.</p>
       <div class="produkte">
-        {FARBNAMEN.map((n) => {
+        {FARB_IDS.map((n) => {
           const p = FARBEN[n];
           return (
             <div class="produkt">
               <span class="verlauf" style={`background: linear-gradient(135deg, ${p.backHi}, ${p.back} 55%, ${p.backLo})`}>
                 <span class="rahmen" style={`background: ${p.frame}`}></span>
               </span>
-              <span class="produkt-name">{n}</span>
+              <span class="produkt-name">{FARBNAME[n]}</span>
               <span class="t-small t-muted">Rahmen {p.frame} · Rücken {p.back}</span>
             </div>
           );

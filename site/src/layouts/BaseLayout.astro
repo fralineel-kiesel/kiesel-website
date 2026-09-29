@@ -19,16 +19,18 @@ import WarenkorbSchublade from '../components/warenkorb/WarenkorbSchublade.astro
 import KasseDialog from '../components/warenkorb/KasseDialog.astro';
 import unboundedUrl from '../assets/fonts/unbounded.woff2?url';
 import instrumentUrl from '../assets/fonts/instrument-sans.woff2?url';
+import { texte, spracheVon } from '../i18n/index.js';
 
+const t = texte(spracheVon(Astro.url));
 const {
   titel,
-  beschreibung = 'Kiesel 1 und Kiesel 1 Pro: zwei kompakte Handys mit Akku bis in die Nacht. Ein Fan-Konzept.',
+  beschreibung = t.meta.beschreibung,
   unterleiste,
   noindex = false,
   schublade = true,
 } = Astro.props;
 
-const volltitel = titel ? `${titel} · Kiesel` : 'Kiesel · Passt in jede Hand.';
+const volltitel = titel ? t.meta.titel(titel) : t.meta.startTitel;
 const favicon = import.meta.env.BASE_URL + 'favicon.svg';
 // Kanonische Adresse = die eine offizielle Adresse dieser Seite, absolut (site + base aus
 // astro.config.mjs). Suchmaschinen fassen damit z.B. /kaufen/?modell=k1 und /kaufen/ zusammen.
@@ -36,7 +38,7 @@ const favicon = import.meta.env.BASE_URL + 'favicon.svg';
 const kanonisch = new URL(Astro.url.pathname, Astro.site).href;
 ---
 <!doctype html>
-<html lang="de-CH">
+<html lang={t.sprache.html}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -46,8 +48,8 @@ const kanonisch = new URL(Astro.url.pathname, Astro.site).href;
     {!noindex && <link rel="canonical" href={kanonisch} />}
     <!-- Link-Vorschau (Open Graph: WhatsApp, Signal, Slack, Mastodon …) -->
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Kiesel" />
-    <meta property="og:locale" content="de_CH" />
+    <meta property="og:site_name" content={t.meta.marke} />
+    <meta property="og:locale" content={t.sprache.og} />
     <meta property="og:title" content={volltitel} />
     <meta property="og:description" content={beschreibung} />
     {!noindex && <meta property="og:url" content={kanonisch} />}
@@ -69,7 +71,7 @@ const kanonisch = new URL(Astro.url.pathname, Astro.site).href;
     <slot name="kopf" />
   </head>
   <body>
-    <a class="skip" href="#inhalt">Zum Inhalt</a>
+    <a class="skip" href="#inhalt">{t.geruest.zumInhalt}</a>
     <Header klebt={!unterleiste} schublade={schublade} />
     {unterleiste && <Unterleiste modell={unterleiste} />}
     <main id="inhalt" tabindex="-1">

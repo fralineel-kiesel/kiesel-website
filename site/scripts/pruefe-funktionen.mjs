@@ -343,12 +343,12 @@ try {
     await seite.locator('[data-kaufen][data-modell="pro"]').click();
     const korb = await warenkorb(seite);
     // Seit Etappe 6 steht im Speicher nur die Wahl, kein Preis (der kommt aus data/preise.js)
-    pruefe('„In den Warenkorb“ (Pro-Karte): genau diese Hülle, ohne Preis im Speicher', korb.length === 1 && korb[0].art === 'huelle' && korb[0].modell === 'pro' && korb[0].farbe === 'Mattschwarz' && !('preis' in korb[0]) && korb[0].anzahl === 1, JSON.stringify(korb));
+    pruefe('„In den Warenkorb“ (Pro-Karte): genau diese Hülle, ohne Preis im Speicher', korb.length === 1 && korb[0].art === 'case' && korb[0].modell === 'pro' && korb[0].farbe === 'matte-black' && !('preis' in korb[0]) && korb[0].anzahl === 1, JSON.stringify(korb));
     pruefe('Knopf meldet „Im Warenkorb ✓“, Zähler oben zeigt 1', (await seite.locator('[data-kaufen][data-modell="pro"]').textContent()).includes('Im Warenkorb') && (await zaehlerOben(seite)) === '1', await zaehlerOben(seite));
-    await seite.locator('input[name="kombi-huelle"][value="Kieselbeige"]').check({ force: true });
-    await seite.locator('input[name="kombi-handy"][value="Mattschwarz"]').check({ force: true });
+    await seite.locator('input[name="kombi-huelle"][value="pebble-beige"]').check({ force: true });
+    await seite.locator('input[name="kombi-handy"][value="matte-black"]').check({ force: true });
     const kombi = await seite.evaluate(() => ({ label: document.querySelector('[data-kombi-handy] svg').getAttribute('aria-label'), link: document.querySelector('[data-kombi-kaufen]').getAttribute('href') }));
-    pruefe('Frei kombinieren: Handy neu gezeichnet, Link zum Kaufen nachgeführt', kombi.label.includes('Mattschwarz') && kombi.label.includes('Kieselbeige') && kombi.link.includes('farbe=Mattschwarz') && kombi.link.includes('huelle=Kieselbeige'), JSON.stringify(kombi));
+    pruefe('Frei kombinieren: Handy neu gezeichnet, Link zum Kaufen nachgeführt', kombi.label.includes('Mattschwarz') && kombi.label.includes('Kieselbeige') && kombi.link.includes('farbe=matte-black') && kombi.link.includes('huelle=pebble-beige'), JSON.stringify(kombi));
     pruefe('Keine Skriptfehler, kein three.js, kein Platzhalter', status.fehler.length === 0 && !status.dreiD && !(await seite.content()).includes('Inhalt folgt'), status.fehler.join(' | '));
     await ctx.close();
   }
@@ -362,13 +362,13 @@ try {
     await seite.locator('[data-modell-wahl="pro"]').click();
     await seite.locator('[data-ansicht="vorne"]').click();
     pruefe('Modell Pro und Vorderseite', (await bild()).startsWith('Kiesel 1 Pro') && (await bild()).endsWith('Vorderseite') && (await gedrueckt('[data-ansicht]'))[0] === 'Vorderseite', await bild());
-    await seite.locator('input[name="huelle-farbe"][value="Himmelblau"]').check({ force: true });
-    await seite.locator('input[name="huelle-vorschau"][value="Kieselbeige"]').check({ force: true });
+    await seite.locator('input[name="huelle-farbe"][value="sky-blue"]').check({ force: true });
+    await seite.locator('input[name="huelle-vorschau"][value="pebble-beige"]').check({ force: true });
     pruefe('Hüllenfarbe und Vorschau-Handyfarbe unabhängig', (await bild()).includes('Kiesel 1 Pro in Kieselbeige mit Hülle in Himmelblau'), await bild());
     await seite.locator('[data-huelle-kaufen]').click();
     const korb = await warenkorb(seite);
     const a = korb[0] ?? {};
-    pruefe('Warenkorb: Pro-Hülle in Himmelblau, ohne Vorschau-Handyfarbe', korb.length === 1 && a.art === 'huelle' && a.modell === 'pro' && a.farbe === 'Himmelblau' && !JSON.stringify(a).includes('Kieselbeige'), JSON.stringify(korb));
+    pruefe('Warenkorb: Pro-Hülle in Himmelblau, ohne Vorschau-Handyfarbe', korb.length === 1 && a.art === 'case' && a.modell === 'pro' && a.farbe === 'sky-blue' && !JSON.stringify(a).includes('pebble-beige'), JSON.stringify(korb));
     await seite.locator('[data-huelle-kaufen]').click();
     pruefe('Zweimal: gleiche Hülle, Anzahl 2', (await warenkorb(seite))[0]?.anzahl === 2 && (await zaehlerOben(seite)) === '2');
     const details = await seite.evaluate(() => Object.fromEntries([...document.querySelectorAll('.details div')].map((d) => [d.querySelector('dt').textContent, d.querySelector('dd').textContent])));

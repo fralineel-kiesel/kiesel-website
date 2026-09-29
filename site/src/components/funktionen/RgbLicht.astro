@@ -18,11 +18,14 @@ import Buehne from '../Buehne.astro';
 import Chip from '../Chip.astro';
 import GlasChip from '../GlasChip.astro';
 import { handy } from '../../lib/kiesel-draw/index.js';
-import { RGB } from '../../data/funktionen.js';
+import { rgbFuer } from '../../data/funktionen.js';
+import { texte, spracheVon } from '../../i18n/index.js';
 
+const t = texte(spracheVon(Astro.url));
+const RGB = rgbFuer(t.rgb);
 const E = RGB.ereignisse;
 const ledAus = (k) => (E[k].color ? { color: E[k].color, o1: E[k].o1, o2: E[k].o2, mid: E[k].mid, edge: E[k].edge } : null);
-const bild = handy({ ansicht: 'hinten', modell: 'pro', farbe: 'Titangrau', hoehe: null, drehung: -6, led: ledAus(RGB.start), label: `Kiesel 1 Pro von hinten, RGB-Licht: ${E[RGB.start].name}` });
+const bild = handy({ ansicht: 'hinten', modell: 'pro', farbe: 'titanium-gray', hoehe: null, drehung: -6, led: ledAus(RGB.start), label: t.rgb.bild(E[RGB.start].name) });
 // Für das Skript: nur was es zum Neuzeichnen braucht
 const daten = Object.fromEntries(Object.entries(E).map(([k, e]) => [k, { name: e.name, led: ledAus(k), rhythmus: e.rhythmus, stufe: e.stufe ?? '', titel: e.titel, text: e.text }]));
 ---
@@ -35,7 +38,7 @@ const daten = Object.fromEntries(Object.entries(E).map(([k, e]) => [k, { name: e
   <div class="text">
     <h2 class="t-1">{RGB.titel}</h2>
     <p class="t-lead t-muted">{RGB.text}</p>
-    <div class="ereignisse" role="group" aria-label="Ereignis wählen">
+    <div class="ereignisse" role="group" aria-label={t.rgb.ereignis}>
       {Object.entries(E).map(([k, e]) => (
         <Chip gruppe="rgb-ereignis" gedrueckt={k === RGB.start} data-ereignis={k}>
           <span class="punkt" style={`--punkt: ${e.color ?? 'var(--line)'}`} aria-hidden="true"></span>{e.name}
@@ -112,6 +115,7 @@ const daten = Object.fromEntries(Object.entries(E).map(([k, e]) => [k, { name: e
 
 <script>
   import { handy } from '../../lib/kiesel-draw/phone.js';
+  import { rgb as T } from '../../i18n/de.js';
 
   // Leuchthof und LED im SVG markieren, damit CSS sie animieren kann
   const markiere = (svg) => {
@@ -130,7 +134,7 @@ const daten = Object.fromEntries(Object.entries(E).map(([k, e]) => [k, { name: e
 
     wurzel.querySelectorAll('[data-ereignis]').forEach((knopf) => knopf.addEventListener('click', () => {
       const k = knopf.dataset.ereignis, e = daten[k];
-      ort.innerHTML = handy({ ansicht: 'hinten', modell: 'pro', farbe: 'Titangrau', hoehe: null, drehung: -6, led: e.led, label: `Kiesel 1 Pro von hinten, RGB-Licht: ${e.name}` });
+      ort.innerHTML = handy({ ansicht: 'hinten', modell: 'pro', farbe: 'titanium-gray', hoehe: null, drehung: -6, led: e.led, label: T.bild(e.name) });
       markiere(ort.querySelector('svg'));
       buehne.dataset.rhythmus = e.rhythmus;
       wurzel.dataset.aktuell = k;

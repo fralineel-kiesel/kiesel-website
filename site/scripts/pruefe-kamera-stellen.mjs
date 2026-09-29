@@ -17,7 +17,7 @@
 import { chromium } from 'playwright';
 import { starteServer } from './dist-server.mjs';
 import { UNSCHAERFE, linsenText, stufenText } from '../src/lib/kamera.js';
-import { TELE_AB, MAX_ZOOM, MAKRO } from '../src/data/kamera.js';
+import { TELE_AB, MAX_ZOOM, MEGAPIXEL, MAKRO } from '../src/data/kamera.js';
 import { WERTE } from '../src/data/technik.js';
 
 const browser = await chromium.launch();
@@ -59,8 +59,8 @@ async function waehle(seite, stufe) {
 
 try {
   console.log('\n── Daten ──');
-  pruefe('TELE_AB und MAX_ZOOM (kamera.js) = WERTE.tele und WERTE.zoomDigital (technik.js)',
-    TELE_AB === WERTE.tele && MAX_ZOOM.k1 === WERTE.zoomDigital.k1 && MAX_ZOOM.pro === WERTE.zoomDigital.pro);
+  pruefe('TELE_AB, MAX_ZOOM und MEGAPIXEL (kamera.js) = WERTE.tele, WERTE.zoomDigital und WERTE.megapixel (technik.js)',
+    TELE_AB === WERTE.tele && MAX_ZOOM.k1 === WERTE.zoomDigital.k1 && MAX_ZOOM.pro === WERTE.zoomDigital.pro && MEGAPIXEL === WERTE.megapixel);
 
   console.log('\n── 1. Ein Zoom-Bild für alle ──');
   for (const [name, kontext] of [['Desktop', DESKTOP], ['Handy', HANDY]]) {
