@@ -417,6 +417,9 @@ export const PRIVACY_REIHEN = [30, 24.5];
 // kind: 'se' | 'k1' | 'pro'; ox, oy = Ecke oben links; s = px pro mm.
 // T = Texte (Abschnitt zeichnung der Textdatei, Standard Deutsch = wie in scene.py)
 // Rückgabe wie in Python: [SVG-Text, Legende als [[Nummer, Name, fälltWeg], …]]
+// Auflösung der Kameras in der Legende (Zeichnungswerte aus scene.py: iPhone SE, Kiesel)
+const MEGAPIXEL = { se: 12, kiesel: 50 };
+
 export function phoneOpen(kind, ox, oy, s, T = DE_Z) {
   const N = T.legende;
   const [W, H, R] = kind !== 'pro' ? [58.6, 123.8, 8.6] : [64.2, 131.5, 10.6];
@@ -432,7 +435,7 @@ export function phoneOpen(kind, ox, oy, s, T = DE_Z) {
     g += chip(X(18), Y(14), 14 * s, 14 * s, '#2B3138', 'A9') + chip(X(35), Y(14), 9 * s, 9 * s, '#3A424B') + chip(X(35), Y(27), 12 * s, 7 * s, '#3A424B');
     g += comp(L(N.platineA9), '', X(10), Y(38));
     g += E('circle', { cx: f(X(8.5)), cy: f(Y(9)), r: f(3.6 * s), style: 'fill: #0A0E13; stroke: #56626E; stroke-width: 1.5' });
-    g += comp(L(N.kameraSe), '', X(8.5), Y(9) - 26);
+    g += comp(L(N.kameraSe(MEGAPIXEL.se)), '', X(8.5), Y(9) - 26);
     g += E('rect', { x: f(X(6)), y: f(Y(50)), width: f(46 * s), height: f(47 * s), rx: '6', style: 'fill: #3B4C5A; stroke: #4E6272' });
     g += E('text', { x: f(X(29)), y: f(Y(75)), style: "font-family: 'Unbounded', sans-serif; font-size: 18px; font-weight: 600; fill: #E7ECF0; text-anchor: middle" }, T.mah('1624'));
     g += comp(L(N.akkuSe), '', X(10), Y(55));
@@ -469,7 +472,7 @@ export function phoneOpen(kind, ox, oy, s, T = DE_Z) {
     const camR = 6.4;
     const cm = !pro ? 9.6 : 10.6;
     g += E('circle', { cx: f(X(cm)), cy: f(Y(cm)), r: f(camR * s), style: 'fill: #0A0E13; stroke: #56626E; stroke-width: 1.5' });
-    g += comp(L(N.kamera), '', X(cm), Y(cm));
+    g += comp(L(N.kamera(MEGAPIXEL.kiesel)), '', X(cm), Y(cm));
     if (pro) {
       g += E('circle', { cx: f(X(27)), cy: f(Y(10.6)), r: f(6 * s), style: 'fill: #0A0E13; stroke: #56626E; stroke-width: 1.5' });
       g += comp(L(N.tele), '', X(27), Y(10.6));

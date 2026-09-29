@@ -19,6 +19,10 @@ import { chf } from '../lib/format.js';
 export const WERTE = {
   ramGb: 12,             // Arbeitsspeicher, beide Modelle
   megapixel: 50,         // jede Kamera, auch das Tele des Pro
+  brennweite: [13, 26],  // Hauptkamera, variable Linse 0.5x bis 1x (mm, ca.)
+  nm: 2,                 // Chip: Fertigung
+  ghz: 4,                // Chip: höchster Takt
+  fps: { video: 120, zeitlupe: 240 },  // 4K bzw. 2K
   wattKabel: 45,         // Laden mit Kabel (ca.)
   wattKabellos: 25,      // MagSafe und Qi
   updateJahre: 7,        // mindestens
@@ -60,23 +64,23 @@ function gruppen(T = DE, farbname = FARBNAME, G = GERAETE_T) {
       z('entsperren', ...beide(V.entsperren)),
     ]),
     g('chip', [
-      z('chip', ...beide(V.chip)),
-      z('cpu', ...beide(V.cpu)),
+      z('chip', ...beide(V.chip(W.nm))),
+      z('cpu', ...beide(V.cpu(W.ghz))),
       z('gpu', ...beide(V.gpu)),
       z('ram', ...beide(V.ram(W.ramGb))),
       z('speicher', speicher('k1'), speicher('pro')),
       z('kuehlung', V.kuehlung.k1, V.kuehlung.pro),
     ]),
     g('kameras', [
-      z('hauptkamera', ...beide(V.hauptkamera(W.megapixel))),
+      z('hauptkamera', ...beide(V.hauptkamera(W.megapixel, ...W.brennweite))),
       z('tele', V.keine, V.tele(W.megapixel, W.tele, W.teleMm)),
       z('zoom', V.zoomK1(W.zoomDigital.k1), V.zoomPro(W.tele, W.zoomDigital.pro)),
       z('nah', V.nahK1, V.nahPro(W.nahfokusCm)),
       z('blitz', ...beide(V.blitz)),
     ]),
     g('video', [
-      z('maximal', ...beide(V.videoMaximal)),
-      z('zeitlupe', ...beide(V.zeitlupe)),
+      z('maximal', ...beide(V.videoMaximal(W.fps.video))),
+      z('zeitlupe', ...beide(V.zeitlupe(W.fps.zeitlupe))),
     ]),
     g('akku', [
       z('akku', V.akku(akku('k1', G)), V.akku(akku('pro', G))),

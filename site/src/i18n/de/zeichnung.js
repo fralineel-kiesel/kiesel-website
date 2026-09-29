@@ -6,7 +6,7 @@
 //    Datum und Uhrzeit des Sperrbildschirms: kiesel-draw/sperrbildschirm.js (über lib/format.js) ──
 export const zeichnung = {
   // Bildbeschreibung von handy(), wenn kein label übergeben wird: „Kiesel 1 Pro, Rückseite“
-  ansicht: { front: ', Vorderseite', back: ', Rückseite', side: ', Seitenansicht, 9 mm dick' },
+  ansicht: { front: ', Vorderseite', back: ', Rückseite', side: (mm) => `, Seitenansicht, ${mm} mm dick` },
   panorama: 'Alpenpanorama',
   blume: 'Blume mit Tautropfen, Biene und Wiese',
   innenleben: (name) => `Innenleben ${name}`,
@@ -15,7 +15,7 @@ export const zeichnung = {
   // Legende des Innenlebens (phoneOpen)
   legende: {
     platineA9: 'Platine mit A9-Chip',
-    kameraSe: 'Kamera (12 MP)',
+    kameraSe: (mp) => `Kamera (${mp} MP)`,
     akkuSe: 'Akku',
     sim: 'SIM-Schlitten',
     vibration: 'Vibrationsmotor',
@@ -26,7 +26,7 @@ export const zeichnung = {
     platineA20: 'Platine mit A20 Pro (abgespeckt)',
     privacy: 'Privacy-Schalter: Sensoren (Stufe 1) und Funk (Stufe 2)',
     vapor: 'Mini-Vapor-Chamber',
-    kamera: 'Kamera 0.5x bis 1x (50 MP)',
+    kamera: (mp) => `Kamera 0.5x bis 1x (${mp} MP)`,
     tele: '3x-Tele mit OIS',
     blitz: 'RGB-Blitz',
     faceId: 'Face ID (Vorderseite)',

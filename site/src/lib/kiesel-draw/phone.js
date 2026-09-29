@@ -12,6 +12,7 @@ import { E, esc, stop, f, rr, uid } from './svg.js';
 import { MODELS, DICKE, geo, camrow, KNOPF_HOEHE, LINSE_R, MIKRO_R, BLITZ_R } from './models.js';
 import { palette, led as ledZustand } from './colors.js';
 import { sperrbildschirm } from './sperrbildschirm.js';
+import { zahl } from '../format.js';
 import { zeichnung as DE_Z } from '../../i18n/de.js';
 
 // Kiesel-Logo: die Kieselform und zwei "Adern"
@@ -354,7 +355,8 @@ export function handy({ ansicht = 'hinten', modell = 'pro', farbe = 'sky-blue', 
       E('ellipse', { cx: f(W / 2), cy: f(H + 80), rx: f(kind === 'side' ? W * 0.8 : W * 0.44), ry: '30', style: 'fill: #000000; opacity: 0.35', filter: `url(#${pid}fl)` });
   }
   const g = drehung ? E('g', { transform: `rotate(${f(drehung)} ${f(W / 2)} ${f(H / 2)})` }, inner) : inner;
-  const lab = label || (modell === 'pro' ? 'Kiesel 1 Pro' : 'Kiesel 1') + texte.ansicht[kind];
+  const zusatz = kind === 'side' ? texte.ansicht.side(zahl(DICKE / 10, undefined, sprache)) : texte.ansicht[kind];
+  const lab = label || (modell === 'pro' ? 'Kiesel 1 Pro' : 'Kiesel 1') + zusatz;
   const groesse = hoehe === null ? {} : { width: f(hoehe * vbw / vbh), height: f(hoehe) };
   return E('svg', { ...groesse, viewBox: `${-pad} ${-pad} ${vbw} ${vbh}`, role: 'img', 'aria-label': esc(lab), style: 'display: block; overflow: visible' }, fl + g);
 }

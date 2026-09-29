@@ -11,6 +11,8 @@ import { kamera as DE } from '../i18n/de.js';
 // Hier als Zahl, damit das Browser-Skript der Kamera nicht alle Gerätedaten mitlädt.
 export const TELE_AB = 3;
 export const MAX_ZOOM = { pro: 10, k1: 5 };
+// Auflösung der Hauptkamera, gleich wie WERTE.megapixel (prüft pruefe:kamera-stellen)
+export const MEGAPIXEL = 50;
 // Zoomstufen unter der Skala: [Wert, Text, betont]
 export const stufenFuer = (T = DE) => ({
   pro: [['0.5', T.stufe('0.5')], ['1', T.stufe('1')], ['3', T.stufeTele('3'), true], ['5', T.stufe('5')], ['10', T.stufe('10')]],
@@ -26,12 +28,12 @@ export const linsenFuer = (T = DE) => {
   return {
     pro: [
       [0.5, L.bereich('0.5', '1'), L.haupt, 1],
-      [1.1, L.bereich('1', '3'), L.ausschnitt, 1.2],
+      [1.1, L.bereich('1', '3'), L.ausschnitt(MEGAPIXEL), 1.2],
       [3, L.ab('3'), L.tele, 1.6],
     ],
     k1: [
       [0.5, L.bereich('0.5', '1'), L.haupt, 1],
-      [1.1, L.bereich('1', '5'), L.ausschnitt, 1.6],
+      [1.1, L.bereich('1', '5'), L.ausschnitt(MEGAPIXEL), 1.6],
     ],
   };
 };

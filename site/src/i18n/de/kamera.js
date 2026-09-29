@@ -25,7 +25,7 @@ export const kamera = {
     bereich: (von, bis) => `${von}x bis ${bis}x`,
     ab: (z) => `ab ${z}x`,
     haupt: 'Hauptkamera, optisch',
-    ausschnitt: 'Ausschnitt aus 50 MP',
+    ausschnitt: (mp) => `Ausschnitt aus ${mp} MP`,
     tele: 'Tele-Linse, danach Ausschnitt',
   },
   // Zoom-Vergleich (Pro-Seite)
