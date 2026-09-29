@@ -26,6 +26,7 @@
   --accent:     light-dark(#0E7490, #5CC3DB); /* Akzent, Hauptknöpfe */
   --accent-ink: light-dark(#FFFFFF, #05232B); /* Text auf Akzent */
   --heat:       light-dark(#A94222, #FF8A5E); /* Warnung, «fällt weg». Hell dunkler als im Artboard (#C4502B): so hat auch kleiner Text mind. 4.5:1 auf --bg, --surface und der Bühne (WCAG AA) */
+  --heat-ink:   light-dark(#FFFFFF, #0C1116); /* Text auf Warnung (Plakette „aus“, Notruf aktiv). Artboard: immer Weiss, im Dunkeln auf #FF8A5E aber nur 2.2:1 */
   --stage:      light-dark(#E6EBEE, #17202A); /* Bühne oben */
   --stage-lo:   light-dark(#D2D9DE, #0A0F14); /* Bühne unten */
   --overlay:    light-dark(rgba(20, 26, 33, 0.45), rgba(4, 8, 12, 0.66)); /* hinter Menü und Schublade */
