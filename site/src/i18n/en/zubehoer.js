@@ -30,7 +30,7 @@ export const zubehoer = {
 // ── /accessories/case/ (page text, drawings of the features, cross-section) ──
 export const huelle = {
   titel: 'Kiesel Case',
-  text: 'Frosted on the back, firm and grippy around the edges. Sits just a touch above the display and camera, so neither ever touches the table.',
+  text: 'Frosted on the back, firm and grippy around the edges. Sits just above the display and camera, so neither touches the table.',
   beschreibung: (text, preis) => `${text} For Kiesel 1 and Kiesel 1 Pro, ${preis}`,
   brotkrumen: 'Breadcrumb',
   zubehoer: 'Accessories',
