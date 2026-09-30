@@ -16,7 +16,7 @@ export const zubehoer = {
   fuenfFarben: 'in five colors',
   ansehen: 'View',
   bildKarte: (huelle, modell, handy) => `Kiesel Case in ${huelle} on a ${modell} in ${handy}`,
-  bildKombi: (handy, huelle) => `Kiesel 1 Pro in ${handy} with case in ${huelle}`,
+  bildKombi: (handy, huelle) => `Kiesel 1 Pro in ${handy} with a case in ${huelle}`,
   platzhalter: { titel: '[More accessories]', text: 'Room for the next product, a MagSafe charger for example.' },
   kombi: {
     titel: 'Mix and match.',
@@ -42,15 +42,15 @@ export const huelle = {
   vorschauLegende: 'Preview with phone color',
   knopf: 'Add to Bag',
   hinweis: 'Free shipping. The preview phone color isn’t part of the order.',
-  bild: (modell, handy, huelle, ansicht) => `${modell} in ${handy} with case in ${huelle}, ${ansicht.toLowerCase()}`,
+  bild: (modell, handy, huelle, ansicht) => `${modell} in ${handy} with a case in ${huelle}, ${ansicht.toLowerCase()}`,
   eigenschaftenTitel: 'Three things it does well.',
   eigenschaften: {
-    milchig: ['Frosted back', 'Translucent like ice on a mountain lake. The phone color, the Kiesel and the MagSafe ring shine through.'],
+    milchig: ['Frosted back', 'Translucent like ice on a mountain lake. The phone color, the pebble logo and the MagSafe ring shine through.'],
     rand: ['Firm edge', 'Grippy and shock-absorbing, in color. The buttons are covered and still press cleanly.'],
     rahmen: ['Raised lip', 'Lay it flat on the table, and only the case touches the surface. Display and camera stay in the air.'],
   },
   // drawings of the three tiles
-  nahMilchig: 'Close-up: frosted back with the Kiesel and MagSafe ring shining through',
+  nahMilchig: 'Close-up: frosted back with the pebble logo and MagSafe ring shining through',
   nahRand: 'Close-up: firm edge with button covers',
   profil: {
     label: (display, kamera) => `Cross-section: the case sits ${display} mm above the display and ${kamera} mm above the camera`,

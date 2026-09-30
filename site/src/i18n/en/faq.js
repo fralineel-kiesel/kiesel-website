@@ -21,7 +21,7 @@ const wort = (n) => ZAHLWORT[n] ?? String(n);
 export const faqFragen = {
   kaufen: {
     frage: 'Can I actually buy a Kiesel?',
-    antwort: 'Sadly, no. Kiesel is a fan concept. The bag works anyway, and only the checkout breaks the sad news.',
+    antwort: 'Sadly, no. Kiesel is a fan concept. The bag works anyway. Only the checkout breaks the sad news.',
   },
   konzept: {
     frage: 'How did the idea for Kiesel come about?',
@@ -29,7 +29,7 @@ export const faqFragen = {
   },
   pebble: {
     frage: 'Why is it called Kiesel?',
-    antwort: 'Kiesel is the German word for pebble: small, smooth and a natural fit for your hand. The concept was dreamed up in Switzerland, so the name stayed German. Say it like “KEE-zel”.',
+    antwort: 'Kiesel is the German word for pebble: small, smooth and a natural fit for your hand. The concept was dreamed up in Switzerland, so the name stayed German. Say it like “KEE-zel.”',
   },
   unterschied: {
     frage: 'What’s the difference between Kiesel 1 and Kiesel 1 Pro?',
@@ -38,7 +38,7 @@ export const faqFragen = {
   },
   dicke: {
     frage: (v) => `Why is Kiesel ${v.dicke} mm thick?`,
-    antwort: (v) => `The extra ${v.dickePlus} mm over the SE go almost entirely into the battery and the MagSafe coil. You barely notice it in your hand. Your battery definitely does.`,
+    antwort: (v) => `The extra ${v.dickePlus} mm over the SE goes almost entirely into the battery and the MagSafe coil. You barely notice it in your hand. Your battery definitely does.`,
   },
   klinke: {
     frage: 'Why is there no headphone jack and no SIM tray?',
@@ -63,7 +63,7 @@ export const faqFragen = {
   },
   privacy: {
     frage: 'What exactly does Privacy Mode do?',
-    antwort: 'It has two levels, both in hardware. Hold the Action button for two seconds, and the camera, microphone and GPS lose power (Sensors Off). Keep holding for up to four seconds, and Wi-Fi, Bluetooth, cellular and NFC lose power too (Radio Silence). The RGB dot glows a steady orange in Level 1 and gives a short blink every few seconds in Level 2.',
+    antwort: 'It has two levels, both in hardware. Hold the Action button for two seconds, and the camera, microphone and GPS lose power (Sensors Off). Keep holding until the four-second mark, and Wi-Fi, Bluetooth, cellular and NFC lose power too (Radio Silence). The RGB dot glows a steady orange in Level 1 and gives a short blink every few seconds in Level 2.',
     link: 'Try Privacy Mode',
   },
   notruf: {
@@ -95,7 +95,7 @@ export const faqSeite = {
   suchen: 'Search',
   suchBeispiel: 'e.g. battery, case, updates',
   themen: 'Topics',
-  nichts: 'Nothing found. Try another word or choose “All”.',
+  nichts: 'Nothing found. Try another word or choose “All.”',
   anzahl: (n) => (n === 1 ? '1 question' : `${n} questions`),
   frageTitel: 'Your question isn’t here?',
   frageText: 'Send it our way, and it might make it into the next version.',

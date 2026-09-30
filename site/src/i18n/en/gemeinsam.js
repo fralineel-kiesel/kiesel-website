@@ -101,7 +101,7 @@ export const warenkorb = {
   schliessen: 'Close bag',
   liste: 'Items in your bag',
   leerTitel: 'Your bag is empty.',
-  leerText: 'Two small phones are waiting to be put together.',
+  leerText: 'Two small phones are waiting for you to make one yours.',
   zusammenstellen: 'Build your Kiesel',
   vorschlagTitel: 'Add a matching case?',
   // sentence with the model name as a <span> in between: before + model + after
@@ -125,7 +125,7 @@ export const warenkorb = {
   huelleDrin: (modell, farbe) => `Kiesel Case for ${modell} in ${farbe} is in your bag.`,
   huelleVoll: (modell, farbe, max) => `You already have ${max} Kiesel Cases for ${modell} in ${farbe} in your bag. That’s the limit.`,
   nichtMehr: (max) => `The limit is ${max} per item.`,
-  nichtWeniger: 'You need at least 1. To take it out, choose “Remove”.',
+  nichtWeniger: 'You need at least 1. To take it out, choose “Remove.”',
   neueAnzahl: (name, n, total) => `${name}: ${n}. Total ${total}.`,
   entfernt: (name) => `${name} removed.`,
   imWarenkorb: 'In your bag ✓',

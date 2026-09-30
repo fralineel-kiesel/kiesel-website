@@ -7,7 +7,7 @@
 export const kamera = {
   zoom: 'Zoom',
   zoomstufen: 'Zoom levels',
-  welcheKamera: 'Which camera is at work',
+  welcheKamera: 'Which camera is in use',
   stufe: (z) => `${z}x`,
   stufeTele: (z) => `${z}x · Tele`,
   // lens label on the image: “Main camera · 1x optical”, “Tele · 6x digital”
@@ -58,12 +58,12 @@ export const kamera = {
   // macro demo (“Get up close.”): knopf = button label, chip = label on the image
   makro: {
     linsen: {
-      weit: { knopf: 'Macro', chip: 'Ultra wide, approx. 3 cm' },
+      weit: { knopf: 'Macro', chip: 'Ultra-wide, approx. 3 cm' },
       tele: { knopf: '3x Tele', chip: '3x Tele, approx. 25 cm' },
       normal: { knopf: '1x', chip: '1x, approx. 20 cm' },
     },
     erklaerung: {
-      pro: 'The flower is the same size with both lenses, the background isn’t: with the telephoto, you stand farther back, so the meadow is relatively closer to the flower. That’s why it looks bigger and seems to move in. The long focal length also makes it much softer.',
+      pro: 'The flower is the same size with both lenses, but the background isn’t: with the telephoto, you stand farther back, so the meadow is relatively closer to the flower. That’s why it looks bigger and seems to move closer. The long focal length also blurs it much more.',
       k1: 'At 1x, you see the whole flower in the meadow. In macro, the ultra-wide setting takes you as close as 3 cm: the blossom fills the frame, and the background stays small but recognizable.',
     },
     bild: 'Flower with a bee in a meadow. Tap the image to set the focus.',
