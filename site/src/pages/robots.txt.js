@@ -2,7 +2,7 @@
 //
 // Achtung: Suchmaschinen lesen robots.txt NUR im Wurzelverzeichnis einer Domain, also unter
 // https://fralineel-kiesel.github.io/robots.txt. Diese Seite liegt aber in einem Unterordner
-// (/kiesel-website/v2/). Die Datei hier ist darum vor allem Vorrat für später (falls die Seite
+// (/kiesel-website/). Die Datei hier ist darum vor allem Vorrat für später (falls die Seite
 // einmal an der Wurzel einer eigenen Domain liegt) und zum Nachschauen. Wirksam anmelden lässt
 // sich die Sitemap heute direkt in der Google Search Console.
 //

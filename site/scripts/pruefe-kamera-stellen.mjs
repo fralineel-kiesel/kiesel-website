@@ -182,7 +182,7 @@ try {
     const kante = Math.max(0, ...leisten);
     // Inhalt = erstes Kind mit Höhe (die Abschnitte haben oben ein Polster)
     const inhalt = [...el.children].find((c) => c.getBoundingClientRect().height > 0) ?? el;
-    return { pfad: location.pathname.replace(/^\/kiesel-website\/v2/, '') + location.hash, kante, oben: inhalt.getBoundingClientRect().top };
+    return { pfad: location.pathname.replace(/^\/kiesel-website/, '') + location.hash, kante, oben: inhalt.getBoundingClientRect().top };
   });
   for (const [name, kontext] of [['Desktop', DESKTOP], ['Handy', HANDY]]) {
     const { seite, ctx } = await oeffne('', kontext);

@@ -46,7 +46,7 @@ import * as en from '../src/i18n/en.js';
 
 const hier = path.dirname(fileURLToPath(import.meta.url));
 const dist = path.join(hier, '..', 'dist');
-const BASE = '/kiesel-website/v2/';
+const BASE = '/kiesel-website/';
 const SITE = 'https://fralineel-kiesel.github.io';
 let fehler = 0;
 function pruefe(name, ok, info = '') {

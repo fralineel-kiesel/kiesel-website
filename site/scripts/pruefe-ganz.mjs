@@ -36,7 +36,7 @@ import { FAQ_ABWEICHUNGEN } from './abweichungen.mjs';
 const hier = path.dirname(fileURLToPath(import.meta.url));
 const dist = path.join(hier, '..', 'dist');
 const src = path.join(hier, '..', 'src');
-const BASIS = '/kiesel-website/v2/';
+const BASIS = '/kiesel-website/';
 let fehler = 0;
 function pruefe(name, ok, info = '') {
   console.log(`${ok ? '✓' : '✗'} ${name}${info ? `  (${info})` : ''}`);
@@ -138,7 +138,7 @@ const lies = (datei) => {
   }
   return htmlVon.get(datei);
 };
-// Pfad unter /kiesel-website/v2/ → Datei in dist (oder null)
+// Pfad unter /kiesel-website/ → Datei in dist (oder null)
 function zielDatei(pfad) {
   if (!pfad.startsWith(BASIS)) return null;
   let d = path.join(dist, decodeURIComponent(pfad.slice(BASIS.length)));

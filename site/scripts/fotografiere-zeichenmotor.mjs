@@ -28,10 +28,10 @@ const ausTeile = path.join(aus, 'vergleich', 'teile');
 for (const d of [ausSw, ausTeile]) fs.mkdirSync(d, { recursive: true });
 
 // ---------------------------------------------------------------- Mini-Server für dist/
-// Liefert den fertigen Build unter demselben Pfad aus wie GitHub Pages (/kiesel-website/v2/).
+// Liefert den fertigen Build unter demselben Pfad aus wie GitHub Pages (/kiesel-website/).
 // Eigener Server statt "astro preview": Davon läuft pro Rechner nur einer, und ein schon
 // laufender würde sonst stören.
-const BASISPFAD = '/kiesel-website/v2/';
+const BASISPFAD = '/kiesel-website/';
 const TYPEN = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp' };
 const dist = path.join(site, 'dist');
 if (!fs.existsSync(dist)) throw new Error('Kein Build gefunden: zuerst npm run build');
