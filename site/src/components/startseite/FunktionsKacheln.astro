@@ -1,0 +1,128 @@
+---
+// Drei Funktionskacheln „Kleine Ideen, grosse Wirkung.“ (feature_tiles() in gen2.py).
+// Die Bilder sind vorerst reine Illustrationen (aria-hidden), der Text sagt alles Nötige.
+// Zum Ausprobieren verlinken die Kacheln auf die Abschnitte von /funktionen/ (#rgb, #zen, #privacy).
+import Knopf from '../Knopf.astro';
+import Icon from '../Icon.astro';
+import { LED_FARBEN } from '../../lib/kiesel-draw/colors.js';
+import { pfad } from '../../lib/pfad.js';
+import { texte, spracheVon } from '../../i18n/index.js';
+
+const blau = LED_FARBEN.call; // derselbe Blauton wie der Blitz beim Anruf
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
+const K = t.startseite.kacheln;
+const KACHELN = ['rgb', 'zen', 'privacy'].map((id) => ({ id, anker: id, ...K[id] }));
+---
+<ul role="list" class="kacheln">
+  {KACHELN.map((k) => (
+    <li>
+      <article class="kachel">
+        <div class="bild" aria-hidden="true">
+          {k.id === 'rgb' && (
+            <svg width="140" height="140" viewBox="0 0 140 140">
+              <defs>
+                <radialGradient id="kachel-rgb" cx="0.5" cy="0.5" r="0.5">
+                  <stop offset="0" stop-color={blau} stop-opacity="0.9" />
+                  <stop offset="0.35" stop-color={blau} stop-opacity="0.4" />
+                  <stop offset="1" stop-color={blau} stop-opacity="0" />
+                </radialGradient>
+              </defs>
+              <circle cx="70" cy="70" r="66" fill="url(#kachel-rgb)" />
+              <circle cx="70" cy="70" r="18" fill="#B9CBD8" />
+              <circle cx="70" cy="70" r="13" fill="#6FA8FF" />
+              <circle cx="66" cy="66" r="4" fill="#FFFFFF" opacity="0.8" />
+            </svg>
+          )}
+          {k.id === 'zen' && (
+            <div class="zen">
+              <span class="mond"><Icon name="moon" size={38} /></span>
+              <span class="schalter"><span class="spur"><span class="knauf"></span></span>{K.zenAn}</span>
+            </div>
+          )}
+          {k.id === 'privacy' && (
+            <div class="privacy">
+              {K.privacyZeilen.map(([n, stufe]) => (
+                <div class="zeile">
+                  <span class="name">{n}<small>{stufe}</small></span>
+                  <svg width="84" height="20" viewBox="0 0 84 20" class="trenner">
+                    <line x1="0" y1="10" x2="24" y2="10" class="leitung" />
+                    <circle cx="28" cy="10" r="4" class="kontakt" />
+                    <line x1="31" y1="8" x2="52" y2="-2" class="hebel" />
+                    <circle cx="56" cy="10" r="4" class="kontakt" />
+                    <line x1="60" y1="10" x2="84" y2="10" class="leitung tot" />
+                  </svg>
+                  <span class="getrennt">{K.getrennt}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <h3 class="t-3">{k.titel}</h3>
+        <p class="t-muted">{k.text}</p>
+        <Knopf art="text" icon="arrow" href={pfad(`funktionen/#${k.anker}`, sprache)}>{K.ausprobieren}<span class="vh">: {k.titel}</span></Knopf>
+      </article>
+    </li>
+  ))}
+</ul>
+
+<style>
+  .kacheln {
+    display: grid;
+    gap: var(--space-4);
+    margin: var(--space-7) 0 0;
+  }
+  .kachel {
+    display: flex;
+    height: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding: var(--space-6);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-l);
+    background: var(--surface);
+  }
+  .bild {
+    display: flex;
+    align-self: stretch;
+    height: 190px;
+    margin-bottom: var(--space-2);
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-m);
+    background: var(--bg);
+  }
+
+  /* Zen: Mond im Kreis und ein gezeichneter Schalter (kein echter, nur Bild) */
+  .zen { display: flex; flex-direction: column; align-items: center; gap: var(--space-3); color: var(--ink); }
+  .mond {
+    display: flex;
+    width: 84px;
+    height: 84px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-full);
+    background: var(--raised);
+  }
+  .schalter { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600; }
+  .spur { position: relative; width: 46px; height: 28px; border-radius: 14px; background: var(--accent); }
+  .knauf { position: absolute; top: 3px; left: 21px; width: 22px; height: 22px; border-radius: 11px; background: #FFFFFF; }
+
+  /* Privacy: zwei offene Schalter (Stufe 1 Sensoren, Stufe 2 Funk), die Leitung dahinter ist tot (gestrichelt) */
+  .privacy { display: flex; flex-direction: column; gap: var(--space-5); }
+  .zeile { display: flex; align-items: center; gap: 10px; }
+  .name { display: flex; flex-direction: column; width: 78px; font-size: 14px; font-weight: 600; line-height: 1.3; }
+  .name small { font-size: 12px; font-weight: 500; color: var(--muted); }
+  .trenner { overflow: visible; }
+  .leitung { stroke: var(--muted); stroke-width: 2; }
+  .tot { stroke-dasharray: 3 3; }
+  .kontakt { fill: none; stroke: var(--ink); stroke-width: 2; }
+  .hebel { stroke: var(--ink); stroke-width: 2.5; stroke-linecap: round; }
+  .getrennt { color: var(--heat); font-size: 13px; font-weight: 600; }
+
+  @media (min-width: 900px) {
+    .kacheln { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-5); }
+  }
+</style>

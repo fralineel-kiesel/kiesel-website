@@ -1,0 +1,27 @@
+---
+// Eingabefeld mit Beschriftung, z.B. für die Gravur.
+// <label for> verbindet Text und Feld: Klick auf den Text setzt den Cursor ins Feld.
+const { id, label, hinweis, ...rest } = Astro.props;
+---
+<div class="feld">
+  <label for={id}>{label}</label>
+  {hinweis && <p class="hinweis" id={`${id}-hinweis`}>{hinweis}</p>}
+  <input id={id} type="text" aria-describedby={hinweis ? `${id}-hinweis` : undefined} {...rest} />
+</div>
+
+<style>
+  .feld { display: flex; flex-direction: column; gap: var(--space-2); }
+  label { font-size: 14px; font-weight: 600; }
+  .hinweis { font-size: 14px; color: var(--muted); }
+  input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-m);
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 16px; /* ab 16 px zoomt iOS beim Antippen nicht hinein */
+  }
+  input::placeholder { color: var(--muted); }
+  input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+</style>

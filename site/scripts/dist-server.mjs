@@ -1,0 +1,46 @@
+// Mini-Server für den fertigen Build (dist/), unter demselben Pfad wie GitHub Pages
+// (/kiesel-website/). Für die Prüfskripte in diesem Ordner.
+// Eigener Server statt "astro preview": Davon läuft pro Rechner nur einer, und ein schon
+// laufender würde sonst stören. Port 0 = irgendein freier.
+//   const { basis, schliessen } = await starteServer();
+//   starteServer({ ordner: '…/dist' }) = anderer Build (z.B. der alte Stand für vergleiche-html.mjs)
+//   starteServer({ basispfad: '/kiesel-website/v2/' }) = Build mit anderem base (alter Stand vor Etappe 10)
+//   starteServer({ fehlerseite: true }) = fehlende Adressen bekommen wie bei GitHub Pages die
+//   404.html (Status 404), sonst eine leere Antwort
+import http from 'node:http';
+import fs from 'node:fs';
+import path from 'node:path';
+import zlib from 'node:zlib';
+import { fileURLToPath } from 'node:url';
+
+export const BASISPFAD = '/kiesel-website/';
+const TYPEN = { '.html': 'text/html; charset=utf-8', '.xml': 'application/xml; charset=utf-8', '.txt': 'text/plain; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp' };
+const dist = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'dist');
+
+// gzip: wie GitHub Pages, damit Ladezeit-Messungen realistisch sind
+export async function starteServer({ gzip = true, ordner = dist, fehlerseite = false, basispfad = BASISPFAD } = {}) {
+  const dist = ordner;
+  if (!fs.existsSync(dist)) throw new Error('Kein Build gefunden: zuerst npm run build');
+  const server = http.createServer((req, res) => {
+    const p = decodeURIComponent(new URL(req.url, 'http://x').pathname);
+    if (!p.startsWith(basispfad)) { res.writeHead(404).end(); return; }
+    let datei = path.join(dist, p.slice(basispfad.length));
+    if (!datei.startsWith(dist)) { res.writeHead(403).end(); return; }
+    if (fs.existsSync(datei) && fs.statSync(datei).isDirectory()) datei = path.join(datei, 'index.html');
+    if (!fs.existsSync(datei)) {
+      const f404 = path.join(dist, '404.html');
+      if (fehlerseite && fs.existsSync(f404)) { res.writeHead(404, { 'content-type': TYPEN['.html'] }); fs.createReadStream(f404).pipe(res); return; }
+      res.writeHead(404).end(); return;
+    }
+    const typ = TYPEN[path.extname(datei)] ?? 'application/octet-stream';
+    const packen = gzip && /text|javascript|svg/.test(typ) && /gzip/.test(req.headers['accept-encoding'] ?? '');
+    res.writeHead(200, { 'content-type': typ, ...(packen ? { 'content-encoding': 'gzip' } : {}) });
+    const strom = fs.createReadStream(datei);
+    (packen ? strom.pipe(zlib.createGzip()) : strom).pipe(res);
+  });
+  await new Promise((r) => server.listen(0, '127.0.0.1', r));
+  return {
+    basis: `http://127.0.0.1:${server.address().port}${basispfad}`,
+    schliessen: () => new Promise((r) => server.close(r)),
+  };
+}

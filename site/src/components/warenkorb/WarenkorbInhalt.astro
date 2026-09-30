@@ -1,0 +1,401 @@
+---
+// Inhalt des Warenkorbs: Artikel, Hüllen-Vorschlag, Summen, „Zur Kasse“.
+// Steht zweimal im Projekt: in der Schublade (art="schublade", Artboard „Warenkorb-Schublade“)
+// und auf /warenkorb/ (art="seite", breit mit Summen rechts, kein Artboard: abgeleitet).
+//
+// Die Artikel kennt nur der Browser (localStorage), darum baut das Skript unten die Liste.
+// Es ändert dabei nur, was sich geändert hat (jede Zeile hat data-id). Warum nicht einfach
+// alles neu? Weil dann der Knopf „+“, auf dem der Tastatur-Fokus gerade steht, ersetzt würde:
+// Der Fokus fiele auf <body> und man müsste sich mit Tab wieder ganz nach unten arbeiten.
+//
+// Das Muster einer Zeile steht als <template> im HTML (mit den Icons und den Astro-Stilen),
+// das Skript klont es für jeden Artikel.
+import Knopf from '../Knopf.astro';
+import Icon from '../Icon.astro';
+import Farbwaehler from '../Farbwaehler.astro';
+import { HUELLE_PREIS, VERSAND, MWST_PROZENT } from '../../data/preise.js';
+import { chf, prozent } from '../../lib/format.js';
+import { pfad } from '../../lib/pfad.js';
+import { texte, spracheVon } from '../../i18n/index.js';
+
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
+
+const { art = 'schublade' } = Astro.props;
+const W = t.warenkorb;
+const p = `wk-${art}`; // Präfix für ids, damit Schublade und Seite sich nicht in die Quere kommen
+---
+<div class:list={['wk', `wk--${art}`]} data-warenkorb-inhalt data-art={art}>
+  <div class="haupt">
+    <ul role="list" class="liste" aria-label={W.liste} data-wk-liste></ul>
+
+    <div class="leer" data-wk-leer hidden>
+      <p class="leer-titel">{W.leerTitel}</p>
+      <p class="t-muted">{W.leerText}</p>
+      <Knopf href={pfad('kaufen/', sprache)} art="primaer" data-wk-leer-knopf>{W.zusammenstellen}</Knopf>
+    </div>
+
+    <section class="vorschlag" aria-labelledby={`${p}-vorschlag`} data-wk-vorschlag hidden>
+      <div class="bild" aria-hidden="true" data-vorschlag-bild></div>
+      <div class="vorschlag-text">
+        <h3 id={`${p}-vorschlag`} class="vorschlag-titel">{W.vorschlagTitel}</h3>
+        <p class="t-small t-muted">{W.vorschlagVor}<span data-vorschlag-modell>Kiesel 1 Pro</span>{W.vorschlagNach(chf(HUELLE_PREIS, sprache))}</p>
+        <Farbwaehler name={`${p}-vorschlag-farbe`} wert="matte-white" legende={W.huellenFarbe} groesse={26} class="vorschlag-farben" />
+        <Knopf art="sekundaer" groesse="s" data-vorschlag-dazu>{W.dazulegen}<span class="vh" data-vorschlag-vh></span></Knopf>
+      </div>
+    </section>
+
+    {art === 'schublade'
+      ? <button type="button" class="weiter" data-wk-weiter>{W.weiter} <Icon name="arrow" size={16} /></button>
+      : <a class="weiter" href={pfad('kaufen/', sprache)}>{W.weiter} <Icon name="arrow" size={16} /></a>}
+  </div>
+
+  <div class="fuss" data-wk-fuss hidden>
+    <dl class="summen">
+      <div><dt>{W.zwischensumme}</dt><dd data-summe="zwischensumme"></dd></div>
+      <div><dt>{W.versand}</dt><dd data-summe="versand">{VERSAND === 0 ? W.kostenlos : chf(VERSAND, sprache)}</dd></div>
+      <div><dt>{W.mwst(prozent(MWST_PROZENT, sprache))}</dt><dd data-summe="mwst"></dd></div>
+      <div class="total"><dt>{W.total}</dt><dd data-summe="total"></dd></div>
+    </dl>
+    <Knopf art="primaer" groesse="l" breit aria-haspopup="dialog" data-zur-kasse>{W.zurKasse}</Knopf>
+  </div>
+
+  <p class="vh" aria-live="polite" data-wk-ansage></p>
+
+  <template data-wk-vorlage>
+    <li class="artikel">
+      <div class="bild" aria-hidden="true" data-bild></div>
+      <div class="info">
+        <h3 class="name" tabindex="-1" data-name></h3>
+        <p class="details" data-details></p>
+        <div class="menge" role="group" data-menge>
+          <button type="button" class="rund" aria-label={W.einsWeniger} data-minus><Icon name="minus" size={16} /></button>
+          <span class="zahl" data-zahl></span>
+          <button type="button" class="rund" aria-label={W.einsMehr} data-plus><Icon name="plus" size={16} /></button>
+          <button type="button" class="entfernen" data-entfernen>{W.entfernen}<span class="vh" data-entfernen-vh></span></button>
+        </div>
+      </div>
+      <p class="preis"><span data-preis></span><span class="stueck t-muted" data-stueck></span></p>
+    </li>
+  </template>
+</div>
+
+<style>
+  .wk { display: flex; flex-direction: column; min-height: 0; }
+  .haupt { display: flex; flex-direction: column; }
+  .liste { margin: 0; }
+
+  /* ── Eine Zeile (cart_item() in gen2.py) ── */
+  .artikel {
+    display: grid;
+    grid-template-columns: 64px minmax(0, 1fr) auto;
+    gap: var(--space-4);
+    align-items: start;
+    padding: 20px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .bild {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-m);
+    background: var(--bg);
+  }
+  .bild :global(svg) { width: auto; height: 100%; }
+  .info { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+  .name { font-size: 16px; font-weight: 600; line-height: 1.4; }
+  .name:focus { outline: none; }
+  .name:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .details { font-size: 14px; line-height: 1.55; color: var(--muted); overflow-wrap: anywhere; }
+  .menge { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: var(--space-2); }
+  .rund {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-full);
+    background: var(--bg);
+    color: var(--ink);
+  }
+  .rund:hover { background: var(--raised); }
+  /* aria-disabled statt disabled: ein deaktivierter Knopf verliert den Fokus */
+  .rund[aria-disabled="true"] { color: var(--muted); opacity: 0.5; cursor: default; }
+  .rund[aria-disabled="true"]:hover { background: var(--bg); }
+  .zahl { min-width: 1ch; font-size: 16px; font-weight: 600; text-align: center; font-variant-numeric: tabular-nums; }
+  .entfernen {
+    min-height: 44px;
+    margin-left: 6px;
+    padding: 0 var(--space-1);
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font-size: 14px;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .entfernen:hover { color: var(--ink); }
+  .preis { display: flex; flex-direction: column; align-items: flex-end; font-size: 16px; font-weight: 600; line-height: 1.4; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .stueck { font-size: 13px; font-weight: 400; }
+
+  /* Schmal: Preis bleibt oben rechts, Mengen-Knöpfe bekommen die ganze Breite. .info löst sich
+     dafür auf (display: contents), Name, Details und Menge werden eigene Rasterzellen. */
+  @media (max-width: 899px) {
+    .artikel { grid-template-areas: "bild name preis" "bild details details" "bild menge menge"; row-gap: var(--space-1); }
+    .artikel > .bild { grid-area: bild; }
+    .info { display: contents; }
+    .name { grid-area: name; }
+    .details { grid-area: details; }
+    .menge { grid-area: menge; }
+    .preis { grid-area: preis; }
+  }
+
+  /* ── Leer ── */
+  .leer { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-3); padding: var(--space-6) 0 var(--space-2); }
+  .leer-titel { font-family: var(--display); font-size: var(--fs-4); font-weight: 500; line-height: 1.3; }
+
+  /* ── Hüllen-Vorschlag ── */
+  .vorschlag {
+    display: grid;
+    grid-template-columns: 64px minmax(0, 1fr);
+    gap: var(--space-4);
+    margin-top: 20px;
+    padding: var(--space-4);
+    border: 1px dashed var(--line);
+    border-radius: var(--radius-l);
+  }
+  .vorschlag-text { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-2); min-width: 0; }
+  .vorschlag-titel { font-size: 16px; font-weight: 600; line-height: 1.4; }
+  .vorschlag :global(.vorschlag-farben legend) { margin-bottom: var(--space-1); font-size: 14px; }
+
+  .weiter {
+    display: inline-flex;
+    align-items: center;
+    align-self: flex-start;
+    gap: 6px;
+    min-height: 44px;
+    margin-top: 6px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--accent);
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .weiter:hover { text-decoration: underline; text-underline-offset: 4px; }
+
+  /* ── Summen (row() in gen2.py) ── */
+  .fuss { display: flex; flex-direction: column; }
+  .summen { display: flex; flex-direction: column; gap: 2px; margin: 0; }
+  .summen div { display: flex; justify-content: space-between; gap: var(--space-4); padding: var(--space-1) 0; color: var(--muted); font-size: 15px; }
+  .summen dd { margin: 0; font-variant-numeric: tabular-nums; }
+  .summen .total { margin-top: var(--space-2); color: var(--ink); font-family: var(--display); font-size: 22px; font-weight: 600; line-height: 1.3; letter-spacing: -0.02em; }
+  .fuss :global([data-zur-kasse]) { margin-top: var(--space-4); }
+
+  /* ── In der Schublade: oben scrollt die Liste, unten stehen die Summen fest ── */
+  .wk--schublade { flex-grow: 1; }
+  .wk--schublade .haupt { flex-grow: 1; overflow-y: auto; overscroll-behavior: contain; padding: var(--space-1) calc(var(--space-5) + 4px) var(--space-5); }
+  .wk--schublade .fuss { padding: 20px calc(var(--space-5) + 4px) calc(var(--space-5) + 4px); border-top: 1px solid var(--line); }
+  @media (max-width: 899px) {
+    .wk--schublade .haupt { padding-inline: 20px; }
+    .wk--schublade .fuss { padding: var(--space-4) 20px 20px; }
+  }
+
+  /* ── Auf /warenkorb/: Liste links, Summen als Karte rechts (klebt beim Scrollen) ── */
+  .wk--seite .fuss {
+    margin-top: var(--space-6);
+    padding: var(--space-5);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-l);
+    background: var(--surface);
+  }
+  .wk--seite .liste { border-top: 1px solid var(--line); }
+  @media (min-width: 900px) {
+    .wk--seite { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 4fr); gap: var(--space-8); align-items: start; }
+    .wk--seite .fuss { position: sticky; top: calc(var(--header-h) + var(--space-5)); margin-top: 0; padding: calc(var(--space-5) + 4px); }
+    .wk--seite .artikel { grid-template-columns: 96px minmax(0, 1fr) auto; gap: var(--space-5); padding: var(--space-5) 0; }
+    .wk--seite .artikel .bild { width: 96px; height: 96px; border-radius: var(--radius-l); }
+    .wk--seite .name { font-size: 18px; }
+    .wk--seite .details { font-size: 15px; }
+  }
+</style>
+
+<script>
+  import { lesen, summen, artikelInfo, setzeAnzahl, entfernen, hinzufuegen, beiAenderung } from '../../scripts/warenkorb.js';
+  import { chfRappen } from '../../lib/format.js';
+  import { PREISE, MAX_ANZAHL } from '../../data/preise.js';
+  import { farben as FARBNAME_DE, warenkorb as W_DE } from '../../i18n/de.js';
+  import { farben as FARBNAME_EN, warenkorb as W_EN } from '../../i18n/en.js';
+  import { waehle, SPRACHE } from '../../scripts/seitensprache.js';
+  const FARBNAME = waehle(FARBNAME_DE, FARBNAME_EN);
+  const W = waehle(W_DE, W_EN);
+
+  // ── Zeichen-Motor erst bei Bedarf ──
+  // Die Vorschaubilder zeichnet der Zeichen-Motor (phone.js, rund 19 KB). Dieses Skript läuft
+  // auf jeder Seite, der Warenkorb ist aber meistens leer und die Schublade zu. Darum holt
+  // import() den Motor erst, wenn es etwas zu zeichnen gibt: sobald der Warenkorb Artikel
+  // enthält (in der Schublade im Leerlauf, auf /warenkorb/ sofort), beim ersten Öffnen der
+  // Schublade, oder schon vorab, wenn Maus oder Fokus auf den Warenkorb-Knopf kommen.
+  // Bis er da ist, bleiben die Bildfelder leer. Sie haben eine feste Grösse, also springt
+  // nichts, wenn das Bild kommt. Den Zähler in der Kopfzeile betrifft das nicht, der braucht
+  // nur warenkorb.js (WarenkorbKnopf.astro).
+  let handy = null; // die Zeichenfunktion, sobald der Motor geladen ist
+  let motorKommt = null;
+  const wennMotorDa = []; // zeichne() jeder Wurzel, damit die leeren Bildfelder gefüllt werden
+  function ladeMotor() {
+    motorKommt ??= import('../../lib/kiesel-draw/phone.js').then(
+      (m) => { handy = m.handy; wennMotorDa.forEach((f) => f()); },
+      () => { motorKommt = null; }, // z.B. kurz offline: beim nächsten Anlass nochmals versuchen
+    );
+  }
+  const imLeerlauf = window.requestIdleCallback?.bind(window) ?? ((f) => setTimeout(f, 200));
+  document.querySelectorAll('[data-warenkorb-knopf]').forEach((k) => {
+    k.addEventListener('pointerenter', ladeMotor, { once: true });
+    k.addEventListener('focus', ladeMotor, { once: true });
+  });
+
+  // Vorschaubild: Rückseite, bei einer Hülle mit Hülle. Unter der Hülle liegt die Farbe eines
+  // gleichen Handys aus dem Warenkorb (sonst Hüllenfarbe), so wie es später aussehen würde.
+  // Einmal gezeichnet, dann aus dem Zwischenspeicher (ein Handy-SVG ist ein paar kB Text).
+  // null = Motor noch nicht da.
+  const bilder = new Map();
+  const bildSchluessel = (modell, farbe, huelle) => [modell, farbe, huelle ?? ''].join('|');
+  function vorschau(modell, farbe, huelle) {
+    if (!handy) return null;
+    const schluessel = bildSchluessel(modell, farbe, huelle);
+    if (!bilder.has(schluessel)) bilder.set(schluessel, handy({ ansicht: 'hinten', modell, farbe, huelle, hoehe: null, boden: false, label: ' ' }));
+    return bilder.get(schluessel);
+  }
+  // [modell, handyfarbe, hülle] für das Vorschaubild einer Zeile
+  function bildFuer(a, liste) {
+    if (a.art === 'phone') return [a.modell, a.farbe, null];
+    const handyDrunter = liste.find((b) => b.art === 'phone' && b.modell === a.modell);
+    return [a.modell, handyDrunter?.farbe ?? a.farbe, a.farbe];
+  }
+
+  document.querySelectorAll('[data-warenkorb-inhalt]').forEach((wurzel) => {
+    const liste = wurzel.querySelector('[data-wk-liste]');
+    const vorlage = wurzel.querySelector('[data-wk-vorlage]');
+    const leer = wurzel.querySelector('[data-wk-leer]');
+    const fuss = wurzel.querySelector('[data-wk-fuss]');
+    const ansage = wurzel.querySelector('[data-wk-ansage]');
+    const vorschlag = wurzel.querySelector('[data-wk-vorschlag]');
+    const sagen = (text) => { ansage.textContent = ''; requestAnimationFrame(() => { ansage.textContent = text; }); };
+
+    // Eine Zeile anlegen oder nachführen. Nur Text und Attribute ändern, nie die Knöpfe ersetzen.
+    function fuelle(li, a, alle) {
+      const info = artikelInfo(a);
+      const wer = `${info.name}, ${info.details}`;
+      li.querySelector('[data-name]').textContent = info.name;
+      li.querySelector('[data-details]').textContent = info.details;
+      li.querySelector('[data-zahl]').textContent = String(a.anzahl);
+      li.querySelector('[data-menge]').setAttribute('aria-label', W.anzahl(wer));
+      li.querySelector('[data-entfernen-vh]').textContent = `: ${wer}`;
+      li.querySelector('[data-minus]').setAttribute('aria-disabled', a.anzahl <= 1 ? 'true' : 'false');
+      li.querySelector('[data-plus]').setAttribute('aria-disabled', a.anzahl >= MAX_ANZAHL ? 'true' : 'false');
+      li.querySelector('[data-preis]').textContent = chfRappen(info.stueck * a.anzahl, SPRACHE);
+      li.querySelector('[data-stueck]').textContent = a.anzahl > 1 ? W.stueckPreis(a.anzahl, chfRappen(info.stueck, SPRACHE)) : '';
+      const bild = bildFuer(a, alle);
+      const ort = li.querySelector('[data-bild]');
+      const schluessel = bildSchluessel(...bild);
+      const svg = ort.dataset.schluessel !== schluessel && vorschau(...bild);
+      if (svg) { ort.innerHTML = svg; ort.dataset.schluessel = schluessel; }
+    }
+
+    function zeichne() {
+      const alle = lesen();
+      const vorhanden = new Map([...liste.children].map((li) => [li.dataset.id, li]));
+      alle.forEach((a, i) => {
+        let li = vorhanden.get(a.id);
+        if (!li) {
+          li = vorlage.content.firstElementChild.cloneNode(true);
+          li.dataset.id = a.id;
+        }
+        fuelle(li, a, alle);
+        if (liste.children[i] !== li) liste.insertBefore(li, liste.children[i] ?? null);
+        vorhanden.delete(a.id);
+      });
+      vorhanden.forEach((li) => li.remove());
+
+      const s = summen(alle);
+      for (const [k, v] of Object.entries(s)) {
+        const dd = wurzel.querySelector(`[data-summe="${k}"]`);
+        if (dd && k !== 'versand') dd.textContent = chfRappen(v, SPRACHE);
+      }
+      leer.hidden = alle.length > 0;
+      fuss.hidden = alle.length === 0;
+      liste.hidden = alle.length === 0;
+      zeichneVorschlag(alle);
+    }
+
+    // Hüllen-Vorschlag: ein Handy liegt drin, aber keine Hülle für dieses Modell
+    let vorschlagModell = null;
+    function zeichneVorschlag(alle) {
+      const ohne = alle.find((a) => a.art === 'phone' && !alle.some((b) => b.art === 'case' && b.modell === a.modell));
+      vorschlag.hidden = !ohne;
+      if (!ohne) { vorschlagModell = null; return; }
+      const farbe = vorschlag.querySelector('input[type="radio"]:checked').value;
+      vorschlagModell = ohne.modell;
+      vorschlag.querySelector('[data-vorschlag-modell]').textContent = PREISE[ohne.modell].name;
+      vorschlag.querySelector('[data-vorschlag-vh]').textContent = `: ${W.huelleFuer(PREISE[ohne.modell].name, FARBNAME[farbe])}`;
+      vorschlag.querySelector('[data-vorschlag-bild]').innerHTML = vorschau(ohne.modell, ohne.farbe, farbe) ?? '';
+    }
+    vorschlag.addEventListener('change', () => zeichneVorschlag(lesen()));
+    vorschlag.querySelector('[data-vorschlag-dazu]').addEventListener('click', () => {
+      const modell = vorschlagModell;
+      if (!modell) return;
+      const farbe = vorschlag.querySelector('input[type="radio"]:checked').value;
+      const r = hinzufuegen({ art: 'case', modell, farbe });
+      if (!r) return;
+      // Der Vorschlag verschwindet jetzt. Fokus auf die neue Zeile, sonst fiele er auf <body>.
+      liste.querySelector(`[data-id="${CSS.escape(r.id)}"] [data-name]`)?.focus();
+      sagen(W.huelleDrin(PREISE[modell].name, FARBNAME[farbe]));
+    });
+
+    // Knöpfe in den Zeilen: ein Zuhörer für alle (auch für Zeilen, die erst später entstehen)
+    liste.addEventListener('click', (e) => {
+      const knopf = e.target.closest('button');
+      const li = knopf?.closest('li[data-id]');
+      if (!li) return;
+      const id = li.dataset.id;
+      const a = lesen().find((b) => b.id === id);
+      if (!a) return;
+      const name = artikelInfo(a).name;
+      if (knopf.matches('[data-plus], [data-minus]')) {
+        const plus = knopf.matches('[data-plus]');
+        if (knopf.getAttribute('aria-disabled') === 'true') {
+          sagen(plus ? W.nichtMehr(MAX_ANZAHL) : W.nichtWeniger);
+          return;
+        }
+        const n = setzeAnzahl(id, a.anzahl + (plus ? 1 : -1));
+        sagen(W.neueAnzahl(name, n, chfRappen(summen().total, SPRACHE)));
+      } else if (knopf.matches('[data-entfernen]')) {
+        // Fokus danach auf die nächste Zeile (oder die vorige, oder „Warenkorb leer“)
+        const nachbar = li.nextElementSibling ?? li.previousElementSibling;
+        entfernen(id);
+        if (nachbar?.isConnected) nachbar.querySelector('[data-name]').focus();
+        else wurzel.querySelector('[data-wk-leer-knopf]').focus();
+        sagen(W.entfernt(name));
+      }
+    });
+
+    zeichne();
+    beiAenderung(zeichne);
+    wennMotorDa.push(zeichne);
+
+    // Motor holen, sobald es Artikel gibt: auf /warenkorb/ sofort (die Bilder sind zu sehen),
+    // in der Schublade im Leerlauf (sie ist ja zu) und spätestens beim Öffnen
+    const sofort = wurzel.dataset.art === 'seite';
+    const wennArtikel = () => { if (lesen().length) (sofort ? ladeMotor() : imLeerlauf(ladeMotor, { timeout: 2000 })); };
+    wennArtikel();
+    beiAenderung(wennArtikel);
+    wurzel.closest('[data-schublade]')?.addEventListener('kiesel:geoeffnet', ladeMotor);
+  });
+</script>

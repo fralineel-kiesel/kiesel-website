@@ -1,0 +1,128 @@
+---
+// Startseite (Artboards „Startseite Desktop“ und „Startseite Handy“, gen2.py Abschnitt 1+2).
+// Jeder Abschnitt ist ein eigener Baustein in src/components/startseite/.
+// Die 3D-Bühne lädt three.js nur hier und nur, wenn das Gerät es verträgt (Buehne3D.astro).
+// Die Knöpfe oben folgen dem Modell der Bühne: Beide Fassungen stehen im HTML, CSS zeigt die
+// passende ([data-nur-modell], siehe Buehne3D). Das Skript unten trägt die Farbe nach.
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Knopf from '../components/Knopf.astro';
+import Buehne3D from '../components/Buehne3D.astro';
+import Akkordeon from '../components/Akkordeon.astro';
+import ModellKarte from '../components/startseite/ModellKarte.astro';
+import Kennzahlen from '../components/startseite/Kennzahlen.astro';
+import ZoomTeaser from '../components/startseite/ZoomTeaser.astro';
+import FunktionsKacheln from '../components/startseite/FunktionsKacheln.astro';
+import HuelleTeaser from '../components/startseite/HuelleTeaser.astro';
+import { faqFuer } from '../data/faq.js';
+import { abPreis } from '../data/preise.js';
+import { modelleFuer } from '../data/modelle.js';
+import { KIESEL_IDS } from '../data/geraete.js';
+import { pfad, anker } from '../lib/pfad.js';
+import { KOPF_SKRIPT, STANDARD } from '../scripts/startmodell.js';
+import { texte, spracheVon } from '../i18n/index.js';
+
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
+const MODELLE = modelleFuer(t, sprache);
+
+const S = t.startseite;
+const FAQ = faqFuer(t.faqFragen, sprache);
+const START_FARBE = 'sky-blue';
+const kaufen = (id, farbe) => pfad(`kaufen/?modell=${id}&farbe=${encodeURIComponent(farbe)}`, sprache);
+---
+<BaseLayout>
+  <script is:inline slot="kopf" set:html={KOPF_SKRIPT} />
+  <section class="held container" aria-labelledby="titel">
+    <h1 class="t-display" id="titel">{S.titel}</h1>
+    <p class="t-lead t-muted einleitung">
+      <span class="lang">{S.einleitung}</span>
+      <span class="kurz">{S.einleitungKurz}</span>
+    </p>
+    <div class="knoepfe">
+      {KIESEL_IDS.map((id) => <Knopf art="primaer" groesse="l" href={pfad(MODELLE[id].pfad, sprache)} data-nur-modell={id}>{S.entdecken(MODELLE[id].name)}</Knopf>)}
+      {KIESEL_IDS.map((id) => (
+        <Knopf art="sekundaer" groesse="l" href={kaufen(id, START_FARBE)} data-nur-modell={id} data-held-kaufen={id}>
+          {t.geruest.kaufenAb(abPreis(id, t.preise, sprache))}<span class="vh">: {MODELLE[id].name}</span>
+        </Knopf>
+      ))}
+    </div>
+    <div class="buehne">
+      <Buehne3D modell={STANDARD} farbe={START_FARBE} name="held-farbe" />
+    </div>
+  </section>
+
+  <section class="abschnitt container" aria-labelledby="modelle">
+    <h2 class="t-1" id={anker('modelle', sprache)}>{S.modelleTitel}</h2>
+    <p class="t-lead t-muted unter">{S.modelleText}</p>
+    <div class="karten">
+      <ModellKarte modell="k1" />
+      <ModellKarte modell="pro" />
+    </div>
+  </section>
+
+  <section class="abschnitt container" aria-label={S.kennzahlen}>
+    <Kennzahlen />
+  </section>
+
+  <section class="abschnitt container">
+    <ZoomTeaser />
+  </section>
+
+  <section class="abschnitt container" aria-labelledby="funktionen">
+    <h2 class="t-1" id={anker('funktionen', sprache)}>{S.funktionenTitel}</h2>
+    <FunktionsKacheln />
+  </section>
+
+  <section class="abschnitt container">
+    <HuelleTeaser />
+  </section>
+
+  <section class="abschnitt container" aria-labelledby="fragen">
+    <h2 class="t-1" id={anker('fragen', sprache)}>{S.fragenTitel}</h2>
+    <div class="faq">
+      <Akkordeon eintraege={FAQ.filter((f) => f.startseite)} offen="kaufen" idVorsilbe="faq" />
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  import { pfad } from '../lib/pfad.js';
+  import { SPRACHE } from '../scripts/seitensprache.js';
+
+  // Kaufen-Knöpfe: gewählte Farbe mitgeben (das Modell steckt schon im jeweiligen Knopf)
+  document.addEventListener('kiesel:modell', (e) => {
+    const { farbe } = e.detail;
+    document.querySelectorAll('[data-held-kaufen]').forEach((a) => {
+      a.href = pfad(`kaufen/?modell=${a.dataset.heldKaufen}&farbe=${encodeURIComponent(farbe)}`, SPRACHE);
+    });
+  });
+</script>
+
+<style>
+  /* ── Handy (bis 899 px) ── */
+  .held { padding-top: var(--space-6); }
+  .einleitung { margin-top: var(--space-3); }
+  .einleitung .lang { display: none; }
+  .knoepfe { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-5); }
+  .knoepfe :global(.knopf) { width: 100%; }
+  .buehne { margin-top: var(--space-6); }
+
+  /* Abstand zwischen den Abschnitten: 64 px auf dem Handy bis 140 px auf dem Desktop */
+  .abschnitt { padding-top: clamp(var(--space-8), 10vw, var(--space-10)); }
+  .unter { max-width: 620px; margin-top: var(--space-4); }
+  .karten { display: grid; gap: var(--space-4); margin-top: var(--space-5); }
+  .faq { margin-top: var(--space-6); }
+
+  /* ── Desktop (ab 900 px) ── */
+  @media (min-width: 900px) {
+    .held { padding-top: var(--space-8); text-align: center; }
+    .einleitung { max-width: 640px; margin: var(--space-5) auto 0; }
+    .einleitung .lang { display: inline; }
+    .einleitung .kurz { display: none; }
+    .knoepfe { flex-direction: row; justify-content: center; gap: var(--space-3); margin-top: var(--space-6); }
+    .knoepfe :global(.knopf) { width: auto; }
+    .buehne { margin-top: var(--space-7); text-align: left; }
+    .karten { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-5); margin-top: var(--space-7); }
+    .faq { margin-top: calc(var(--space-6) + var(--space-2)); }
+  }
+</style>

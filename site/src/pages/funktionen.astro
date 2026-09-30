@@ -1,0 +1,72 @@
+---
+// /funktionen/ nach dem Artboard „Funktionen“ (design/generator/gen3.py): Kopf mit Sprungmarken,
+// dann RGB-Licht, Zen-Modus, Privacy-Modus und „Such das Gipfelkreuz“. Alles echt bedienbar.
+// Texte in src/i18n/de.js (funktionen, rgb, zen, privacy, kamera), Farben und Logik in src/data/funktionen.js.
+import BaseLayout from '../layouts/BaseLayout.astro';
+import RgbLicht from '../components/funktionen/RgbLicht.astro';
+import ZenModus from '../components/funktionen/ZenModus.astro';
+import PrivacyModus from '../components/funktionen/PrivacyModus.astro';
+import KameraSuche from '../components/funktionen/KameraSuche.astro';
+import { kopfFuer, kameraFuer } from '../data/funktionen.js';
+import { anker } from '../lib/pfad.js';
+import { texte, spracheVon } from '../i18n/index.js';
+
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
+
+const F = t.funktionen;
+const KOPF = kopfFuer(F);
+const KAMERA = kameraFuer(F);
+---
+<BaseLayout titel={F.seitenTitel} beschreibung={F.beschreibung}>
+  <section class="kopf container" aria-labelledby="funktionen-titel">
+    <h1 class="t-display" id="funktionen-titel">{KOPF.titel}</h1>
+    <p class="t-lead t-muted">{KOPF.einleitung}</p>
+    <nav class="anker" aria-label={F.sprungmarken}>
+      {KOPF.anker.map(([text, id]) => <a href={`#${anker(id, sprache)}`}>{text}</a>)}
+    </nav>
+  </section>
+
+  <section class="abschnitt container" id={anker('rgb', sprache)} aria-label={F.anker.rgb}><RgbLicht /></section>
+  <section class="abschnitt container" id={anker('zen', sprache)} aria-label={F.anker.zen}><ZenModus /></section>
+  <section class="abschnitt container" id={anker('privacy', sprache)} aria-label={F.anker.privacy}><PrivacyModus /></section>
+  <section class="abschnitt container" id={anker('kamera', sprache)} aria-labelledby="kamera-titel">
+    <h2 class="t-1" id="kamera-titel">{KAMERA.titel}</h2>
+    <p class="t-lead t-muted unter">{KAMERA.text}</p>
+    <KameraSuche />
+  </section>
+</BaseLayout>
+
+<style>
+  .kopf { padding-top: var(--space-8); }
+  .kopf .t-lead { max-width: 640px; margin-top: var(--space-5); }
+  .anker { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-6); }
+  .anker a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 18px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-full);
+    background: var(--surface);
+    color: var(--ink);
+    font-size: var(--fs-small);
+    font-weight: 500;
+    text-decoration: none;
+  }
+  .anker a:hover { background: var(--raised); }
+  /* Abstand zwischen den Abschnitten wie auf den anderen Seiten. Als Sprungziel (#kamera von
+     der Startseite, #rgb aus der FAQ …) steht der Inhalt knapp unter der Kopfzeile: Das Polster
+     oben im Abschnitt verschwindet über dem Bildrand (scroll-padding-top in global.css). */
+  .abschnitt {
+    --abstand: clamp(var(--space-8), 10vw, var(--space-10));
+    padding-top: var(--abstand);
+    scroll-margin-top: calc(var(--space-2) - var(--abstand));
+  }
+  .unter { max-width: 720px; margin-top: var(--space-4); }
+  @media (min-width: 900px) {
+    .kopf { padding-top: calc(var(--space-8) + var(--space-2)); }
+    /* Im Artboard sind die Titel dieser Seite 56 statt 64 px gross */
+    .abschnitt :global(h2.t-1) { font-size: calc(var(--fs-1) * 0.875); }
+  }
+</style>

@@ -1,0 +1,94 @@
+---
+// Thema-Umschalter im Footer: Auto · Hell · Dunkel
+//   Auto   = folgt der Systemeinstellung (prefers-color-scheme), nichts gespeichert
+//   Hell   = data-theme="light" auf <html>, gespeichert in localStorage["kiesel-thema"]
+//   Dunkel = data-theme="dark"
+// Drei statt zwei Stellungen, damit man auch wieder zur Systemeinstellung zurückkommt.
+//
+// Beim Laden setzt ein Mini-Skript im <head> (BaseLayout) data-theme, bevor die Seite
+// gezeichnet wird. Sonst würde kurz das falsche Thema aufblitzen.
+// Technik wie beim Farbwähler: echte Radio-Knöpfe, damit Tastatur und Screenreader passen.
+import { texte, spracheVon } from '../i18n/index.js';
+
+const t = texte(spracheVon(Astro.url));
+const OPTIONEN = ['auto', 'light', 'dark'].map((wert) => ({ wert, text: t.geruest.thema[wert] }));
+---
+<fieldset class="thema" data-thema-umschalter>
+  <legend>{t.geruest.thema.legende}</legend>
+  <div class="optionen">
+    {OPTIONEN.map((o) => (
+      <label>
+        <input class="vh" type="radio" name="kiesel-thema" value={o.wert} checked={o.wert === 'auto'} />
+        <span>{o.text}</span>
+      </label>
+    ))}
+  </div>
+</fieldset>
+
+<style>
+  .thema {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+  }
+  legend {
+    padding: 0;
+    margin-bottom: var(--space-2);
+    font-size: 13px;
+    color: var(--muted);
+  }
+  /* Auf dem Handy ist Platz in der Breite: Legende links neben die Knöpfe */
+  @media (max-width: 899px) {
+    legend { float: left; margin: 7px var(--space-3) 0 0; }
+  }
+  .optionen {
+    display: inline-flex;
+    gap: 2px;
+    padding: 3px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-full);
+    background: var(--surface);
+  }
+  label { position: relative; cursor: pointer; }
+  label span {
+    display: block;
+    padding: 5px 11px;
+    border-radius: var(--radius-full);
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+  label:hover span { color: var(--ink); }
+  input:checked + span { background: var(--ink); color: var(--bg); }
+  input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+
+<script>
+  const SCHLUESSEL = 'kiesel-thema';
+
+  function gespeichert() {
+    try { return localStorage.getItem(SCHLUESSEL) || 'auto'; } catch { return 'auto'; }
+  }
+
+  function anwenden(wert) {
+    if (wert === 'light' || wert === 'dark') document.documentElement.dataset.theme = wert;
+    else delete document.documentElement.dataset.theme;
+  }
+
+  document.querySelectorAll('[data-thema-umschalter]').forEach((gruppe) => {
+    const jetzt = gespeichert();
+    const passend = gruppe.querySelector(`input[value="${jetzt}"]`);
+    if (passend) passend.checked = true;
+
+    gruppe.addEventListener('change', (e) => {
+      const wert = e.target.value;
+      anwenden(wert);
+      try {
+        if (wert === 'auto') localStorage.removeItem(SCHLUESSEL);
+        else localStorage.setItem(SCHLUESSEL, wert);
+      } catch { /* privates Fenster: Wahl gilt dann nur bis zum Neuladen */ }
+    });
+  });
+</script>

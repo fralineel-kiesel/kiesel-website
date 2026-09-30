@@ -1,0 +1,56 @@
+---
+// „Fünf Farben.“: alle Farben als Rückseite nebeneinander (colors_row in gen2.py).
+// Auf dem Handy passt die Reihe nicht in die Breite: Sie lässt sich seitlich wischen und
+// rastet dabei an jedem Handy ein (scroll-snap).
+import { handy } from '../../lib/kiesel-draw/index.js';
+import { FARB_IDS } from '../../data/farben.js';
+import { modelleFuer } from '../../data/modelle.js';
+import { texte, spracheVon } from '../../i18n/index.js';
+
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
+const MODELLE = modelleFuer(t, sprache);
+
+const { modell } = Astro.props;
+// Reihenfolge wie im Artboard: die Farbe der Modellseite zuerst
+const farbe = MODELLE[modell].seite.farbe;
+const reihe = [farbe, ...FARB_IDS.filter((n) => n !== farbe)];
+---
+<ul role="list" class="farben" aria-label={t.modellseite.fuenfFarben}>
+  {reihe.map((n) => (
+    <li>
+      <Fragment set:html={handy({ texte: t.zeichnung, sprache, ansicht: 'hinten', modell, farbe: n, hoehe: null, label: t.modellseite.bildFarbe(MODELLE[modell].name, t.farben[n]) })} />
+      <span>{t.farben[n]}</span>
+    </li>
+  ))}
+</ul>
+
+<style>
+  .farben {
+    display: flex;
+    gap: var(--space-4);
+    margin: 0 calc(-1 * var(--gutter));
+    padding: 0 var(--gutter) var(--space-2);
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: var(--gutter);
+    scrollbar-width: none;
+  }
+  .farben::-webkit-scrollbar { display: none; }
+  li {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    scroll-snap-align: start;
+  }
+  li :global(svg) { height: 240px; width: auto; }
+  span { font-weight: 500; }
+
+  @media (min-width: 900px) {
+    .farben { justify-content: space-between; margin: 0; padding: 0; overflow: visible; }
+    li { gap: var(--space-3); }
+    li :global(svg) { height: 330px; }
+  }
+</style>

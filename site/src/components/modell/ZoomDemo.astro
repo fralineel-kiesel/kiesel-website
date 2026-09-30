@@ -1,0 +1,23 @@
+---
+// Zoom-Demo auf /kiesel-1/: eine Kamera, 0.5x bis 1x optisch (variable Linse), darüber
+// digital bis 5x. Je weiter digital gezoomt wird, desto weicher wird das Bild.
+// Das Bild ist dasselbe Baustück wie überall (ZoomBild), nur mit modell="k1": eine Ebene,
+// kein Linsenwechsel.
+import ZoomBild from './ZoomBild.astro';
+import ZoomSkala from './ZoomSkala.astro';
+import LinsenLeiste from './LinsenLeiste.astro';
+import { stufenFuer, linsenFuer, MAX_ZOOM } from '../../data/kamera.js';
+import { texte, spracheVon } from '../../i18n/index.js';
+
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
+const STUFEN = stufenFuer(t.kamera);
+const LINSEN = linsenFuer(t.kamera);
+
+---
+<div class="zoom-demo" data-kamera data-zoom-demo>
+  <ZoomBild modell="k1" start={1} blick={[756, 246]} />
+  <ZoomSkala max={MAX_ZOOM.k1} stufen={STUFEN.k1} label={t.kamera.zoom} />
+  <LinsenLeiste abschnitte={LINSEN.k1} />
+  <p class="vh" aria-live="polite" data-ansage></p>
+</div>

@@ -1,0 +1,130 @@
+---
+// Kopfzeile nach den Artboards „Startseite Desktop“ und „Startseite Handy“.
+//   Desktop (ab 900 px): Logo · Hauptmenü in der Mitte · Warenkorb · Kaufen
+//   Handy:               Logo · Warenkorb · Burger
+// Sie klebt oben (sticky). Ausnahme: Seiten mit Unterleiste (Modellseiten), dort klebt
+// die Unterleiste. Zwei klebende Leisten übereinander würden auf dem Handy zu viel Platz fressen.
+import Logo from './Logo.astro';
+import Icon from './Icon.astro';
+import Knopf from './Knopf.astro';
+import HandysMenue from './HandysMenue.astro';
+import MobilMenue from './MobilMenue.astro';
+import WarenkorbKnopf from './WarenkorbKnopf.astro';
+import { HAUPTMENUE } from '../data/navigation.js';
+import { pfad, istAktiv } from '../lib/pfad.js';
+import { linkName } from '../data/navigation.js';
+import { texte, spracheVon } from '../i18n/index.js';
+
+const { klebt = true, schublade = true } = Astro.props;
+const aktuell = Astro.url.pathname;
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
+---
+<header class:list={['kopfzeile', { klebt }]}>
+  <div class="leiste">
+    <a class="marke" href={pfad('', sprache)} aria-label={t.geruest.zurStartseite}>
+      <Logo size={30} /><span class="wort" aria-hidden="true">{t.geruest.wortmarke}</span>
+    </a>
+
+    <nav class="hauptmenue" aria-label={t.geruest.hauptnavigation}>
+      <ul role="list">
+        {HAUPTMENUE.map((p) => (
+          <li>
+            {p.menue
+              ? <HandysMenue aktiv={p.bereich.some((b) => istAktiv(aktuell, b, false, sprache))} />
+              : <a href={pfad(p.pfad, sprache)} aria-current={istAktiv(aktuell, p.pfad, true, sprache) ? 'page' : istAktiv(aktuell, p.pfad, false, sprache) ? 'true' : undefined}>{linkName(p, t)}</a>}
+          </li>
+        ))}
+      </ul>
+    </nav>
+
+    <div class="aktionen">
+      <WarenkorbKnopf schublade={schublade} />
+      <Knopf href={pfad('kaufen/', sprache)} art="ink" groesse="s" class="kaufen">{t.geruest.kaufen}</Knopf>
+      <span class="nur-handy"><MobilMenue /></span>
+    </div>
+  </div>
+</header>
+<!-- Schleier über der Seite, solange das Menü „Handys“ offen ist -->
+<div class="menue-schleier" hidden data-menue-schleier></div>
+
+<style>
+  .kopfzeile {
+    position: relative; /* Bezugspunkt für das Panel von „Handys“ */
+    z-index: 50;
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+  }
+  .kopfzeile.klebt { position: sticky; top: 0; }
+
+  .leiste {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    height: var(--header-h);
+    padding: 0 12px 0 20px;
+  }
+
+  .marke {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-grow: 1;
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .marke :global(.logo) { width: 26px; height: 26px; }
+  .wort {
+    font-family: var(--display);
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.03em;
+  }
+
+  .hauptmenue { display: none; }
+  .aktionen { display: flex; align-items: center; gap: var(--space-2); }
+  .aktionen :global(.kaufen) { display: none; }
+
+  /* ── Desktop ── */
+  @media (min-width: 900px) {
+    .leiste {
+      width: min(100% - 2 * var(--gutter), var(--page-max));
+      margin-inline: auto;
+      padding: 0;
+      gap: var(--space-5);
+    }
+    .marke { flex-grow: 0; }
+    .marke :global(.logo) { width: 30px; height: 30px; }
+    .wort { font-size: 20px; letter-spacing: -0.02em; }
+
+    .hauptmenue { display: block; flex-grow: 1; }
+    .hauptmenue ul { display: flex; justify-content: center; gap: 2px; margin: 0; }
+    .hauptmenue a {
+      display: inline-flex;
+      align-items: center;
+      padding: 8px 14px;
+      border-radius: var(--radius-full);
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 500;
+      line-height: 1.6;
+      text-decoration: none;
+    }
+    .hauptmenue a:hover { color: var(--ink); }
+    .hauptmenue a[aria-current] { color: var(--ink); background: var(--raised); }
+
+    .aktionen { gap: var(--space-5); }
+    .aktionen :global(.kaufen) { display: inline-flex; }
+    .nur-handy { display: none; }
+  }
+
+  .menue-schleier {
+    position: fixed;
+    inset: 0;
+    z-index: 40; /* unter der Kopfzeile (50), über der Seite */
+    background: var(--overlay);
+    animation: einblenden 0.2s ease-out;
+  }
+  @keyframes einblenden { from { opacity: 0; } }
+</style>

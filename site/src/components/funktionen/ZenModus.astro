@@ -1,0 +1,102 @@
+---
+// Zen-Modus auf /funktionen/ (Artboard „Funktionen“, Abschnitt zen): links Text, Schalter und
+// was still wird, rechts der Sperrbildschirm des Pro in Titangrau mit drei Mitteilungen.
+// Die Mitteilungen liegen wie in gen3.py (phone_overlay) als Ebene im Handy-SVG, in
+// Handy-Koordinaten (Pro: 642 breit). Zen an: Sie gleiten nacheinander nach oben weg, dafür
+// erscheint die Pille „Zen-Modus“. Die Farben gehören zum Bild, darum fest wie im Artboard.
+import Buehne from '../Buehne.astro';
+import Schalter from '../Schalter.astro';
+import Icon from '../Icon.astro';
+import { handy, MODELS } from '../../lib/kiesel-draw/index.js';
+import { zenFuer } from '../../data/funktionen.js';
+import { texte, spracheVon } from '../../i18n/index.js';
+
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
+
+const ZEN = zenFuer(t.zen);
+const W = MODELS.pro.W;
+const r = (a) => Object.entries(a).map(([k, v]) => `${k}="${v}"`).join(' ');
+const mitteilungen = [['#3FB6D3', 0.38, 0.52], ['#35D07F', 0.30, 0.46], ['#F2A33A', 0.42, 0.34]].map(([farbe, t1, t2], i) => {
+  const y = 480 + i * 150;
+  return `<g class="mitteilung" style="--i: ${i}">`
+    + `<rect ${r({ x: 40, y, width: W - 80, height: 126, rx: 36, style: 'fill: #FFFFFF; opacity: 0.16' })}/>`
+    + `<rect ${r({ x: 66, y: y + 31, width: 64, height: 64, rx: 16, style: `fill: ${farbe}` })}/>`
+    + `<rect ${r({ x: 152, y: y + 38, width: (W * t1).toFixed(2), height: 16, rx: 8, style: 'fill: #E9EEF3; opacity: 0.85' })}/>`
+    + `<rect ${r({ x: 152, y: y + 72, width: (W * t2).toFixed(2), height: 13, rx: 6.5, style: 'fill: #E9EEF3; opacity: 0.45' })}/>`
+    + '</g>';
+}).join('');
+const pille = `<g class="zen-pille"><rect ${r({ x: W / 2 - 160, y: 404, width: 320, height: 64, rx: 32, style: 'fill: #FFFFFF; opacity: 0.16' })}/>`
+  + `<text ${r({ x: W / 2, y: 446, style: 'font-family: var(--body); font-size: 30px; font-weight: 600; fill: #F3F6F8; text-anchor: middle' })}>${ZEN.pille}</text></g>`;
+const bild = handy({ texte: t.zeichnung, sprache, ansicht: 'vorne', modell: 'pro', farbe: 'titanium-gray', hoehe: null, label: ZEN.bild.aus })
+  .replace(/<\/svg>$/, mitteilungen + pille + '</svg>');
+---
+<div class="zen" data-zen="aus" data-zen-modus>
+  <div class="text">
+    <h2 class="t-1">{ZEN.titel}</h2>
+    <p class="t-lead t-muted">{ZEN.text}</p>
+    <div class="schalter"><Schalter data-zen-schalter><span data-zen-label>{ZEN.schalter[0]}</span></Schalter></div>
+    <h3 class="liste-titel">{ZEN.stillTitel}</h3>
+    <ul class="liste">
+      {ZEN.still.map((t) => <li><span class="haken"><Icon name="check" size={16} /></span>{t}</li>)}
+    </ul>
+    <p class="hinweis t-small t-muted">{ZEN.hinweis}</p>
+  </div>
+  <Buehne class="buehne">
+    <div class="handy" set:html={bild} data-zen-handy />
+  </Buehne>
+  <p class="vh" aria-live="polite" data-zen-ansage></p>
+</div>
+
+<style>
+  .zen { display: grid; gap: var(--space-6); align-items: center; }
+  .zen :global(.buehne) { height: 480px; }
+  .handy { height: 82%; display: flex; justify-content: center; }
+  .handy :global(svg) { height: 100%; width: auto; }
+  .text { display: flex; flex-direction: column; }
+  .text .t-lead { margin-top: var(--space-4); max-width: 520px; }
+  .schalter { margin-top: calc(var(--space-6) - 4px); }
+  .liste-titel { margin: var(--space-6) 0 var(--space-1); font-family: var(--body); font-size: var(--fs-small); font-weight: 600; color: var(--muted); }
+  .liste { max-width: 420px; margin: 0; padding: 0; list-style: none; }
+  .liste li { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) 0; border-top: 1px solid var(--line); }
+  .haken { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 28px; height: 28px; border-radius: var(--radius-full); background: var(--raised); color: var(--ink); }
+  .hinweis { margin-top: calc(var(--space-4) + 2px); }
+
+  /* Mitteilungen gleiten nacheinander weg, die Pille kommt danach */
+  .zen :global(.mitteilung), .zen :global(.zen-pille) { transform-box: view-box; transition: opacity 0.35s ease, transform 0.45s ease; }
+  .zen :global(.mitteilung) { transition-delay: calc(var(--i) * 70ms); }
+  .zen :global(.zen-pille) { opacity: 0; transform: translateY(20px); }
+  [data-zen="an"] :global(.mitteilung) { opacity: 0; transform: translateY(-60px); transition-delay: calc((2 - var(--i)) * 70ms); }
+  [data-zen="an"] :global(.zen-pille) { opacity: 1; transform: none; transition-delay: 0.25s; }
+  @media (prefers-reduced-motion: reduce) {
+    .zen :global(.mitteilung), .zen :global(.zen-pille) { transition: none !important; }
+    [data-zen="an"] :global(.mitteilung) { transform: none; }
+  }
+  @media (min-width: 900px) {
+    .zen { grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); gap: var(--space-8); }
+    .zen :global(.buehne) { height: 680px; }
+  }
+</style>
+
+<script>
+  import { zen as ZEN_DE } from '../../i18n/de.js';
+
+  import { zen as ZEN_EN } from '../../i18n/en.js';
+
+  import { waehle } from '../../scripts/seitensprache.js';
+
+  const ZEN = waehle(ZEN_DE, ZEN_EN);
+
+  document.querySelectorAll('[data-zen-modus]').forEach((wurzel) => {
+    const label = wurzel.querySelector('[data-zen-label]');
+    const svg = wurzel.querySelector('[data-zen-handy] svg');
+    const ansage = wurzel.querySelector('[data-zen-ansage]');
+    wurzel.querySelector('[data-zen-schalter]').addEventListener('kiesel:schalter', (e) => {
+      const an = e.detail.an;
+      wurzel.dataset.zen = an ? 'an' : 'aus';
+      label.textContent = ZEN.schalter[an ? 1 : 0];
+      svg.setAttribute('aria-label', an ? ZEN.bild.an : ZEN.bild.aus);
+      ansage.textContent = an ? ZEN.ansage.an : ZEN.ansage.aus;
+    });
+  });
+</script>

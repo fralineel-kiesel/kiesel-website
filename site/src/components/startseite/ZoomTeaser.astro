@@ -1,0 +1,50 @@
+---
+// Zoom-Teaser „Zoom, der nicht aufgibt.“ mit dem Alpenpanorama aus dem Zeichen-Motor.
+// Anfangs 3x wie im Artboard. Das Bild ist dasselbe Baustück wie auf den Modellseiten und
+// auf /funktionen/ (ZoomBild): gleiche Unschärfe, gleicher Linsenwechsel bei 3x, gleiches
+// Linsen-Label. Nur die Bedienung ist die Zoom-Leiste aus dem Artboard (0.5 · 1 · 3 · 10).
+// Der Blick zielt aufs Gipfelkreuz, damit man es bei 10x noch sieht (wie im Text versprochen).
+// Die versteckten Details gibt es nur auf /funktionen/, der Text und der Knopf verweisen dorthin.
+// Achtung: Im Artboard (gen2.py) führt „Zoom ausprobieren“ zur Pro-Seite, das war falsch.
+import Knopf from '../Knopf.astro';
+import ZoomLeiste from '../ZoomLeiste.astro';
+import ZoomBild from '../modell/ZoomBild.astro';
+import { pfad } from '../../lib/pfad.js';
+import { texte, spracheVon } from '../../i18n/index.js';
+
+const sprache = spracheVon(Astro.url);
+const Z = texte(sprache).startseite.zoom;
+---
+<div class="zoom" data-kamera data-zoom-teaser>
+  <div class="text">
+    <h2 class="t-1">{Z.titel}</h2>
+    <p class="t-lead t-muted lang">{Z.text}</p>
+    <p class="t-lead t-muted kurz">{Z.textKurz}</p>
+    <div><Knopf art="text" icon="arrow" href={pfad('funktionen/#kamera', sprache)}>{Z.knopf}</Knopf></div>
+  </div>
+  <ZoomBild modell="pro" start={3} blick={[756, 232]} klein>
+    <div class="leiste"><ZoomLeiste aktiv="3" label={Z.leiste} /></div>
+  </ZoomBild>
+</div>
+
+<style>
+  .zoom { display: grid; gap: var(--space-5); }
+  .text { display: flex; flex-direction: column; gap: var(--space-3); }
+  .text .lang { display: none; }
+  .leiste { position: absolute; z-index: 2; left: 0; right: 0; bottom: var(--space-3); display: flex; justify-content: center; }
+
+  @media (min-width: 900px) {
+    .zoom {
+      grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+      gap: var(--space-8);
+      align-items: center;
+    }
+    .text { gap: var(--space-4); }
+    /* Wie im Artboard das untere Ende von Titel 1 (56 px), sonst bricht der Titel
+       in der schmalen Spalte auf drei Zeilen um */
+    .text h2 { font-size: calc(var(--fs-1) * 0.875); }
+    .text .lang { display: block; }
+    .text .kurz { display: none; }
+    .leiste { bottom: calc(var(--space-4) + var(--space-1)); }
+  }
+</style>

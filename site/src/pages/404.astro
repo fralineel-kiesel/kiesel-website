@@ -1,0 +1,47 @@
+---
+// Eigene 404-Seite. Astro baut daraus dist/404.html.
+// GitHub Pages zeigt eine 404.html nur, wenn sie im obersten Ordner der Website liegt; das ist
+// dist/404.html, also https://fralineel-kiesel.github.io/kiesel-website/404.html.
+// Fehlende Adressen unter /kiesel-website/en/ tauschen sich selbst auf Englisch (BaseLayout).
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Knopf from '../components/Knopf.astro';
+import { pfad } from '../lib/pfad.js';
+import { texte, spracheVon } from '../i18n/index.js';
+
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
+
+const F = t.fehler404;
+---
+<BaseLayout titel={F.titel} noindex beschreibung={F.beschreibung}>
+  <section class="container fehler">
+    <p class="code" aria-hidden="true">404</p>
+    <h1 class="t-1">{F.ueberschrift}</h1>
+    <p class="t-lead t-muted">{F.text}</p>
+    <div class="knoepfe">
+      <Knopf href={pfad('', sprache)} art="primaer" groesse="l">{F.zurStartseite}</Knopf>
+      <Knopf href={pfad('kiesel-1-pro/', sprache)} art="sekundaer" groesse="l">{F.proAnsehen}</Knopf>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .fehler {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-4);
+    padding-top: clamp(var(--space-7), 8vw, var(--space-9));
+    text-align: center;
+  }
+  .code {
+    font-family: var(--display);
+    font-size: var(--fs-display);
+    font-weight: 600;
+    line-height: var(--lh-display);
+    letter-spacing: var(--ls-display);
+    color: var(--accent);
+  }
+  .fehler p:not(.code) { max-width: 560px; }
+  .knoepfe { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-3); margin-top: var(--space-4); }
+</style>

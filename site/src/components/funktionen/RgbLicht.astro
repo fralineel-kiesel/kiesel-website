@@ -1,0 +1,155 @@
+---
+// RGB-Licht auf /funktionen/ (Artboard „Funktionen“, Abschnitt rgb): links die Rückseite des
+// Pro in Titangrau, rechts neun Ereignisse. Ein Klick zeichnet das Handy mit der LED-Farbe des
+// Ereignisses neu (Zeichen-Motor im Browser) und startet den passenden Rhythmus.
+//
+// Warum 2D und nicht 3D: Das 3D-Modell hat keine LED-Zustände, und three.js lädt nur die
+// Startseite. Der Leuchthof ist im SVG ein Kreis (r = 120) über einem Verlauf; CSS lässt ihn
+// und die LED selbst pulsieren (Klassen .hof und .kern setzt das Skript nach jedem Zeichnen).
+// Rhythmen (data-rhythmus auf der Bühne): schnell (Anruf), zweimal (Nachricht), atmen (Lädt),
+// langsam (Akku tief), ruhig, blinkt (Funkstille = Privacy-Modus Stufe 2), aus.
+// Bei „weniger Bewegung“ leuchtet alles ruhig. Damit Funkstille und Privacy Stufe 1 dann
+// trotzdem unterscheidbar bleiben, steht ihre Stufe als Glas-Chip auf der Bühne.
+//
+// Warum ein eigenes Ereignis „Funkstille“ statt zwei Rhythmen unter „Privacy“: Jeder Chip
+// zeigt genau ein Lichtmuster, Karte und Punkt sagen immer dasselbe. Zwei Rhythmen unter
+// einem Chip bräuchten einen Unterschalter oder eine Karte, die mehr erklärt als zu sehen ist.
+import Buehne from '../Buehne.astro';
+import Chip from '../Chip.astro';
+import GlasChip from '../GlasChip.astro';
+import { handy } from '../../lib/kiesel-draw/index.js';
+import { rgbFuer } from '../../data/funktionen.js';
+import { texte, spracheVon } from '../../i18n/index.js';
+
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
+
+const RGB = rgbFuer(t.rgb);
+const E = RGB.ereignisse;
+const ledAus = (k) => (E[k].color ? { color: E[k].color, o1: E[k].o1, o2: E[k].o2, mid: E[k].mid, edge: E[k].edge } : null);
+const bild = handy({ texte: t.zeichnung, sprache, ansicht: 'hinten', modell: 'pro', farbe: 'titanium-gray', hoehe: null, drehung: -6, led: ledAus(RGB.start), label: t.rgb.bild(E[RGB.start].name) });
+// Für das Skript: nur was es zum Neuzeichnen braucht
+const daten = Object.fromEntries(Object.entries(E).map(([k, e]) => [k, { name: e.name, led: ledAus(k), rhythmus: e.rhythmus, stufe: e.stufe ?? '', titel: e.titel, text: e.text }]));
+---
+<div class="rgb" data-rgb data-daten={JSON.stringify(daten)}>
+  <Buehne class="buehne" data-rhythmus={E[RGB.start].rhythmus}>
+    <div class="handy" data-rgb-handy set:html={bild} />
+    <span class="blitz" aria-hidden="true"></span>
+    <span class="stufe" aria-hidden="true" data-rgb-stufe hidden={!E[RGB.start].stufe}><GlasChip><span data-rgb-stufe-text>{E[RGB.start].stufe ?? ''}</span></GlasChip></span>
+  </Buehne>
+  <div class="text">
+    <h2 class="t-1">{RGB.titel}</h2>
+    <p class="t-lead t-muted">{RGB.text}</p>
+    <div class="ereignisse" role="group" aria-label={t.rgb.ereignis}>
+      {Object.entries(E).map(([k, e]) => (
+        <Chip gruppe="rgb-ereignis" gedrueckt={k === RGB.start} data-ereignis={k}>
+          <span class="punkt" style={`--punkt: ${e.color ?? 'var(--line)'}`} aria-hidden="true"></span>{e.name}
+        </Chip>
+      ))}
+    </div>
+    <div class="karte" aria-live="polite">
+      <span class="t-3" data-rgb-titel>{E[RGB.start].titel}</span>
+      <span class="t-muted" data-rgb-text>{E[RGB.start].text}</span>
+    </div>
+  </div>
+</div>
+
+<style>
+  .rgb { display: grid; gap: var(--space-6); align-items: center; }
+  .rgb :global(.buehne) { height: 440px; }
+  .handy { height: 82%; display: flex; justify-content: center; }
+  .handy :global(svg) { height: 100%; width: auto; }
+  .text { display: flex; flex-direction: column; }
+  .text .t-lead { margin-top: var(--space-4); max-width: 560px; }
+  .ereignisse { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: calc(var(--space-6) - 4px); }
+  .ereignisse :global(.chip) { min-height: 44px; padding: 0 16px; gap: var(--space-2); }
+  .punkt { width: 10px; height: 10px; border-radius: var(--radius-full); background: var(--punkt); box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.25); }
+  .karte {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: var(--space-5);
+    padding: 20px 22px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-m);
+    background: var(--surface);
+  }
+
+  /* ── Rhythmen: Leuchthof (.hof) und LED (.kern) ── */
+  .rgb :global(.hof), .rgb :global(.kern) { transform-box: fill-box; transform-origin: center; }
+  [data-rhythmus="schnell"] :global(.hof) { animation: schnell 0.9s ease-in-out infinite; }
+  [data-rhythmus="schnell"] :global(.kern) { animation: schnell-kern 0.9s ease-in-out infinite; }
+  [data-rhythmus="zweimal"] :global(.hof) { animation: zweimal 2.6s linear infinite; }
+  [data-rhythmus="zweimal"] :global(.kern) { animation: zweimal-kern 2.6s linear infinite; }
+  [data-rhythmus="atmen"] :global(.hof) { animation: atmen 2s ease-in-out infinite; }
+  [data-rhythmus="langsam"] :global(.hof) { animation: langsam 2.4s ease-in-out infinite; }
+  [data-rhythmus="langsam"] :global(.kern) { animation: langsam-kern 2.4s ease-in-out infinite; }
+  @keyframes schnell { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.25; transform: scale(0.85); } }
+  @keyframes schnell-kern { 50% { opacity: 0.6; } }
+  @keyframes zweimal { 0%, 14%, 28%, 100% { opacity: 0.05; } 5%, 9%, 19%, 23% { opacity: 1; } }
+  @keyframes zweimal-kern { 0%, 14%, 28%, 100% { opacity: 0.55; } 5%, 9%, 19%, 23% { opacity: 1; } }
+  @keyframes atmen { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+  @keyframes langsam { 0%, 100% { opacity: 1; } 50% { opacity: 0.15; } }
+  @keyframes langsam-kern { 50% { opacity: 0.55; } }
+  /* Funkstille: ruhig orange, alle 3 s ein kurzes Blinken (ca. 0.2 s dunkel) */
+  [data-rhythmus="blinkt"] :global(.hof) { animation: blinkt 3s linear infinite; }
+  [data-rhythmus="blinkt"] :global(.kern) { animation: blinkt-kern 3s linear infinite; }
+  @keyframes blinkt { 0%, 90%, 97%, 100% { opacity: 1; } 92%, 95% { opacity: 0.08; } }
+  @keyframes blinkt-kern { 0%, 90%, 97%, 100% { opacity: 1; } 92%, 95% { opacity: 0.3; } }
+
+  /* Stufe des Privacy-Modus als Text, nur bei „weniger Bewegung“ (dann blinkt nichts) */
+  .stufe { position: absolute; left: 50%; bottom: var(--space-5); transform: translateX(-50%); display: none; }
+
+  /* Fotoblitz: die Bühne blitzt einmal hell auf */
+  .blitz { position: absolute; inset: 0; background: var(--glass-on); opacity: 0; pointer-events: none; }
+  .rgb[data-blitzt] .blitz { animation: blitzen 0.6s ease-out; }
+  @keyframes blitzen { 0% { opacity: 0.85; } 100% { opacity: 0; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rgb :global(.hof), .rgb :global(.kern), .blitz { animation: none !important; }
+    .stufe:not([hidden]) { display: block; }
+  }
+  @media (min-width: 900px) {
+    .rgb { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: var(--space-8); }
+    .rgb :global(.buehne) { height: 680px; }
+  }
+</style>
+
+<script>
+  import { handy } from '../../lib/kiesel-draw/phone.js';
+  import { rgb as T_DE } from '../../i18n/de.js';
+  import { rgb as T_EN } from '../../i18n/en.js';
+  import { waehle } from '../../scripts/seitensprache.js';
+  const T = waehle(T_DE, T_EN);
+
+  // Leuchthof und LED im SVG markieren, damit CSS sie animieren kann
+  const markiere = (svg) => {
+    svg.querySelector('circle[r="120"]')?.classList.add('hof');
+    svg.querySelector('circle[r="17"]')?.classList.add('kern');
+  };
+
+  document.querySelectorAll('[data-rgb]').forEach((wurzel) => {
+    const daten = JSON.parse(wurzel.dataset.daten);
+    const buehne = wurzel.querySelector('[data-rhythmus]');
+    const ort = wurzel.querySelector('[data-rgb-handy]');
+    const titel = wurzel.querySelector('[data-rgb-titel]');
+    const text = wurzel.querySelector('[data-rgb-text]');
+    const stufe = wurzel.querySelector('[data-rgb-stufe]');
+    markiere(ort.querySelector('svg'));
+
+    wurzel.querySelectorAll('[data-ereignis]').forEach((knopf) => knopf.addEventListener('click', () => {
+      const k = knopf.dataset.ereignis, e = daten[k];
+      ort.innerHTML = handy({ ansicht: 'hinten', modell: 'pro', farbe: 'titanium-gray', hoehe: null, drehung: -6, led: e.led, label: T.bild(e.name) });
+      markiere(ort.querySelector('svg'));
+      buehne.dataset.rhythmus = e.rhythmus;
+      wurzel.dataset.aktuell = k;
+      titel.textContent = e.titel;
+      text.textContent = e.text;
+      stufe.hidden = !e.stufe;
+      stufe.querySelector('[data-rgb-stufe-text]').textContent = e.stufe;
+      // Fotoblitz: Animation jedes Mal neu starten
+      wurzel.removeAttribute('data-blitzt');
+      if (k === 'flash') { void wurzel.offsetWidth; wurzel.setAttribute('data-blitzt', ''); }
+    }));
+  });
+</script>

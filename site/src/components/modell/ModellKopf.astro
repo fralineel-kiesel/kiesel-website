@@ -1,0 +1,60 @@
+---
+// Kopf der Modellseite: Name, Unterzeile, Preis und die grosse Doppelansicht
+// (Rückseite + Vorderseite auf der Bühne). Artboard „Modellseite Kiesel 1 Pro“, oberster Abschnitt.
+// Die Handys zeichnet der Zeichen-Motor schon beim Bauen, im Browser läuft dafür kein Skript.
+//   modell: 'k1' | 'pro'
+import Buehne from '../Buehne.astro';
+import { handy } from '../../lib/kiesel-draw/index.js';
+import { modelleFuer } from '../../data/modelle.js';
+import { abPreis } from '../../data/preise.js';
+import { anker } from '../../lib/pfad.js';
+import { texte, spracheVon } from '../../i18n/index.js';
+
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
+const MODELLE = modelleFuer(t, sprache);
+
+const { modell } = Astro.props;
+const m = MODELLE[modell];
+const S = t.modellseite;
+// hoehe: null = Grösse per CSS (die Bühne ist auf dem Handy kleiner)
+const hinten = handy({ texte: t.zeichnung, sprache, ansicht: 'hinten', modell, farbe: m.seite.farbe, drehung: -8, hoehe: null, label: S.bildHinten(m.name, t.farben[m.seite.farbe]) });
+const vorne = handy({ texte: t.zeichnung, sprache, ansicht: 'vorne', modell, farbe: m.seite.farbe, drehung: 5, hoehe: null, label: S.bildVorne(m.name, t.farben[m.seite.farbe]) });
+---
+<section class="kopf container" aria-labelledby="modell-titel">
+  <h1 class="t-display" id="modell-titel">{m.name}</h1>
+  <p class="t-2 unterzeile">{m.seite.unterzeile}</p>
+  <p class="preis t-muted">{S.preisOder(abPreis(modell, t.preise, sprache))}<a href={`#${anker('farben', sprache)}`}>{S.farbenAnsehen}</a></p>
+  <Buehne class="doppel">
+    <div class="paar">
+      <div class="hinten" set:html={hinten} />
+      <div class="vorne" set:html={vorne} />
+    </div>
+  </Buehne>
+</section>
+
+<style>
+  .kopf { padding-top: var(--space-7); text-align: center; }
+  .unterzeile {
+    margin-top: var(--space-3);
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .preis { margin-top: var(--space-3); font-size: var(--fs-4); }
+  .preis a { color: inherit; text-underline-offset: 3px; }
+  .preis a:hover { color: var(--ink); }
+  .kopf :global(.doppel) { margin-top: var(--space-6); height: 400px; }
+  .paar { display: flex; align-items: center; }
+  /* Die SVGs haben rundherum 200 Einheiten Rand (für den Schatten), darum überlappen sie
+     stark: im Artboard -120 px bei 540 px Höhe, also -22 % der Höhe */
+  .paar :global(svg) { height: var(--h); width: auto; }
+  .paar { --h: 330px; }
+  .vorne { margin-left: calc(var(--h) * -0.222); margin-top: calc(var(--h) * 0.074); }
+
+  @media (min-width: 900px) {
+    .kopf { padding-top: calc(var(--space-9) - var(--space-2)); }
+    .unterzeile { margin-top: calc(var(--space-4) + 2px); }
+    .kopf :global(.doppel) { margin-top: var(--space-7); height: 660px; }
+    .paar { --h: 540px; }
+  }
+</style>

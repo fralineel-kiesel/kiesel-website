@@ -1,0 +1,50 @@
+{
+  "name": "kiesel-website-v2",
+  "private": true,
+  "type": "module",
+  "version": "2.0.0",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "pruefe:zeichenmotor": "node scripts/pruefe-zeichenmotor.mjs",
+    "fotos:zeichenmotor": "astro build && node scripts/fotografiere-zeichenmotor.mjs",
+    "fotos:startseite": "astro build && node scripts/fotografiere-startseite.mjs",
+    "pruefe:startseite": "astro build && node scripts/pruefe-startseite.mjs",
+    "pruefe:waechter": "node scripts/pruefe-waechter.mjs",
+    "pruefe:bauplan": "node scripts/pruefe-bauplan.mjs",
+    "leistung:startseite": "astro build && node scripts/leistung-startseite.mjs",
+    "fotos:modellseiten": "astro build && node scripts/fotografiere-modellseiten.mjs",
+    "pruefe:modellseiten": "astro build && node scripts/pruefe-modellseiten.mjs",
+    "fotos:kamera": "astro build && node scripts/fotografiere-kamera.mjs",
+    "pruefe:kamera": "astro build && node scripts/pruefe-kamera.mjs",
+    "pruefe:kamera-stellen": "astro build && node scripts/pruefe-kamera-stellen.mjs",
+    "pruefe:funktionen": "astro build && node scripts/pruefe-funktionen.mjs",
+    "fotos:funktionen": "astro build && node scripts/fotografiere-funktionen.mjs",
+    "fotos:privacy": "astro build && node scripts/fotografiere-privacy.mjs",
+    "pruefe:kaufen": "astro build && node scripts/pruefe-kaufen.mjs",
+    "pruefe:kennungen": "astro build && node scripts/pruefe-kennungen.mjs",
+    "fotos:kaufen": "astro build && node scripts/fotografiere-kaufen.mjs",
+    "pruefe:vergleichen": "astro build && node scripts/pruefe-vergleichen.mjs",
+    "pruefe:akku-rechner": "astro build && node scripts/pruefe-akku-rechner.mjs",
+    "pruefe:faq": "astro build && node scripts/pruefe-faq.mjs",
+    "pruefe:ganz": "astro build && node scripts/pruefe-ganz.mjs",
+    "pruefe:texte": "node scripts/pruefe-texte.mjs",
+    "pruefe:englisch": "astro build && node scripts/pruefe-englisch.mjs",
+    "fotos:pseudo": "node scripts/fotografiere-pseudo.mjs",
+    "pruefe:laden": "astro build && node scripts/pruefe-laden.mjs",
+    "fotos:ganz": "astro build && node scripts/fotografiere-ganz.mjs",
+    "fotos:englisch": "node scripts/fotografiere-englisch.mjs",
+    "lighthouse": "astro build && node scripts/lighthouse.mjs",
+    "vergleiche:html": "node scripts/vergleiche-html.mjs"
+  },
+  "dependencies": {
+    "astro": "^7.3.5",
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "chrome-launcher": "^1.2.1",
+    "lighthouse": "^13.5.0",
+    "playwright": "^1.56.1"
+  }
+}

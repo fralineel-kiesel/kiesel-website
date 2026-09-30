@@ -1,0 +1,29 @@
+---
+// Glas-Chip: halbdurchsichtige Beschriftung, die auf Bildern und Bühnen liegt.
+// Weil er immer auf einem Bild steht, sieht er in beiden Themen gleich aus.
+import Icon from './Icon.astro';
+const { icon } = Astro.props;
+---
+<span class="glas-chip">
+  {icon && <Icon name={icon} size={18} />}
+  <slot />
+</span>
+
+<style>
+  .glas-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 8px 14px;
+    border-radius: var(--radius-full);
+    background: var(--glass);
+    color: var(--glass-ink);
+    font-family: var(--body);
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.4;
+    white-space: nowrap;
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+  }
+</style>

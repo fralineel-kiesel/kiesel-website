@@ -1,0 +1,470 @@
+---
+import { GERAETE, akku } from '../../data/geraete.js';
+// Versteckte Seite /designsystem/spielwiese/: Werkbank für den Zeichen-Motor (Etappe 2).
+// Hier lässt sich alles durchspielen, was src/lib/kiesel-draw kann, bevor die echten
+// Seiten es benutzen. Steht in keinem Menü, noindex für Suchmaschinen.
+//
+// Zwei Arten, den Motor zu benutzen, beide kommen hier vor:
+//   1. Im Build (hier oben im Frontmatter): Astro ruft handy() beim Bauen auf und schreibt
+//      das fertige SVG ins HTML. Kein JavaScript im Browser nötig (Galerie unten).
+//   2. Im Browser (<script> unten): Bei jeder Reglerbewegung neu zeichnen (Werkbank oben).
+//
+// Alle Einstellungen stehen auch in der Adresse, z.B.
+//   /designsystem/spielwiese/?modell=k1&farbe=matte-black&ansicht=hinten&huelle=matte-white&led=call
+//   (Farben als Kennung, alte Namen wie Mattschwarz gehen auch)
+// So lässt sich eine Kombination als Link weitergeben oder automatisch fotografieren.
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { pfad } from '../../lib/pfad.js';
+import Chip from '../../components/Chip.astro';
+import Farbwaehler from '../../components/Farbwaehler.astro';
+import Schalter from '../../components/Schalter.astro';
+import { farben as FARBNAME, panoramaDetails as DETAIL_NAMEN, blumeFokus as BLUME_NAMEN } from '../../i18n/de.js';
+import { handy, innenleben, FARBNAMEN_PAL, LED_NAMEN, LED_FARBEN, ZOOM_TARGETS, BLUME_FOKUS } from '../../lib/kiesel-draw/index.js';
+
+const MODELLE = [['k1', 'Kiesel 1'], ['pro', 'Kiesel 1 Pro']];
+const ANSICHTEN = [['vorne', 'Vorne'], ['hinten', 'Hinten'], ['seite', 'Seite']];
+
+// Galerie: im Build gezeichnet
+const galerie = MODELLE.map(([mk, name]) => ({
+  name,
+  reihen: ANSICHTEN.map(([ansicht, aname]) => ({
+    aname,
+    handys: FARBNAMEN_PAL.map((farbe) => ({ farbe, svg: handy({ ansicht, modell: mk, farbe, hoehe: 190, boden: false }) })),
+  })),
+}));
+const huellen = FARBNAMEN_PAL.map((farbe) => ({
+  farbe,
+  hinten: handy({ ansicht: 'hinten', modell: 'pro', farbe: 'titanium-gray', huelle: farbe, hoehe: 190, boden: false }),
+  vorne: handy({ ansicht: 'vorne', modell: 'k1', farbe: 'titanium-gray', huelle: farbe, hoehe: 190, boden: false }),
+}));
+const leds = Object.keys(LED_NAMEN).map((z) => ({ z, name: LED_NAMEN[z], svg: handy({ ansicht: 'hinten', modell: 'pro', farbe: 'matte-black', led: z, hoehe: 190, boden: false }) }));
+const innen = [['se', GERAETE.se.name, akku('se')], ['k1', GERAETE.k1.name, akku('k1')], ['pro', GERAETE.pro.name, akku('pro')]]
+  .map(([mk, titel, akku]) => ({ titel, akku, ...innenleben({ modell: mk }) }));
+---
+<BaseLayout titel="Spielwiese" noindex beschreibung="Werkbank für den Zeichen-Motor: Handys, Alpenpanorama und Blume mit allen Reglern.">
+  <div class="container sw">
+    <header class="kopf">
+      <p class="t-small t-muted"><a href={pfad('designsystem/')}>Designsystem</a> / Spielwiese</p>
+      <h1 class="t-1">Spielwiese</h1>
+      <p class="t-lead t-muted intro">Werkbank für den Zeichen-Motor (<code>src/lib/kiesel-draw</code>). Alles hier wird aus Code gezeichnet, keine Bilddateien. Die Einstellungen stehen in der Adresszeile und lassen sich als Link weitergeben.</p>
+    </header>
+
+    <!-- ============================ HANDY ============================ -->
+    <section aria-labelledby="t-handy">
+      <h2 class="t-2" id="t-handy">Handy</h2>
+      <div class="werkbank">
+        <div class="buehne" data-buehne="handy">
+          <div class="handy-platz" data-handy></div>
+        </div>
+        <div class="regler" data-regler="handy">
+          <fieldset class="gruppe">
+            <legend>Modell</legend>
+            <div class="chips">{MODELLE.map(([w, n]) => <Chip gruppe="modell" data-wert={w} gedrueckt={w === 'pro'}>{n}</Chip>)}</div>
+          </fieldset>
+          <fieldset class="gruppe">
+            <legend>Ansicht</legend>
+            <div class="chips">{ANSICHTEN.map(([w, n]) => <Chip gruppe="ansicht" data-wert={w} gedrueckt={w === 'hinten'}>{n}</Chip>)}</div>
+          </fieldset>
+          <div class="gruppe">
+            <Farbwaehler name="handyfarbe" legende="Farbe" wert="sky-blue" />
+            <label class="eigene">
+              <input type="color" value="#C0392B" data-eigene-farbe />
+              <span>Eigene Farbe (Töne werden abgeleitet)</span>
+            </label>
+          </div>
+          <div class="gruppe">
+            <Schalter data-huelle>Hülle</Schalter>
+            <div class="huellenfarbe" data-huellenfarbe>
+              <Farbwaehler name="huellenfarbe" legende="Farbe der Hülle" wert="matte-white" groesse={28} />
+            </div>
+          </div>
+          <fieldset class="gruppe">
+            <legend>LED <span class="t-muted hinweis" data-led-hinweis>(nur hinten sichtbar)</span></legend>
+            <div class="chips">
+              {Object.entries(LED_NAMEN).map(([w, n]) => (
+                <Chip gruppe="led" data-wert={w} gedrueckt={w === 'off'}>
+                  <span class="led-punkt" style={`--led: ${LED_FARBEN[w] ?? 'transparent'}`} aria-hidden="true"></span>{n}
+                </Chip>
+              ))}
+            </div>
+          </fieldset>
+          <div class="gruppe schieber">
+            <label>Grösse <output data-aus="hoehe">600 px</output><input type="range" min="160" max="720" step="10" value="600" data-schieber="hoehe" /></label>
+            <label>Drehung <output data-aus="drehung">0°</output><input type="range" min="-30" max="30" step="1" value="0" data-schieber="drehung" /></label>
+          </div>
+          <div class="gruppe">
+            <p class="legende">So im Code</p>
+            <pre class="code"><code data-code></code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================ PANORAMA ============================ -->
+    <section aria-labelledby="t-alpen">
+      <h2 class="t-2" id="t-alpen">Alpenpanorama</h2>
+      <p class="t-muted">1600 × 1000 Einheiten mit acht versteckten Details. Zoomen verschiebt und vergrössert nur den Bildausschnitt (<code>viewBox</code>), darum bleibt alles auch bei 10x scharf. Zum Verschieben ins Bild ziehen oder die Pfeiltasten benutzen.</p>
+      <div class="bild" data-panorama tabindex="0" aria-label="Alpenpanorama, mit Pfeiltasten verschieben"></div>
+      <div class="regler-reihe">
+        <label class="breit">Zoom <output data-aus="zoom">1.0x</output><input type="range" min="1" max="10" step="0.1" value="1" data-schieber="zoom" /></label>
+        <Schalter data-zoompunkte>Zoom-Ziele zeigen</Schalter>
+      </div>
+      <fieldset class="gruppe">
+        <legend>Springen zu (8x)</legend>
+        <div class="chips">
+          <Chip gruppe="ziel" data-ziel="gesamt" gedrueckt>Ganzes Bild</Chip>
+          {ZOOM_TARGETS.map(([id, x, y]) => <Chip gruppe="ziel" data-ziel={id} data-x={x} data-y={y}>{DETAIL_NAMEN[id]}</Chip>)}
+        </div>
+      </fieldset>
+      <p class="t-small t-muted" data-panorama-info aria-live="polite"></p>
+    </section>
+
+    <!-- ============================ BLUME ============================ -->
+    <section aria-labelledby="t-blume">
+      <h2 class="t-2" id="t-blume">Blume</h2>
+      <p class="t-muted">Vier Ebenen (Gras vorne, Biene, Blume, Hintergrund), jede mit eigener Unschärfe. Der Fokus-Regler verschiebt die Schärfeebene von vorne nach hinten, die Blende bestimmt, wie schnell es unscharf wird. Die Knöpfe setzen die vier Vorgaben aus der Vorlage.</p>
+      <div class="bild" data-blume></div>
+      <div class="regler-reihe">
+        <label class="breit">Fokus <output data-aus="fokus">Blume</output><input type="range" min="0" max="1" step="0.01" value="0.5" data-schieber="fokus" /></label>
+        <label class="breit">Blende <output data-aus="staerke">24</output><input type="range" min="0" max="40" step="1" value="24" data-schieber="staerke" /></label>
+      </div>
+      <fieldset class="gruppe">
+        <legend>Vorgaben</legend>
+        <div class="chips">{Object.keys(BLUME_FOKUS).map((id) => <Chip gruppe="blume" data-vorgabe={id}>{BLUME_NAMEN[id]}</Chip>)}</div>
+      </fieldset>
+    </section>
+
+    <!-- ============================ GALERIE (im Build gezeichnet) ============================ -->
+    <section aria-labelledby="t-galerie">
+      <h2 class="t-2" id="t-galerie">Galerie</h2>
+      <p class="t-muted">Diese Handys zeichnet Astro schon beim Bauen der Seite. Im Browser läuft dafür kein JavaScript.</p>
+      {galerie.map((m) => (
+        <div class="galerie-block">
+          <h3 class="t-3">{m.name}</h3>
+          {m.reihen.map((r) => (
+            <div class="galerie-reihe">
+              <span class="reihen-name">{r.aname}</span>
+              {r.handys.map((h) => <figure class="mini"><Fragment set:html={h.svg} /><figcaption>{FARBNAME[h.farbe]}</figcaption></figure>)}
+            </div>
+          ))}
+        </div>
+      ))}
+      <div class="galerie-block">
+        <h3 class="t-3">Hüllen (auf Titangrau)</h3>
+        <div class="galerie-reihe">
+          {huellen.map((h) => <figure class="mini doppel"><span><Fragment set:html={h.hinten} /><Fragment set:html={h.vorne} /></span><figcaption>{FARBNAME[h.farbe]}</figcaption></figure>)}
+        </div>
+      </div>
+      <div class="galerie-block">
+        <h3 class="t-3">LED-Zustände (Pro, Mattschwarz)</h3>
+        <div class="galerie-reihe">
+          {leds.map((l) => <figure class="mini"><Fragment set:html={l.svg} /><figcaption>{l.name}</figcaption></figure>)}
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="t-innen">
+      <h2 class="t-2" id="t-innen">Innenleben</h2>
+      <p class="t-muted">Alle drei im selben Massstab, von hinten geöffnet. <span class="heat">Orange</span> markiert, was beim Kiesel wegfällt.</p>
+      <div class="innen">
+        {innen.map((i) => (
+          <div class="innen-spalte">
+            <h3 class="t-3">{i.titel}</h3>
+            <p class="t-muted">{i.akku}</p>
+            <div class="innen-bild"><Fragment set:html={i.svg} /></div>
+            <ol class="legende-liste">
+              {i.legende.map((l) => <li><span class:list={['nr', { weg: l.faelltWeg }]}>{l.nr}</span>{l.name}{l.faelltWeg && <span class="heat weg-text">fällt weg</span>}</li>)}
+            </ol>
+          </div>
+        ))}
+      </div>
+    </section>
+  </div>
+</BaseLayout>
+
+<style>
+  .sw { padding-top: var(--space-8); padding-bottom: var(--space-8); }
+  .kopf { display: flex; flex-direction: column; gap: var(--space-3); }
+  .kopf a { color: inherit; }
+  .intro { max-width: 760px; }
+  code { font-size: 0.9em; }
+  section { display: flex; flex-direction: column; gap: var(--space-5); padding-top: var(--space-8); }
+
+  /* Werkbank: Bühne links, Regler rechts; unter 900 px untereinander */
+  .werkbank { display: grid; gap: var(--space-6); }
+  @media (min-width: 900px) { .werkbank { grid-template-columns: minmax(0, 1fr) 380px; align-items: start; } }
+  .buehne {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 560px;
+    padding: var(--space-6);
+    border-radius: var(--radius-xl);
+    background: linear-gradient(180deg, var(--stage), var(--stage-lo));
+    overflow: hidden;
+  }
+  @media (min-width: 900px) { .buehne { position: sticky; top: calc(var(--header-h) + var(--space-4)); min-height: 760px; } }
+  .handy-platz { max-width: 100%; }
+  /* Das SVG hat feste width/height; auf schmalen Bildschirmen darf es schrumpfen */
+  .handy-platz :global(svg) { max-width: 100%; height: auto; }
+
+  .regler { display: flex; flex-direction: column; gap: var(--space-5); }
+  .gruppe { display: flex; flex-direction: column; gap: var(--space-3); border: 0; margin: 0; padding: 0; min-width: 0; }
+  .gruppe legend, .legende { padding: 0; margin: 0 0 var(--space-3); font-size: 15px; font-weight: 600; }
+  .hinweis { font-weight: 400; }
+  .chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+  .led-punkt { width: 10px; height: 10px; border-radius: var(--radius-full); background: var(--led); box-shadow: inset 0 0 0 1px var(--line); }
+  .eigene { display: flex; align-items: center; gap: var(--space-3); min-height: 44px; font-size: 15px; cursor: pointer; }
+  .eigene input { width: 44px; height: 44px; padding: 0; border: 1px solid var(--line); border-radius: var(--radius-s); background: var(--surface); cursor: pointer; }
+  .huellenfarbe[aria-disabled="true"] { opacity: 0.4; }
+  .schieber label, .regler-reihe label { display: grid; grid-template-columns: 1fr auto; gap: var(--space-2); font-size: 15px; font-weight: 600; }
+  .schieber input, .regler-reihe input { grid-column: 1 / -1; width: 100%; min-height: 44px; accent-color: var(--accent); }
+  output { font-weight: 400; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .code {
+    margin: 0;
+    padding: var(--space-4);
+    border-radius: var(--radius-m);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    font-size: 13px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  /* Panorama und Blume: festes Seitenverhältnis wie das Bild (1.6 bzw. 1.5) */
+  .bild { border-radius: var(--radius-l); overflow: hidden; background: var(--surface); touch-action: none; }
+  .bild :global(svg) { width: 100%; height: auto; }
+  [data-panorama] { aspect-ratio: 16 / 10; cursor: grab; }
+  [data-panorama]:active { cursor: grabbing; }
+  [data-panorama]:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  [data-blume] { aspect-ratio: 3 / 2; touch-action: auto; }
+  .regler-reihe { display: flex; flex-wrap: wrap; align-items: end; gap: var(--space-5) var(--space-7); }
+  .regler-reihe .breit { flex: 1 1 260px; }
+
+  /* Galerie */
+  .galerie-block { display: flex; flex-direction: column; gap: var(--space-3); }
+  .galerie-reihe {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--space-2);
+    overflow-x: auto;
+    padding: var(--space-4);
+    border-radius: var(--radius-l);
+    background: linear-gradient(180deg, var(--stage), var(--stage-lo));
+  }
+  .reihen-name { flex: 0 0 64px; align-self: center; font-size: 14px; font-weight: 600; color: var(--muted); }
+  .mini { min-width: 76px; margin: 0; display: flex; flex-direction: column; align-items: center; gap: var(--space-1); flex-shrink: 0; }
+  .mini > span { display: flex; align-items: flex-end; }
+  .mini figcaption { font-size: 13px; color: var(--muted); }
+
+  /* Innenleben: dunkel wie im Artboard, in beiden Themen */
+  .innen { display: grid; gap: var(--space-6); }
+  @media (min-width: 900px) { .innen { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .innen-spalte { display: flex; flex-direction: column; gap: var(--space-2); align-items: center; }
+  .innen-bild { width: 100%; max-width: 380px; border-radius: var(--radius-l); background: #0C1116; }
+  .innen-bild :global(svg) { width: 100%; height: auto; }
+  .legende-liste { list-style: none; margin: var(--space-3) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); width: 100%; max-width: 340px; }
+  .legende-liste li { display: flex; align-items: center; gap: 10px; font-size: 14px; line-height: 1.3; }
+  .nr { flex: 0 0 22px; height: 22px; border-radius: 11px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; background: #5CC3DB; color: #06222A; }
+  .nr.weg { background: #FF8A5E; }
+  .heat { color: var(--heat); font-weight: 600; }
+  .weg-text { font-size: 12px; margin-left: auto; }
+</style>
+
+<script>
+  import { farbId } from '../../data/farben.js';
+  import { farben as FARBNAME, panoramaDetails as DETAIL_NAMEN } from '../../i18n/de.js';
+  import { handy, palette, crop, begrenze, alpen, zoomPunkte, ZOOM_TARGETS, blume, blumeUnschaerfe, BLUME_FOKUS, BLUR, f } from '../../lib/kiesel-draw/index.js';
+
+  // ------------------------------------------------------------ Zustand + Adresse
+  // Alle Einstellungen in einem Objekt. Beim Laden aus der Adresse gelesen, bei jeder
+  // Änderung wieder hineingeschrieben (replaceState: ohne neuen Eintrag im Verlauf).
+  const url = new URL(location.href);
+  const q = (k, std) => url.searchParams.get(k) ?? std;
+  const S = {
+    modell: q('modell', 'pro'),
+    ansicht: q('ansicht', 'hinten'),
+    farbe: farbId(q('farbe')) ?? q('farbe', 'sky-blue'),
+    huelle: q('huelle', ''),
+    huellenfarbe: farbId(q('huellenfarbe')) ?? 'matte-white',
+    led: q('led', 'off'),
+    hoehe: Number(q('hoehe', 600)),
+    drehung: Number(q('drehung', 0)),
+  };
+  if (S.huelle && S.huelle !== 'aus') S.huellenfarbe = farbId(S.huelle) ?? S.huellenfarbe; // ?huelle=matte-white
+
+  function adresseSchreiben() {
+    const u = new URL(location.href);
+    for (const [k, v] of Object.entries(S)) u.searchParams.set(k, String(v));
+    u.searchParams.delete('huelle');
+    if (S.huelle) u.searchParams.set('huelle', S.huellenfarbe); else u.searchParams.delete('huellenfarbe');
+    history.replaceState(null, '', u);
+  }
+
+  // ------------------------------------------------------------ Handy
+  const platz = document.querySelector('[data-handy]');
+  const code = document.querySelector('[data-code]');
+  const ledHinweis = document.querySelector('[data-led-hinweis]');
+
+  function zeichneHandy() {
+    const opt = {
+      ansicht: S.ansicht, modell: S.modell, farbe: S.farbe, hoehe: S.hoehe, drehung: S.drehung,
+      huelle: S.huelle ? S.huellenfarbe : null, led: S.led,
+    };
+    platz.innerHTML = handy(opt);
+    // Den Aufruf zeigen, der genau dieses Bild erzeugt (zum Abschauen für die echten Seiten)
+    const teile = [`ansicht: '${opt.ansicht}'`, `modell: '${opt.modell}'`, `farbe: '${opt.farbe}'`];
+    if (opt.huelle) teile.push(`huelle: '${opt.huelle}'`);
+    if (opt.led !== 'off' && opt.ansicht === 'hinten') teile.push(`led: '${opt.led}'`);
+    if (opt.drehung) teile.push(`drehung: ${opt.drehung}`);
+    teile.push(`hoehe: ${opt.hoehe}`);
+    code.textContent = `handy({ ${teile.join(', ')} })`;
+    if (/^#/.test(S.farbe)) code.textContent += `\n\n// abgeleitete Töne:\n${JSON.stringify(palette(S.farbe), null, 1).replace(/\n\s*/g, ' ')}`;
+    ledHinweis.hidden = S.ansicht === 'hinten';
+    adresseSchreiben();
+  }
+
+  // Chips (Modell, Ansicht, LED): der Chip-Baustein kümmert sich um aria-pressed,
+  // wir lesen nur den Wert
+  const chipWahl = (gruppe, schluessel) => {
+    document.querySelectorAll(`.chip[data-chip-gruppe="${gruppe}"]`).forEach((c) => {
+      c.setAttribute('aria-pressed', c.dataset.wert === S[schluessel] ? 'true' : 'false');
+      c.addEventListener('click', () => { S[schluessel] = c.dataset.wert; zeichneHandy(); });
+    });
+  };
+  chipWahl('modell', 'modell');
+  chipWahl('ansicht', 'ansicht');
+  chipWahl('led', 'led');
+
+  // Farbwähler: Produktfarbe oder eigene Farbe
+  const fwHandy = document.querySelector('input[name="handyfarbe"]').closest('[data-farbwaehler]');
+  const eigene = document.querySelector('[data-eigene-farbe]');
+  function farbeAnzeigen() {
+    fwHandy.querySelectorAll('input').forEach((i) => { i.checked = i.value === S.farbe; });
+    fwHandy.querySelector('[data-farbname]').textContent = FARBNAME[S.farbe] ?? S.farbe;
+    if (/^#/.test(S.farbe)) eigene.value = S.farbe.toLowerCase();
+  }
+  fwHandy.addEventListener('change', (e) => { S.farbe = e.target.value; zeichneHandy(); });
+  eigene.addEventListener('input', () => { S.farbe = eigene.value.toUpperCase(); farbeAnzeigen(); zeichneHandy(); });
+
+  // Hülle: Schalter + eigener Farbwähler (nur aktiv, wenn die Hülle an ist)
+  const schalterHuelle = document.querySelector('[data-huelle]');
+  const huellenBox = document.querySelector('[data-huellenfarbe]');
+  const fwHuelle = huellenBox.querySelector('[data-farbwaehler]');
+  function huelleAnzeigen() {
+    schalterHuelle.setAttribute('aria-checked', S.huelle ? 'true' : 'false');
+    huellenBox.setAttribute('aria-disabled', S.huelle ? 'false' : 'true');
+    fwHuelle.disabled = !S.huelle;
+    fwHuelle.querySelectorAll('input').forEach((i) => { i.checked = i.value === S.huellenfarbe; });
+    fwHuelle.querySelector('[data-farbname]').textContent = FARBNAME[S.huellenfarbe];
+  }
+  schalterHuelle.addEventListener('kiesel:schalter', (e) => { S.huelle = e.detail.an ? S.huellenfarbe : ''; huelleAnzeigen(); zeichneHandy(); });
+  fwHuelle.addEventListener('change', (e) => { S.huellenfarbe = e.target.value; if (S.huelle) S.huelle = S.huellenfarbe; zeichneHandy(); });
+
+  // Schieberegler
+  const schieber = (name, format, setze) => {
+    const el = document.querySelector(`[data-schieber="${name}"]`);
+    const aus = document.querySelector(`[data-aus="${name}"]`);
+    return { el, zeige: (v) => { el.value = String(v); aus.textContent = format(Number(v)); }, bei: (fn) => el.addEventListener('input', () => { aus.textContent = format(Number(el.value)); fn(Number(el.value)); }) };
+  };
+  const sHoehe = schieber('hoehe', (v) => `${v} px`);
+  const sDrehung = schieber('drehung', (v) => `${v}°`);
+  sHoehe.zeige(S.hoehe); sDrehung.zeige(S.drehung);
+  sHoehe.bei((v) => { S.hoehe = v; zeichneHandy(); });
+  sDrehung.bei((v) => { S.drehung = v; zeichneHandy(); });
+
+  farbeAnzeigen();
+  huelleAnzeigen();
+  zeichneHandy();
+
+  // ------------------------------------------------------------ Panorama
+  // Einmal zeichnen, danach nur noch die viewBox ändern: Das ist viel schneller, als bei
+  // jeder Bewegung 400 Bäume neu zu erzeugen.
+  const pano = document.querySelector('[data-panorama]');
+  const panoInfo = document.querySelector('[data-panorama-info]');
+  const P = { zoom: Number(q('zoom', 1)), cx: Number(q('cx', 800)), cy: Number(q('cy', 500)), punkte: q('punkte', '') === '1' };
+  pano.innerHTML = `<svg viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Alpenpanorama mit Bergsee, Dorf und versteckten Details" style="display:block">${alpen('spa')}<g data-marken></g></svg>`;
+  const panoSvg = pano.querySelector('svg');
+  const marken = pano.querySelector('[data-marken]');
+  const sZoom = schieber('zoom', (v) => `${v.toFixed(1)}x`);
+  const schalterPunkte = document.querySelector('[data-zoompunkte]');
+
+  function zeichnePanorama() {
+    [P.cx, P.cy] = begrenze(P.cx, P.cy, P.zoom);
+    panoSvg.setAttribute('viewBox', crop(P.cx, P.cy, P.zoom));
+    // Markierungen gleich gross auf dem Bildschirm, egal wie stark gezoomt und wie breit das
+    // Bild ist: Schrift 16 Einheiten × massstab soll etwa 14 px ergeben.
+    // Ein Bildschirm-Pixel sind (1600 / zoom) / Bildbreite Einheiten.
+    const einheitenProPx = 1600 / P.zoom / (pano.clientWidth || 800);
+    marken.innerHTML = P.punkte ? zoomPunkte((14 / 16) * einheitenProPx) : '';
+    const w = 1600 / P.zoom, h = w / 1.6;
+    const sichtbar = ZOOM_TARGETS.filter(([, x, y]) => Math.abs(x - P.cx) < w / 2 && Math.abs(y - P.cy) < h / 2).map(([id]) => DETAIL_NAMEN[id]);
+    panoInfo.textContent = `${P.zoom.toFixed(1)}x · Mitte ${Math.round(P.cx)}, ${Math.round(P.cy)} · viewBox ${crop(P.cx, P.cy, P.zoom)}` +
+      (P.zoom >= 4 && sichtbar.length ? ` · Im Bild: ${sichtbar.join(', ')}` : '');
+    const u = new URL(location.href);
+    u.searchParams.set('zoom', P.zoom.toFixed(1)); u.searchParams.set('cx', Math.round(P.cx)); u.searchParams.set('cy', Math.round(P.cy));
+    if (P.punkte) u.searchParams.set('punkte', '1'); else u.searchParams.delete('punkte');
+    history.replaceState(null, '', u);
+  }
+  sZoom.zeige(P.zoom);
+  sZoom.bei((v) => { P.zoom = v; zeichnePanorama(); });
+  schalterPunkte.setAttribute('aria-checked', P.punkte ? 'true' : 'false');
+  schalterPunkte.addEventListener('kiesel:schalter', (e) => { P.punkte = e.detail.an; zeichnePanorama(); });
+  document.querySelectorAll('.chip[data-chip-gruppe="ziel"]').forEach((c) => c.addEventListener('click', () => {
+    if (c.dataset.ziel === 'gesamt') Object.assign(P, { zoom: 1, cx: 800, cy: 500 });
+    else Object.assign(P, { zoom: 8, cx: Number(c.dataset.x), cy: Number(c.dataset.y) });
+    sZoom.zeige(P.zoom);
+    zeichnePanorama();
+  }));
+
+  // Ziehen: Bildschirm-Pixel in Bild-Einheiten umrechnen (1600 / zoom Einheiten = volle Breite)
+  let zug = null;
+  pano.addEventListener('pointerdown', (e) => { zug = { x: e.clientX, y: e.clientY, cx: P.cx, cy: P.cy }; pano.setPointerCapture(e.pointerId); });
+  pano.addEventListener('pointermove', (e) => {
+    if (!zug) return;
+    const proPx = 1600 / P.zoom / pano.clientWidth;
+    P.cx = zug.cx - (e.clientX - zug.x) * proPx;
+    P.cy = zug.cy - (e.clientY - zug.y) * proPx;
+    zeichnePanorama();
+  });
+  pano.addEventListener('pointerup', () => { zug = null; });
+  pano.addEventListener('keydown', (e) => {
+    const schritt = 160 / P.zoom;
+    const d = { ArrowLeft: [-schritt, 0], ArrowRight: [schritt, 0], ArrowUp: [0, -schritt], ArrowDown: [0, schritt] }[e.key];
+    if (!d) return;
+    e.preventDefault();
+    P.cx += d[0]; P.cy += d[1];
+    zeichnePanorama();
+  });
+  zeichnePanorama();
+  new ResizeObserver(() => P.punkte && zeichnePanorama()).observe(pano);
+
+  // ------------------------------------------------------------ Blume
+  // Gezeichnet mit vier eigenen Filtern; die Regler ändern nur deren stdDeviation.
+  const bl = document.querySelector('[data-blume]');
+  const B = { fokus: Number(q('fokus', 0.5)), staerke: Number(q('blende', 24)) };
+  const filterDefs = ['bg', 'fl', 'fg', 'bee'].map((e) =>
+    `<filter id="spb-${e}" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="0.01"></feGaussianBlur></filter>`).join('');
+  bl.innerHTML = `<svg viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Blume mit Tautropfen, Biene und Wiese" style="display:block"><defs>${filterDefs}</defs>${blume('sp', 'b-bg', 'b-fl', 'b-fg', 'b-bee')}</svg>`;
+  const unschaerfe = Object.fromEntries(['bg', 'fl', 'fg', 'bee'].map((e) => [e, bl.querySelector(`#spb-${e} feGaussianBlur`)]));
+  const setzeUnschaerfe = (werte) => { for (const [e, v] of Object.entries(werte)) unschaerfe[e].setAttribute('stdDeviation', f(v)); };
+  const sFokus = schieber('fokus', (v) => (v < 0.15 ? 'Gras vorne' : v < 0.4 ? 'Biene' : v < 0.65 ? 'Blume' : 'Hintergrund') + ` (${v.toFixed(2)})`);
+  const sStaerke = schieber('staerke', (v) => String(v));
+  const blumeChips = document.querySelectorAll('.chip[data-chip-gruppe="blume"]');
+  function stufenlos() {
+    setzeUnschaerfe(blumeUnschaerfe(B.fokus, B.staerke));
+    blumeChips.forEach((c) => c.setAttribute('aria-pressed', 'false'));
+    const u = new URL(location.href); u.searchParams.set('fokus', B.fokus.toFixed(2)); u.searchParams.set('blende', String(B.staerke));
+    history.replaceState(null, '', u);
+  }
+  sFokus.zeige(B.fokus); sStaerke.zeige(B.staerke);
+  sFokus.bei((v) => { B.fokus = v; stufenlos(); });
+  sStaerke.bei((v) => { B.staerke = v; stufenlos(); });
+  // Vorgabe: dieselben Unschärfen wie b0–b4 in scene.py
+  blumeChips.forEach((c) => c.addEventListener('click', () => {
+    const fx = BLUME_FOKUS[c.dataset.vorgabe];
+    setzeUnschaerfe({ bg: BLUR[fx.bg], fl: BLUR[fx.fl], fg: BLUR[fx.fg], bee: BLUR[fx.bee] });
+  }));
+  stufenlos();
+</script>

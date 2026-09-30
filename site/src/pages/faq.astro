@@ -1,0 +1,168 @@
+---
+// /faq/ nach dem Artboard „FAQ“ (gen4.py): Suche, Themen-Chips, Akkordeon, „Frage stellen“.
+// Fragen: data/faq.js. Das Akkordeon ist dasselbe wie auf der Startseite (Akkordeon.astro).
+//
+// Filtern heisst: Einträge per hidden aus- und einblenden. Die offenen bleiben offen.
+// Ein Sprungziel in der Adresse (faq/#privacy, faq/#konzept) öffnet diese Frage.
+//
+// Strukturierte Daten (JSON-LD, Typ FAQPage): dieselben Fragen und Antworten noch einmal in einer
+// Form, die Suchmaschinen und andere Programme ohne Raten lesen können. Siehe schema.org/FAQPage.
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Akkordeon from '../components/Akkordeon.astro';
+import Chip from '../components/Chip.astro';
+import Knopf from '../components/Knopf.astro';
+import { faqFuer, THEMEN, FRAGE_STELLEN_ADRESSE } from '../data/faq.js';
+import { texte, spracheVon } from '../i18n/index.js';
+
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
+
+const F = t.faqSeite;
+const FAQ = faqFuer(t.faqFragen, sprache);
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: FAQ.map((f) => ({
+    '@type': 'Question',
+    name: f.frage,
+    acceptedAnswer: { '@type': 'Answer', text: f.antwort },
+  })),
+};
+// „</script>“ in einem Text würde das Skript-Element vorzeitig beenden: < darum als < schreiben
+const ld = JSON.stringify(jsonLd).replace(/</g, '\\u003c');
+---
+<BaseLayout titel={F.titel} beschreibung={F.beschreibung}>
+  <script type="application/ld+json" slot="kopf" set:html={ld} />
+
+  <div class="faq container" data-faq>
+    <h1 class="t-display">{F.titel}</h1>
+    <p class="t-lead t-muted einleitung">{F.einleitung}</p>
+
+    <div class="suche">
+      <label for="faqsuche">{F.suchen}</label>
+      <input id="faqsuche" type="search" placeholder={F.suchBeispiel} autocomplete="off" data-suche />
+    </div>
+
+    <div class="themen" role="group" aria-label={F.themen}>
+      {['alle', ...THEMEN].map((id) => <Chip gedrueckt={id === 'alle'} data-thema-wahl={id}>{t.faqThemen[id]}</Chip>)}
+    </div>
+
+    <div class="liste">
+      <Akkordeon eintraege={FAQ.map((e) => ({ ...e, themaName: t.faqThemen[e.thema] }))} offen="kaufen" ebene={2} idVorsilbe="faq" anker thema />
+      <p class="nichts t-muted" data-nichts hidden>{F.nichts}</p>
+      <p class="vh" aria-live="polite" data-anzahl></p>
+    </div>
+
+    <section class="frage-stellen" aria-labelledby="frage-titel">
+      <div>
+        <h2 class="t-3" id="frage-titel">{F.frageTitel}</h2>
+        <p class="t-muted">{F.frageText}</p>
+      </div>
+      <Knopf art="sekundaer" href={FRAGE_STELLEN_ADRESSE} target="_blank" rel="noopener">{F.frageKnopf}<span class="vh">{t.bausteine.neuerTab}</span></Knopf>
+    </section>
+  </div>
+</BaseLayout>
+
+<style>
+  .faq { padding-top: var(--space-7); }
+  .einleitung { max-width: 680px; margin-top: var(--space-4); }
+  .suche { display: flex; flex-direction: column; gap: var(--space-2); max-width: 560px; margin-top: var(--space-7); }
+  label { font-size: 15px; font-weight: 600; }
+  input {
+    min-height: 48px;
+    padding: 14px 18px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--surface);
+    color: var(--ink);
+    font: inherit;
+    font-size: 17px;
+  }
+  input::placeholder { color: var(--muted); }
+  .themen { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-5); }
+  .themen :global(.chip) { min-height: 44px; padding: 0 16px; font-size: 15px; }
+  .liste { max-width: 960px; margin-top: var(--space-6); }
+  .liste :global(.frage button) { font-size: var(--fs-3); }
+  .nichts { padding: var(--space-5) 0; border-bottom: 1px solid var(--line); }
+  .frage-stellen {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-5);
+    max-width: 960px;
+    margin-top: 56px;
+    padding: var(--space-6);
+    border: 1px solid var(--line);
+    border-radius: 28px;
+    background: var(--surface);
+  }
+  .frage-stellen div { display: flex; flex-direction: column; gap: 6px; }
+
+  @media (min-width: 900px) {
+    .faq { padding-top: var(--space-9); }
+    .einleitung { margin-top: 20px; }
+    .suche { margin-top: var(--space-7); }
+    .frage-stellen { flex-direction: row; justify-content: space-between; align-items: center; }
+  }
+</style>
+
+<script>
+  import { faqSeite as F_DE } from '../i18n/de.js';
+
+  import { faqSeite as F_EN } from '../i18n/en.js';
+
+  import { waehle } from '../scripts/seitensprache.js';
+
+  const F = waehle(F_DE, F_EN);
+
+  document.querySelectorAll('[data-faq]').forEach((wurzel) => {
+    const suche = wurzel.querySelector('[data-suche]');
+    const chips = [...wurzel.querySelectorAll('[data-thema-wahl]')];
+    const eintraege = [...wurzel.querySelectorAll('[data-eintrag]')];
+    const nichts = wurzel.querySelector('[data-nichts]');
+    const anzahl = wurzel.querySelector('[data-anzahl]');
+    let thema = 'alle';
+
+    // Klein und ohne Akzente vergleichen: „hulle“ findet „Hülle“
+    const einfach = (s) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+    const texte = new Map(eintraege.map((e) => [e, einfach(e.textContent)]));
+
+    function filtere() {
+      const q = einfach(suche.value.trim());
+      let n = 0;
+      for (const e of eintraege) {
+        const zeigen = (thema === 'alle' || e.dataset.thema === thema) && (!q || texte.get(e).includes(q));
+        e.hidden = !zeigen;
+        if (zeigen) n++;
+      }
+      nichts.hidden = n > 0;
+      chips.forEach((c) => c.setAttribute('aria-pressed', c.dataset.themaWahl === thema ? 'true' : 'false'));
+      // Für Screenreader: wie viele Fragen stehen jetzt da? (nur wenn gefiltert wird)
+      anzahl.textContent = q || thema !== 'alle' ? F.anzahl(n) : '';
+    }
+
+    suche.addEventListener('input', filtere);
+    wurzel.addEventListener('click', (e) => {
+      const c = e.target.closest('[data-thema-wahl]');
+      if (!c) return;
+      thema = c.dataset.themaWahl;
+      filtere();
+    });
+
+    // Sprungziel öffnet die Frage (auch wenn es erst später per Link gewechselt wird)
+    function oeffneAnker() {
+      const ziel = eintraege.find((e) => e.id && `#${e.id}` === decodeURIComponent(location.hash));
+      if (!ziel) return;
+      thema = 'alle';
+      suche.value = '';
+      filtere();
+      const knopf = ziel.querySelector('button[aria-controls]');
+      knopf.setAttribute('aria-expanded', 'true');
+      document.getElementById(knopf.getAttribute('aria-controls')).hidden = false;
+    }
+    addEventListener('hashchange', oeffneAnker);
+    oeffneAnker();
+    // Zurück-Knopf: der Browser kann einen alten Suchtext wiederherstellen
+    if (suche.value) filtere();
+  });
+</script>

@@ -1,0 +1,93 @@
+---
+// Die acht versteckten Details als kleine Vorschaubilder unter der Kamera-Demo (Artboard
+// „Funktionen“, gen3.py: 136 × 85, Ausschnitt crop(x, y, 8)). Versteckt: „?“ und „Noch
+// versteckt“. Gefunden (kamera-zoom.js setzt data-gefunden): Bild, Akzentrand, Name.
+// Auch versteckte sind Knöpfe: Ein Klick fliegt hin (Tipp). Sonst kämen Tastatur- und
+// Screenreader-Nutzer nie überall hin. Nur auf /funktionen/ (KameraSuche).
+//   quelle: id der Szene (panoramaQuelle)
+import { ZOOM_TARGETS } from '../../lib/kiesel-draw/ausschnitt.js';
+import { panoramaAnsicht } from '../../lib/kiesel-draw/scene.js';
+import { texte, spracheVon } from '../../i18n/index.js';
+
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
+
+const { quelle } = Astro.props;
+const D = texte(sprache).kamera.details;
+---
+<ul class="funde" aria-label={D.liste}>
+  {ZOOM_TARGETS.map(([id, x, y], i) => (
+    <li>
+      <button type="button" class="fund" data-detail={i} data-detail-id={id} aria-label={D.verstecktLabel(i + 1, ZOOM_TARGETS.length)}>
+        <span class="bild">
+          <span class="vorschau" set:html={panoramaAnsicht(quelle, { zoom: 8, cx: x, cy: y })} />
+          <span class="frage" aria-hidden="true">?</span>
+        </span>
+        <span class="name" aria-hidden="true" data-fundname>{D.versteckt}</span>
+      </button>
+    </li>
+  ))}
+</ul>
+
+<style>
+  .funde {
+    display: flex;
+    gap: var(--space-4);
+    margin: var(--space-6) 0 0;
+    padding: 0 0 var(--space-2);
+    list-style: none;
+    /* Auf dem Handy wischt man durch die acht (sie bleiben so gross wie im Artboard) */
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: thin;
+  }
+  li { flex: 0 0 120px; scroll-snap-align: start; }
+  .fund {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    text-align: left;
+    cursor: zoom-in;
+  }
+  .bild {
+    position: relative;
+    display: block;
+    aspect-ratio: 1.6;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-s);
+    background: var(--raised);
+  }
+  .vorschau { position: absolute; inset: 0; visibility: hidden; }
+  .vorschau :global(svg) { width: 100%; height: 100%; }
+  .frage {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-family: var(--display);
+    font-size: var(--fs-3);
+    font-weight: 600;
+  }
+  .name { font-family: var(--body); font-size: var(--fs-small); line-height: 1.3; }
+  .fund[data-gefunden] { color: var(--ink); }
+  .fund[data-gefunden] .name { font-weight: 600; }
+  .fund[data-gefunden] .bild { border: 2px solid var(--accent); }
+  .fund[data-gefunden] .vorschau { visibility: visible; }
+  .fund[data-gefunden] .frage { display: none; }
+  .fund:hover .bild { border-color: var(--muted); }
+  .fund[data-gefunden]:hover .bild { border-color: var(--accent); }
+  .fund:focus-visible { outline: none; }
+  .fund:focus-visible .bild { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  @media (min-width: 900px) {
+    .funde { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); overflow: visible; padding: 0; }
+  }
+</style>

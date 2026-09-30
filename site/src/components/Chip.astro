@@ -1,0 +1,47 @@
+---
+// Chip (Auswahl-Pille), z.B. Zoomstufen oder Speichergrössen.
+// Es ist ein <button> mit aria-pressed: Screenreader sagen dann „gedrückt“ oder „nicht gedrückt“.
+//   gedrueckt: true/false
+// Chips mit gleichem data-chip-gruppe verhalten sich wie eine Auswahl: einer ist gedrückt.
+const { gedrueckt = false, gruppe, class: klasse, ...rest } = Astro.props;
+---
+<button type="button" class:list={['chip', klasse]} aria-pressed={gedrueckt ? 'true' : 'false'} data-chip-gruppe={gruppe} {...rest}>
+  <slot />
+</button>
+
+<style>
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.4;
+    white-space: nowrap;
+  }
+  .chip:hover { background: var(--raised); }
+  .chip[aria-pressed="true"] {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--bg);
+  }
+</style>
+
+<script>
+  // Klick auf einen Chip einer Gruppe: diesen drücken, alle anderen der Gruppe lösen.
+  // Ein Skript in einer Astro-Komponente läuft pro Seite nur einmal, egal wie viele Chips es gibt.
+  document.addEventListener('click', (e) => {
+    const chip = e.target.closest('.chip[data-chip-gruppe]');
+    if (!chip) return;
+    const gruppe = chip.dataset.chipGruppe;
+    document.querySelectorAll(`.chip[data-chip-gruppe="${gruppe}"]`).forEach((c) => {
+      c.setAttribute('aria-pressed', c === chip ? 'true' : 'false');
+    });
+  });
+</script>

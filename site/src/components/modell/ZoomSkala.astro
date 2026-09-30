@@ -1,0 +1,119 @@
+---
+// Zoom-Skala der Kamera-Demos nach dem Artboard „Funktionen“ (gen3.py, „Such das Gipfelkreuz“):
+// Spur 6 px, Akzent-Füllung bis zum Griff, Strich bei 3x (Tele), darunter die Zoomstufen an
+// ihrer Stelle. Logarithmisch (0.5x … max), sonst lägen 0.5x bis 3x auf dem ersten Viertel.
+//
+// Aufbau: Spur, Füllung, Strich und Griff sind gezeichnet (wie im Artboard reicht die Spur über
+// die ganze Breite, der Griff sitzt mit seiner Mitte genau auf dem Wert). Darüber liegt ein
+// unsichtbares, echtes <input type="range"> für Maus, Finger, Tastatur und Screenreader. Es
+// ist links und rechts einen halben Griff breiter, damit seine Griffmitte dieselbe Strecke
+// fährt. Die Beschriftungen darunter sind Knöpfe (Zoomstufen, data-stufe).
+// Den Wert (--wert, 0…1) setzt kamera-zoom.js.
+//   max: grösster Zoom   stufen: [[Wert, Text, betont], …]   tele: Zoom mit Strich (oder null)
+//   label: für Screenreader
+import { texte, spracheVon } from '../../i18n/index.js';
+
+const K = texte(spracheVon(Astro.url)).kamera;
+const { max, stufen, tele = null, label = K.zoom } = Astro.props;
+const lage = (z) => Math.log(z / 0.5) / Math.log(max / 0.5); // 0 … 1 auf der Spur
+---
+<div class="zoom-skala" style="--wert: 0" data-zoom-skala>
+  <input class="regler" type="range" min="0" max="1000" step="1" aria-label={label} data-zoom-regler />
+  <div class="spur" aria-hidden="true">
+    <span class="fuellung"></span>
+    {tele && <span class="tele" style={`--an: ${lage(tele)}`}></span>}
+    <span class="griff"></span>
+  </div>
+  <div class="stufen" role="group" aria-label={K.zoomstufen}>
+    {stufen.map(([wert, text, betont], i) => (
+      <button
+        type="button"
+        class:list={['stufe', { betont, erste: i === 0, letzte: i === stufen.length - 1 }]}
+        style={`--an: ${lage(Number(wert))}`}
+        aria-pressed="false"
+        data-stufe={wert}
+      >{text}</button>
+    ))}
+  </div>
+</div>
+
+<style>
+  .zoom-skala { --griff: 30px; position: relative; height: 62px; margin-top: var(--space-5); }
+  .spur { position: absolute; left: 0; right: 0; top: 0; height: 18px; pointer-events: none; }
+  .spur::before, .fuellung {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 6px;
+    height: 6px;
+    border-radius: 3px;
+  }
+  .spur::before { right: 0; background: var(--line); }
+  .fuellung { width: calc(100% * var(--wert)); background: var(--accent); }
+  .tele {
+    position: absolute;
+    top: 0;
+    left: calc(100% * var(--an));
+    width: 2px;
+    height: 18px;
+    margin-left: -1px;
+    background: var(--ink);
+  }
+  .griff {
+    position: absolute;
+    top: -6px;
+    left: calc(100% * var(--wert));
+    width: var(--griff);
+    height: var(--griff);
+    border-radius: var(--radius-full);
+    background: #FFFFFF;
+    box-shadow: 0 1px 4px rgb(0 0 0 / 0.35);
+    transform: translateX(-50%);
+  }
+  /* Der echte Regler: unsichtbar über der Spur, einen halben Griff breiter auf jeder Seite */
+  .regler {
+    position: absolute;
+    z-index: 1;
+    top: -6px;
+    left: calc(var(--griff) / -2);
+    width: calc(100% + var(--griff));
+    height: var(--griff);
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+    touch-action: pan-y;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .regler::-webkit-slider-thumb { -webkit-appearance: none; width: var(--griff); height: var(--griff); }
+  .regler::-moz-range-thumb { width: var(--griff); height: var(--griff); border: 0; }
+  .regler:focus-visible + .spur .griff { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  /* Zoomstufen: 44 px hohe Knöpfe, Text an der Stelle des Werts (erste/letzte bündig) */
+  .stufe {
+    position: absolute;
+    z-index: 2;
+    top: 14px;
+    left: calc(100% * var(--an));
+    min-width: 44px;
+    height: 44px;
+    padding: 4px 6px 0;
+    border: 0;
+    border-radius: var(--radius-s);
+    background: transparent;
+    color: var(--muted);
+    font-family: var(--body);
+    font-size: var(--fs-small);
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    text-align: center;
+    align-content: start;
+    transform: translateX(-50%);
+    cursor: pointer;
+  }
+  .stufe.erste { transform: none; padding-left: 0; text-align: left; }
+  .stufe.letzte { transform: translateX(-100%); padding-right: 0; text-align: right; }
+  .stufe.betont, .stufe:hover, .stufe[aria-pressed="true"] { color: var(--ink); }
+  .stufe:focus-visible { outline: 3px solid var(--accent); outline-offset: -2px; }
+</style>

@@ -1,0 +1,114 @@
+---
+// Mitscrollende Unterleiste der Modellseiten (Artboard „Modellseite Kiesel 1 Pro“).
+// Klebt oben, sobald die Kopfzeile weggescrollt ist.
+//   modell: 'k1' | 'pro'
+// Die aktive Seite ermittelt sie selbst aus der Adresse.
+import Knopf from './Knopf.astro';
+import { modelleFuer } from '../data/modelle.js';
+import { pfad, istAktiv } from '../lib/pfad.js';
+import { texte, spracheVon } from '../i18n/index.js';
+
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
+const MODELLE = modelleFuer(t, sprache);
+
+const { modell } = Astro.props;
+const m = MODELLE[modell];
+const U = t.geruest.unterleiste;
+const aktuell = Astro.url.pathname;
+const links = [
+  { name: U.uebersicht, pfad: m.pfad },
+  { name: U.technik, pfad: `${m.pfad}technik/` },
+  { name: U.vergleichen, pfad: `vergleichen/?kiesel=${modell}` },
+];
+---
+<nav class="unterleiste" aria-label={m.name}>
+  <div class="container innen">
+    <a class="name" href={pfad(m.pfad, sprache)}>{m.name}</a>
+    <ul role="list" class="links">
+      {links.map((l) => (
+        <li><a href={pfad(l.pfad, sprache)} aria-current={istAktiv(aktuell, l.pfad, true, sprache) ? 'page' : undefined}>{l.name}</a></li>
+      ))}
+    </ul>
+    <Knopf href={pfad(`kaufen/?modell=${modell}&farbe=${m.seite.farbe}`, sprache)} art="primaer" groesse="s" class="kaufen">{t.geruest.kaufen}</Knopf>
+  </div>
+</nav>
+
+<style>
+  .unterleiste {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+  }
+  .innen {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    height: var(--subnav-h);
+  }
+  .name {
+    flex-shrink: 0;
+    font-family: var(--display);
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    color: var(--ink);
+    text-decoration: none;
+  }
+  /* Auf dem Handy passen nicht alle Links: die Liste scrollt dann seitlich */
+  .links {
+    display: flex;
+    gap: 20px;
+    flex-grow: 1;
+    min-width: 0;
+    height: 100%;
+    margin: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    mask-image: linear-gradient(90deg, #000 85%, transparent);
+  }
+  .links::-webkit-scrollbar { display: none; }
+  .links li { display: flex; flex-shrink: 0; }
+  .links a {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    border-bottom: 2px solid transparent;
+    padding-top: 2px; /* gleicht die Linie unten aus, damit der Text mittig bleibt */
+    color: var(--muted);
+    font-size: 15px;
+    font-weight: 500;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .links a:hover { color: var(--ink); }
+  .links a[aria-current="page"] {
+    color: var(--ink);
+    font-weight: 600;
+    border-bottom-color: var(--accent);
+  }
+  .innen :global(.kaufen) { flex-shrink: 0; }
+
+  @media (min-width: 900px) {
+    .innen { gap: 28px; }
+    .name { flex-grow: 1; font-size: 18px; }
+    .links { flex-grow: 0; gap: 28px; overflow: visible; mask-image: none; }
+  }
+</style>
+
+<script>
+  // Handy: Die Linkliste scrollt seitlich. Steht der aktive Punkt (z.B. „Technische Daten“)
+  // halb ausserhalb, die Liste so weit schieben, dass er ganz zu sehen ist. Nur die Liste
+  // scrollt, nicht die Seite.
+  document.querySelectorAll('.unterleiste .links').forEach((liste) => {
+    const aktiv = liste.querySelector('[aria-current="page"]');
+    if (!aktiv || liste.scrollWidth <= liste.clientWidth) return;
+    // Positionen auf dem Bildschirm; rechts blendet die Liste aus (mask 85 %)
+    const l = liste.getBoundingClientRect(), a = aktiv.getBoundingClientRect();
+    const zuWeitRechts = a.right - (l.left + l.width * 0.85);
+    if (zuWeitRechts > 0) liste.scrollLeft += Math.min(zuWeitRechts + 8, a.left - l.left);
+  });
+</script>

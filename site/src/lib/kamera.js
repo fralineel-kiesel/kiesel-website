@@ -1,0 +1,92 @@
+// Rechnung und Beschriftung der Kamera-Demos, ohne Browser: läuft im Build (Startzustand im
+// HTML) und im Browser (kamera-zoom.js). Gebraucht von ZoomBild, also von allen vier
+// Zoom-Stellen (Startseite, /kiesel-1/, /kiesel-1-pro/, /funktionen/). Nur hier ändern,
+// dann können die Stellen nicht mehr auseinanderlaufen.
+//
+// Begriffe
+//   z      Kamera-Zoom, wie ihn die Kamera-App anzeigt (0.5x … 10x)
+//   Z      Bild-Zoom im Panorama: 1 = ganzes Bild (1600 breit), 8 = 200 breit
+//   linse  'haupt' (Hauptkamera, auch Kiesel 1) oder 'tele' (nur Pro, ab 3x)
+import { TELE_AB, MAX_ZOOM } from '../data/kamera.js';
+import { zahl as zahlFormat } from './format.js';
+import { kamera as DE } from '../i18n/de.js';
+
+// Alle Texte kommen aus der Textdatei (kamera in src/i18n/de.js); T = anderer Sprache übergeben.
+
+// ── Zoom-Umrechnung ──
+// Stützpunkte Kamera-Zoom → Bild-Zoom, dazwischen gleichmässig im Logarithmus.
+// 0.5x = ganzes Bild, 1x = 1.5, ab 3x gleich.
+const STUETZ = [[0.5, 1], [1, 1.5], [3, 3], [5, 5], [10, 10]];
+function zwischen(wert, von, nach) {
+  const v = Math.min(STUETZ[STUETZ.length - 1][von], Math.max(STUETZ[0][von], wert));
+  for (let i = 1; i < STUETZ.length; i++) {
+    const a = STUETZ[i - 1], b = STUETZ[i];
+    if (v <= b[von]) return a[nach] * (b[nach] / a[nach]) ** (Math.log(v / a[von]) / Math.log(b[von] / a[von]));
+  }
+  return STUETZ[STUETZ.length - 1][nach];
+}
+export const bildZoom = (z) => zwischen(z, 0, 1);
+export const kameraZoom = (Z) => zwischen(Z, 1, 0);
+
+// Anzeige wie in der Kamera-App: eine Nachkommastelle, ohne „.0“ (2.8x, 3x)
+export const rund = (z) => Math.round(z * 10) / 10;
+export const zahl = (z, sprache = 'de') => zahlFormat(rund(z), undefined, sprache);
+
+// Unschärfe in px bei 600 px Bildbreite (kamera-zoom.js rechnet auf die echte Breite um)
+//   Hauptkamera (auch Kiesel 1): bis 1x optisch scharf, darüber digital immer weicher.
+//     Über 5x kann der Kiesel 1 nicht, im Vergleich wird sein Bild dort nur noch breiiger.
+//   Tele: bei 3x optisch scharf, darüber digital, aber aus einem viel schärferen Bild.
+export const UNSCHAERFE = {
+  haupt: (z) => (z <= 1 ? 0 : 0.75 * (Math.min(z, 5) - 1) + 0.45 * Math.max(0, z - 5)),
+  tele: (z) => (z <= TELE_AB ? 0 : 0.3 * (z - TELE_AB)),
+};
+UNSCHAERFE.k1 = UNSCHAERFE.haupt;
+
+// Welche Linse arbeitet bei der angezeigten Zahl z? Der Kiesel 1 hat keine Tele.
+export const linseBei = (modell, z) => (modell === 'pro' && rund(z) >= TELE_AB ? 'tele' : 'haupt');
+
+// Optisch heisst: ohne Ausschnitt aus dem Sensor (variable Linse bis 1x, Tele genau bei 3x)
+export const optisch = (z, linse) => rund(z) <= 1 || (linse === 'tele' && rund(z) === TELE_AB);
+
+// Stufe mit Art: „1x optisch“, „6x digital“. Über dem Maximum des Modells (nur im Vergleich:
+// Kiesel 1 bei 10x) „max. 5x digital“.
+export function stufenText(modell, z, linse = linseBei(modell, z), T = DE) {
+  const max = MAX_ZOOM[modell];
+  const stufe = rund(z) > max ? T.maximal(max) : T.stufe(zahl(z));
+  return T.stufenText(stufe, optisch(Math.min(z, max), linse));
+}
+
+// Linsen-Label auf dem Bild: „Hauptkamera · 1x optisch“, „Tele · 6x digital“
+export const linsenText = (modell, z, linse = linseBei(modell, z), T = DE) => T.linsenText(T.linse[linse], stufenText(modell, z, linse, T));
+
+// Für Screenreader: wie scharf ist das Bild (Unschärfe bei 600 px Breite)?
+export const schaerfeText = (px, T = DE) => T.schaerfe[px < 0.05 ? 'scharf' : px < 1.6 ? 'leicht' : 'unscharf'];
+
+// Bildbeschreibung des Zoom-Bilds: „Alpenpanorama bei 3x, Tele-Linse, scharf“
+export const bildText = (z, linse, T = DE) => T.bild(zahl(z), T.linseLang[linse], schaerfeText(UNSCHAERFE[linse](z), T));
+
+// Texte des Zoom-Vergleichs (Pro-Seite): zwei Chips, lang (Desktop) und kurz (Handy), und
+// die Bildbeschreibung. Links der Kiesel 1 (immer Hauptkamera, max. 5x), rechts der Pro.
+// Den Linsennamen lässt der Vergleich weg: Welche Linse arbeitet, zeigen die zwei Punkte im
+// Pro-Chip. Ein Namenswechsel mitten im Linsenwechsel wäre zudem ein harter Textsprung
+// genau dort, wo das Bild weich überblenden soll (pruefe:kamera misst das mit).
+//   allein: Vergleich ausgeschaltet, nur noch der Pro im Bild
+export function vergleichTexte(z, linse = linseBei('pro', z), allein = false, T = DE) {
+  const V = T.vergleich;
+  const stufe = (m) => (rund(z) > MAX_ZOOM[m] ? T.maximal(MAX_ZOOM[m]) : T.stufe(zahl(z)));
+  const pro = V.linseSchaerfe(T.linseLang[linse], schaerfeText(UNSCHAERFE[linse](z), T));
+  return {
+    lang: { k1: V.k1(stufenText('k1', z, undefined, T)), pro: V.pro(stufenText('pro', z, linse, T)) },
+    kurz: { k1: V.k1(stufe('k1')), pro: V.proKurz(linse === 'tele', stufe('pro')) },
+    bild: allein ? V.bildAllein(zahl(z), pro) : V.bild(zahl(z), schaerfeText(UNSCHAERFE.k1(z), T), pro),
+  };
+}
+
+// Makro-Demo: Grösse einer Ebene als SVG-transform. Skaliert um den Punkt [mx, my] (siehe
+// MAKRO_MITTE), also translate(m) scale(s) translate(-m), als eine Matrix geschrieben.
+// Die Unschärfe (Filter der Ebene) wächst dabei mit: Ein vergrösserter Hintergrund ist auch
+// entsprechend weicher, wie im echten Bild.
+export function makroTrafo(s, [mx, my]) {
+  const r = (v) => String(Math.round(v * 1000) / 1000);
+  return `matrix(${r(s)} 0 0 ${r(s)} ${r(mx * (1 - s))} ${r(my * (1 - s))})`;
+}

@@ -1,0 +1,184 @@
+/* global.css – Schriften, Grundlagen und Schriftklassen für alle Seiten
+   Wird einmal im BaseLayout importiert. Alles, was nur eine Komponente betrifft,
+   steht als <style> in der Komponente selbst (Astro macht es dort automatisch „scoped“,
+   also gültig nur für diese Komponente). */
+
+@import "./tokens.css";
+
+/* ── Schriften ──────────────────────────────────────────────────────────
+   Lokal in src/assets/fonts/ (Lizenz: SIL OFL, siehe OFL-*.txt daneben).
+   Beide Dateien sind variable Fonts: eine Datei enthält alle Stärken von 400 bis 600.
+   Genau die brauchen die Vorlagen: Unbounded 500/600, Instrument Sans 400/500/600.
+   Der Pfad ist relativ; beim Build hängt Astro einen Fingerabdruck an den Dateinamen
+   und setzt den base-Pfad /kiesel-website/ davor. */
+@font-face {
+  font-family: "Unbounded";
+  src: url("../assets/fonts/unbounded.woff2") format("woff2");
+  font-weight: 400 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Instrument Sans";
+  src: url("../assets/fonts/instrument-sans.woff2") format("woff2");
+  font-weight: 400 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ── Ersatzschriften ohne Layoutsprung ──
+   Bis die Schriften da sind (swap), zeigt der Browser eine Systemschrift. Arial ist aber viel
+   schmaler als Unbounded, beim Wechsel brechen Zeilen anders um und der Inhalt darunter
+   springt (auf langsamer Leitung bis CLS 0.06 auf dem Handy). Darum hier eine Arial, die auf
+   die Masse der echten Schrift gezogen ist: size-adjust = gleiche Breite bei einem deutschen
+   Mustertext, ascent/descent = gleiche Grundlinie. Die Werte hat fontTools aus den woff2-
+   Dateien und Liberation Sans (gleiche Masse wie Arial) gerechnet, je Gewicht gegen die
+   passende Arial (Regular für 400/500, Bold für 600). Auf Android fehlt Arial, dort greift
+   Roboto (ähnlich breit). Neue Schrift oder neues Gewicht → Werte neu rechnen. */
+@font-face {
+  font-family: "Unbounded Ersatz";
+  src: local("Arial"), local("ArialMT"), local("Liberation Sans"), local("Arimo"), local("Roboto");
+  font-weight: 400 500;
+  size-adjust: 132.9%;
+  ascent-override: 74.9%;
+  descent-override: 18.4%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: "Unbounded Ersatz";
+  src: local("Arial Bold"), local("Arial-BoldMT"), local("Liberation Sans Bold"), local("Arimo Bold"), local("Roboto Bold");
+  font-weight: 600;
+  size-adjust: 128.2%;
+  ascent-override: 77.6%;
+  descent-override: 19.1%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: "Instrument Sans Ersatz";
+  src: local("Arial"), local("ArialMT"), local("Liberation Sans"), local("Arimo"), local("Roboto");
+  font-weight: 400;
+  size-adjust: 100.7%;
+  ascent-override: 96.3%;
+  descent-override: 24.8%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: "Instrument Sans Ersatz";
+  src: local("Arial"), local("ArialMT"), local("Liberation Sans"), local("Arimo"), local("Roboto");
+  font-weight: 500;
+  size-adjust: 101.8%;
+  ascent-override: 95.3%;
+  descent-override: 24.6%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: "Instrument Sans Ersatz";
+  src: local("Arial Bold"), local("Arial-BoldMT"), local("Liberation Sans Bold"), local("Arimo Bold"), local("Roboto Bold");
+  font-weight: 600;
+  size-adjust: 97.9%;
+  ascent-override: 99%;
+  descent-override: 25.5%;
+  line-gap-override: 0%;
+}
+
+/* ── Grundlagen ── */
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+/* Inhalte je gewähltem Modell (Startseite: 3D-Bühne und Knöpfe). Buehne3D setzt
+   data-held-modell auf <html>, schon vor dem ersten Bild. Ohne Wahl gilt der Pro. */
+:root:not([data-held-modell="k1"]) [data-nur-modell="k1"],
+:root[data-held-modell="k1"] [data-nur-modell="pro"] { display: none !important; }
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  /* Sprungziele (#kamera, #farben …) nicht unter der klebenden Leiste verstecken. Es klebt
+     immer nur eine: die Kopfzeile, auf den Modellseiten stattdessen die Unterleiste. */
+  scroll-padding-top: calc(var(--header-h) + var(--space-4));
+}
+html:has(.unterleiste) { scroll-padding-top: calc(var(--subnav-h) + var(--space-4)); }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: var(--fs-text);
+  line-height: var(--lh-text);
+  -webkit-font-smoothing: antialiased;
+}
+body > main { flex-grow: 1; }
+
+h1, h2, h3, h4, p, ul, ol, figure { margin: 0; }
+ul[role="list"], ol[role="list"] { list-style: none; padding: 0; }
+a { color: inherit; }
+img, svg { display: block; max-width: 100%; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+
+/* Tastatur-Fokus gut sichtbar, aber nur bei Tastaturbedienung (nicht beim Klicken) */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Nur für Screenreader sichtbar */
+.vh {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Inhaltsbreite: höchstens 1200 px, links und rechts mindestens der Seitenrand */
+.container {
+  width: min(100% - 2 * var(--gutter), var(--page-max));
+  margin-inline: auto;
+}
+
+/* Sprunglink „Zum Inhalt“ für Tastatur-Nutzer, erscheint erst mit Fokus */
+.skip {
+  position: absolute;
+  left: var(--space-4);
+  top: var(--space-2);
+  z-index: 100;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-full);
+  background: var(--ink);
+  color: var(--bg);
+  font-weight: 600;
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+.skip:focus-visible { transform: none; }
+
+/* ── Schriftklassen nach Artboard „Designsystem“ ── */
+.t-display, .t-1, .t-2, .t-3, .t-zahl {
+  font-family: var(--display);
+  font-weight: 600;
+}
+.t-display { font-size: var(--fs-display); line-height: var(--lh-display); letter-spacing: var(--ls-display); }
+.t-1       { font-size: var(--fs-1);       line-height: var(--lh-1);       letter-spacing: var(--ls-1); }
+.t-2       { font-size: var(--fs-2);       line-height: var(--lh-2);       letter-spacing: var(--ls-2); }
+.t-3       { font-size: var(--fs-3);       line-height: var(--lh-3);       letter-spacing: var(--ls-3); }
+.t-4       { font-family: var(--display); font-weight: 500; font-size: var(--fs-4); line-height: 1.3; letter-spacing: var(--ls-3); }
+.t-zahl    { font-size: var(--fs-zahl);    line-height: 1;                 letter-spacing: var(--ls-1); }
+.t-lead    { font-size: var(--fs-lead);  line-height: var(--lh-text); }
+.t-text    { font-size: var(--fs-text);  line-height: var(--lh-text); }
+.t-small   { font-size: var(--fs-small); line-height: 1.5; }
+.t-muted   { color: var(--muted); }
+
+/* Weniger Bewegung, wenn das im System so eingestellt ist */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

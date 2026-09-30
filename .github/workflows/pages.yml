@@ -1,0 +1,70 @@
+# Veröffentlicht Kiesel 2.0 (Ordner site/) auf GitHub Pages:
+#   Branch main  →  https://fralineel-kiesel.github.io/kiesel-website/
+# Nur ein Push auf main (oder ein manueller Start unter Actions) veröffentlicht. Andere Branches
+# lösen nichts aus, sonst würde ein beliebiger Push die Live-Seite überschreiben.
+# Voraussetzung: Settings › Pages › Source = "GitHub Actions".
+#
+# Bewusst OHNE Tests: Der Workflow baut nur (npm run build) und veröffentlicht. Stoppen kann
+# ihn also nur ein Fehler beim Bauen. Die Prüfskripte (npm run pruefe:…) laufen lokal vor dem
+# Pull Request; viele brauchen einen Browser und messen Zeit oder Pixel, und so etwas soll nie
+# eine Veröffentlichung blockieren. Wer hier Tests ergänzt: nur deterministische (z.B.
+# pruefe:waechter, pruefe:zeichenmotor), keine Messungen wie leistung:startseite oder lighthouse.
+
+name: GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  bauen:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Code holen
+        uses: actions/checkout@v7
+
+      - name: Node.js einrichten
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+
+      - name: Pakete installieren
+        working-directory: site
+        run: npm ci
+
+      - name: Kiesel 2.0 bauen
+        working-directory: site
+        run: npm run build
+
+      - name: Pages vorbereiten
+        uses: actions/configure-pages@v6
+
+      # site/dist/ liegt danach an der Wurzel: dist/index.html = …/kiesel-website/,
+      # dist/404.html = die eine Fehlerseite, die GitHub Pages ausliefert
+      - name: Ergebnis hochladen
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: site/dist
+
+  veroeffentlichen:
+    needs: bauen
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Auf GitHub Pages veröffentlichen
+        id: deployment
+        uses: actions/deploy-pages@v5

@@ -1,0 +1,53 @@
+---
+// Knopf nach Artboard „Designsystem“ › Bausteine.
+//   art:    'primaer' (Akzent) | 'sekundaer' (Rahmen) | 'ink' (schwarz/weiss, z.B. Kaufen) | 'text' (Textlink mit Pfeil)
+//   groesse:'s' | 'm' | 'l'
+//   href:   mit href wird es ein Link <a>, ohne ein <button>
+//   icon:   Name aus Icon.astro, steht rechts vom Text
+//   breit:  volle Breite (Handy)
+// Alle weiteren Attribute (aria-label, id, data-…) werden durchgereicht.
+import Icon from './Icon.astro';
+
+const { art = 'primaer', groesse = 'm', href, icon, breit = false, type = 'button', class: klasse, ...rest } = Astro.props;
+const Tag = href ? 'a' : 'button';
+---
+<Tag
+  class:list={['knopf', `knopf--${art}`, `knopf--${groesse}`, { 'knopf--breit': breit }, klasse]}
+  href={href}
+  type={href ? undefined : type}
+  {...rest}
+>
+  <slot />
+  {icon && <Icon name={icon} size={18} />}
+</Tag>
+
+<style>
+  .knopf {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    /* Unsichtbarer Rahmen, damit alle Arten gleich hoch sind (der Zweitknopf hat einen sichtbaren) */
+    border: 1px solid transparent;
+    border-radius: var(--radius-full);
+    font-family: var(--body);
+    font-weight: 600;
+    line-height: 1.25;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: filter 0.15s, background-color 0.15s;
+  }
+  .knopf--s { padding: 9px 17px; font-size: 15px; }
+  .knopf--m { padding: 13px 23px; font-size: 16px; }
+  .knopf--l { padding: 16px 29px; font-size: 17px; }
+  .knopf--breit { width: 100%; }
+
+  .knopf--primaer   { background: var(--accent); color: var(--accent-ink); }
+  .knopf--sekundaer { background: var(--surface); color: var(--ink); border-color: var(--line); }
+  .knopf--ink       { background: var(--ink); color: var(--bg); }
+  .knopf--text      { background: transparent; color: var(--accent); padding: 0; border: 0; }
+
+  .knopf--primaer:hover, .knopf--ink:hover { filter: brightness(1.08); }
+  .knopf--sekundaer:hover { background: var(--raised); }
+  .knopf--text:hover { text-decoration: underline; text-underline-offset: 4px; }
+</style>

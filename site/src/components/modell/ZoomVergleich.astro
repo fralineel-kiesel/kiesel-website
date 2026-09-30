@@ -1,0 +1,235 @@
+---
+// Zoom-Vergleich auf /kiesel-1-pro/ („3x Tele. Echt optisch.“, Artboard „Modellseite Kiesel 1 Pro“).
+// Links der Kiesel 1 (nur digital, wird unscharf), rechts der Pro (Tele-Linse ab 3x).
+//
+// Das Bild ist das gemeinsame ZoomBild mit vergleich: drei gleich grosse Ebenen übereinander
+// (Hauptkamera und Tele des Pro, darüber der Kiesel 1, den clip-path nur bis zur Trennlinie
+// zeigt). Zoom, Unschärfe und Linsenwechsel macht kamera-zoom.js, hier stehen nur die
+// Trennlinie und die zwei Chips (Texte aus linsenText(), wie überall). Skala und
+// Linsen-Leiste wie im Artboard „Funktionen“.
+// Die Trennlinie steuert ein echtes <input type="range">: Damit funktionieren Pfeiltasten,
+// Pos1/Ende und Screenreader von selbst. Maus und Finger bedienen dazu die ganze Bildfläche.
+import Schalter from '../Schalter.astro';
+import Icon from '../Icon.astro';
+import GlasChip from '../GlasChip.astro';
+import ZoomBild from './ZoomBild.astro';
+import ZoomSkala from './ZoomSkala.astro';
+import LinsenLeiste from './LinsenLeiste.astro';
+import { stufenFuer, linsenFuer, TELE_AB, MAX_ZOOM } from '../../data/kamera.js';
+import { vergleichTexte } from '../../lib/kamera.js';
+import { texte, spracheVon } from '../../i18n/index.js';
+
+const sprache = spracheVon(Astro.url);
+const K = texte(sprache).kamera;
+const STUFEN = stufenFuer(K);
+const LINSEN = linsenFuer(K);
+
+// Anfangs 5x wie im Artboard: crop(756, 246, 5)
+const START = 5;
+const t = vergleichTexte(START, undefined, false, K);
+---
+<div class="zoom-vergleich" data-kamera data-zoom-vergleich data-linse="tele">
+  <ZoomBild modell="pro" start={START} blick={[756, 246]} vergleich chip={false} bildtext={t.bild}>
+    <span class="chip-links"><GlasChip><span class="lang" data-text="k1">{t.lang.k1}</span><span class="kurz" data-kurz="k1">{t.kurz.k1}</span></GlasChip></span>
+    <span class="chip-rechts"><GlasChip>
+      <span class="linsen" aria-hidden="true" title={K.vergleich.aktiveLinse}><span class="punkt haupt"></span><span class="punkt tele"></span></span>
+      <span class="lang" data-text="pro">{t.lang.pro}</span><span class="kurz" data-kurz="pro">{t.kurz.pro}</span>
+    </GlasChip></span>
+    <div class="linie" aria-hidden="true"><span class="griff"><Icon name="swap" size={22} /></span></div>
+    <input
+      class="regler"
+      type="range"
+      min="0"
+      max="100"
+      step="1"
+      value="50"
+      aria-label={K.vergleich.trennlinie}
+      aria-valuetext={K.vergleich.mitte}
+      data-regler
+    />
+  </ZoomBild>
+  <ZoomSkala max={MAX_ZOOM.pro} stufen={STUFEN.pro} tele={TELE_AB} label={K.zoom} />
+  <LinsenLeiste abschnitte={LINSEN.pro} />
+  <div class="vergleich-zeile">
+    <Schalter an={true} data-vergleich-schalter>{K.vergleich.schalter}</Schalter>
+  </div>
+  <p class="vh" aria-live="polite" data-ansage></p>
+</div>
+
+<style>
+  .chip-links, .chip-rechts { position: absolute; top: var(--space-3); z-index: 2; pointer-events: none; }
+  .chip-links { left: var(--space-3); }
+  .chip-rechts { right: var(--space-3); }
+  /* Auf dem Handy wären beide Chips zusammen breiter als das Bild: Kurzfassung */
+  .lang { display: none; }
+
+  /* Welche Linse arbeitet: links Hauptkamera, rechts Tele, wie hinten am Pro */
+  .linsen { display: inline-flex; gap: 4px; margin-right: -2px; }
+  .punkt {
+    position: relative;
+    width: 10px;
+    height: 10px;
+    border: 1.5px solid var(--glass-ink);
+    border-radius: var(--radius-full);
+    opacity: 0.55;
+    transition: background-color 0.2s, opacity 0.2s;
+  }
+  [data-linse="haupt"] .punkt.haupt, [data-linse="tele"] .punkt.tele { background: var(--glass-ink); opacity: 1; }
+  /* Beim Wechsel läuft ein Ring von der neuen Linse weg. Die Regel greift erst, wenn
+     data-linse wechselt, darum startet die Animation genau dann (auch mehrmals). */
+  .punkt::after {
+    content: '';
+    position: absolute;
+    inset: -1.5px;
+    border: 1.5px solid var(--glass-ink);
+    border-radius: inherit;
+    opacity: 0;
+  }
+  [data-linse="haupt"] .punkt.haupt::after { animation: puls-haupt 0.6s ease-out; }
+  [data-linse="tele"] .punkt.tele::after { animation: puls-tele 0.6s ease-out; }
+  /* Zwei gleiche Animationen mit zwei Namen: sonst startet sie beim Hin- und Herwechseln nicht neu */
+  @keyframes puls-haupt { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(2.6); } }
+  @keyframes puls-tele { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(2.6); } }
+  @media (prefers-reduced-motion: reduce) {
+    .punkt::after { animation: none !important; }
+    .punkt { transition: none; }
+  }
+
+  .linie {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: var(--pos);
+    z-index: 2;
+    width: 2px;
+    margin-left: -1px;
+    background: var(--glass-on);
+    pointer-events: none;
+  }
+  .griff {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 48px;
+    height: 48px;
+    margin: -24px 0 0 -24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-full);
+    background: var(--glass-on);
+    color: var(--glass-on-ink);
+    box-shadow: 0 2px 10px rgb(0 0 0 / 0.25);
+  }
+  /* Der Regler selbst ist unsichtbar (liegt über der Fläche); sein Fokus erscheint am Griff */
+  .regler {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .regler:focus-visible ~ .linie .griff,
+  :global([data-fenster]):has(.regler:focus-visible) .griff {
+    outline: 3px solid var(--accent);
+    outline-offset: 3px;
+  }
+  /* Vergleich aus (data-allein am Bild): nur noch der Pro */
+  :global([data-allein]) .linie, :global([data-allein]) .chip-links { display: none; }
+
+  .vergleich-zeile { display: flex; justify-content: flex-end; margin-top: var(--space-4); }
+
+  @media (min-width: 900px) {
+    .lang { display: inline; }
+    .kurz { display: none; }
+    .chip-links { left: var(--space-5); top: var(--space-5); }
+    .chip-rechts { right: var(--space-5); top: var(--space-5); }
+  }
+</style>
+
+<script>
+  import { vergleichTexte } from '../../lib/kamera.js';
+  import { prozent } from '../../lib/format.js';
+  import { kamera as K_DE } from '../../i18n/de.js';
+  import { kamera as K_EN } from '../../i18n/en.js';
+  import { waehle, SPRACHE } from '../../scripts/seitensprache.js';
+  const K = waehle(K_DE, K_EN);
+
+  document.querySelectorAll('[data-zoom-vergleich]').forEach((wurzel) => {
+    const fenster = wurzel.querySelector('[data-fenster]');
+    const regler = wurzel.querySelector('[data-regler]');
+    const feld = (sel) => ({ k1: wurzel.querySelector(`[${sel}="k1"]`), pro: wurzel.querySelector(`[${sel}="pro"]`) });
+    const text = feld('data-text'), kurz = feld('data-kurz');
+    const bildtext = fenster.querySelector('[data-bildtext]');
+
+    // Der Kamera-Motor meldet jede neue Zoomstufe; die Texte kommen aus derselben Quelle wie überall
+    const beschrifte = ({ z, linse }) => {
+      const t = vergleichTexte(z, linse, fenster.hasAttribute('data-allein'), K);
+      for (const m of ['k1', 'pro']) {
+        text[m].textContent = t.lang[m];
+        kurz[m].textContent = t.kurz[m];
+      }
+      bildtext.setAttribute('aria-label', t.bild);
+    };
+    fenster.addEventListener('kiesel:kamera', (e) => beschrifte(e.detail));
+
+    // ── Trennlinie ──
+    function setze(wert) {
+      const v = Math.min(100, Math.max(0, Math.round(wert)));
+      regler.value = String(v);
+      fenster.style.setProperty('--pos', `${v}%`);
+      fenster.style.setProperty('--anteil', String(v / 100));
+      regler.setAttribute('aria-valuetext', v === 50 ? K.vergleich.mitte : K.vergleich.anteil(prozent(v, SPRACHE), prozent(100 - v, SPRACHE)));
+    }
+    regler.addEventListener('input', () => setze(+regler.value));
+    const ausX = (x) => {
+      const r = fenster.getBoundingClientRect();
+      return ((x - r.left) / r.width) * 100;
+    };
+
+    // Maus: sofort ziehen. Finger/Stift: erst ziehen, wenn die Bewegung waagrecht ist,
+    // sonst gehört die Geste dem Scrollen (touch-action: pan-y). Antippen setzt die Linie.
+    let zug = null;
+    fenster.addEventListener('pointerdown', (e) => {
+      if (fenster.hasAttribute('data-allein') || e.button !== 0) return;
+      zug = { id: e.pointerId, x: e.clientX, y: e.clientY, aktiv: e.pointerType === 'mouse' };
+      if (zug.aktiv) {
+        fenster.setPointerCapture(e.pointerId);
+        setze(ausX(e.clientX));
+        e.preventDefault(); // kein Text markieren
+      }
+    });
+    fenster.addEventListener('pointermove', (e) => {
+      if (!zug || e.pointerId !== zug.id) return;
+      if (!zug.aktiv) {
+        const dx = Math.abs(e.clientX - zug.x), dy = Math.abs(e.clientY - zug.y);
+        if (dx > 6 && dx > dy) {
+          zug.aktiv = true;
+          fenster.setPointerCapture(e.pointerId);
+        } else if (dy > 6) {
+          zug = null; // senkrecht: der Browser scrollt
+          return;
+        } else return;
+      }
+      setze(ausX(e.clientX));
+    });
+    const ende = (e) => {
+      if (!zug || e.pointerId !== zug.id) return;
+      // Antippen ohne Bewegung: Linie dorthin
+      if (!zug.aktiv && e.type === 'pointerup') setze(ausX(e.clientX));
+      zug = null;
+    };
+    fenster.addEventListener('pointerup', ende);
+    fenster.addEventListener('pointercancel', ende);
+
+    // ── Vergleich an/aus ──
+    wurzel.querySelector('[data-vergleich-schalter]').addEventListener('kiesel:schalter', (e) => {
+      fenster.toggleAttribute('data-allein', !e.detail.an);
+      regler.disabled = !e.detail.an;
+      const { z, linse } = fenster.kamera.zustand();
+      beschrifte({ z: Math.round(z * 10) / 10, linse });
+    });
+  });
+</script>

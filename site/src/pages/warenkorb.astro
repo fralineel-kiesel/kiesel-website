@@ -1,0 +1,33 @@
+---
+// /warenkorb/: derselbe Inhalt wie die Schublade, aber in Breite. Kein Artboard dafür,
+// abgeleitet aus „Warenkorb-Schublade“ (Zeilen, Summen, Knöpfe) und „Kaufen“ (Titel,
+// Seitenrand, 5:6-Raster wird hier 7:4, weil die Liste mehr Platz braucht als die Summen).
+// Ohne Schublade: Der Warenkorb-Knopf oben ist hier ein Link auf diese Seite (aria-current).
+import BaseLayout from '../layouts/BaseLayout.astro';
+import WarenkorbInhalt from '../components/warenkorb/WarenkorbInhalt.astro';
+import { texte, spracheVon } from '../i18n/index.js';
+
+const t = texte(spracheVon(Astro.url));
+const W = t.warenkorbSeite;
+---
+<BaseLayout titel={W.titel} beschreibung={W.beschreibung} schublade={false}>
+  <div class="container warenkorb">
+    <h1 class="t-1 titel">{W.titel}</h1>
+    <p class="t-lead t-muted einleitung">{W.einleitung}</p>
+    <WarenkorbInhalt art="seite" />
+  </div>
+</BaseLayout>
+
+<style>
+  .warenkorb { padding-top: var(--space-6); padding-bottom: var(--space-9); }
+  .einleitung { margin: var(--space-3) 0 var(--space-6); }
+  /* Was hier steht (Liste oder „noch leer“), weiss erst das Skript (localStorage). Damit der
+     Footer beim Einblenden nicht sichtbar nach unten rutscht (Layout-Verschiebung, CLS), steht
+     er schon beim ersten Bild unterhalb des Bildschirms. */
+  .warenkorb :global(.wk--seite) { min-height: 70vh; min-height: 70svh; }
+  @media (min-width: 900px) {
+    .warenkorb { padding-top: var(--space-8); }
+    .titel { font-size: 64px; line-height: 1; letter-spacing: -0.045em; }
+    .einleitung { margin: var(--space-4) 0 var(--space-7); }
+  }
+</style>

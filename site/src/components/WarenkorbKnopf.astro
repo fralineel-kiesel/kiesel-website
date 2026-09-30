@@ -1,0 +1,100 @@
+---
+// Warenkorb-Knopf in der Kopfzeile: Tasche mit Zähler.
+// Die Zahl kennt nur der Browser (localStorage), darum setzt sie ein kleines Skript.
+// Ohne Artikel bleibt der Zähler versteckt.
+//   schublade: true = ein <button>, der die Warenkorb-Schublade öffnet (fast überall)
+//              false = ein Link auf /warenkorb/ (auf /warenkorb/ selbst, dort ohne Schublade)
+import Icon from './Icon.astro';
+import { pfad } from '../lib/pfad.js';
+import { texte, spracheVon } from '../i18n/index.js';
+
+const { schublade = true } = Astro.props;
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
+---
+{schublade
+  ? (
+    <button type="button" class="warenkorb-knopf" aria-label={t.warenkorbKnopf.leer} aria-haspopup="dialog" aria-expanded="false" aria-controls="warenkorb-schublade" data-warenkorb-knopf>
+      <Icon name="bag" size={20} class="tasche" />
+      <span class="zahl" data-warenkorb-zahl hidden>0</span>
+    </button>
+  ) : (
+    <a class="warenkorb-knopf" href={pfad('warenkorb/', sprache)} aria-label={t.warenkorbKnopf.leer} aria-current="page" data-warenkorb-knopf>
+      <Icon name="bag" size={20} class="tasche" />
+      <span class="zahl" data-warenkorb-zahl hidden>0</span>
+    </a>
+  )}
+
+<style>
+  .warenkorb-knopf {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-full);
+    background: transparent;
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .zahl {
+    position: absolute;
+    top: 6px;
+    right: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 9px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Handy: Tasche 22 px, ohne Rahmen. Desktop: runder Knopf mit Rahmen. */
+  .warenkorb-knopf :global(.tasche) { width: 22px; height: 22px; }
+  @media (min-width: 900px) {
+    .warenkorb-knopf {
+      border: 1px solid var(--line);
+      background: var(--surface);
+    }
+    .warenkorb-knopf:hover { background: var(--raised); }
+    .warenkorb-knopf :global(.tasche) { width: 20px; height: 20px; }
+    .zahl {
+      top: -4px;
+      right: -4px;
+      min-width: 20px;
+      height: 20px;
+      border-radius: 10px;
+      font-size: 12px;
+    }
+  }
+</style>
+
+<script>
+  import { anzahl, beiAenderung } from '../scripts/warenkorb.js';
+  import { warenkorbKnopf as T_DE } from '../i18n/de.js';
+  import { warenkorbKnopf as T_EN } from '../i18n/en.js';
+  import { waehle } from '../scripts/seitensprache.js';
+  const T = waehle(T_DE, T_EN);
+
+  function zeigen() {
+    const n = anzahl();
+    document.querySelectorAll('[data-warenkorb-knopf]').forEach((knopf) => {
+      const zahl = knopf.querySelector('[data-warenkorb-zahl]');
+      zahl.textContent = n > 99 ? '99+' : String(n);
+      zahl.hidden = n === 0;
+      knopf.setAttribute('aria-label', n === 0 ? T.leer : T.artikel(n));
+    });
+  }
+  zeigen();
+  beiAenderung(zeigen);
+</script>

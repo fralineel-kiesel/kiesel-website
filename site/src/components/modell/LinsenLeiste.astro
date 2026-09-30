@@ -1,0 +1,49 @@
+---
+// Linsen-Leiste unter der Zoom-Skala (Artboard „Funktionen“): zeigt, welche Kamera bei welchem
+// Zoom arbeitet. Der gerade aktive Abschnitt ist in Akzentfarbe (setzt kamera-zoom.js über
+// data-aktiv: der letzte, dessen „ab“ erreicht ist). Breiten wie im Artboard (1 : 1.2 : 1.6).
+//   abschnitte: [[ab, Titel, Text, Breite], …] (siehe data/kamera.js)
+import { texte, spracheVon } from '../../i18n/index.js';
+
+const K = texte(spracheVon(Astro.url)).kamera;
+const { abschnitte } = Astro.props;
+---
+<ul class="linsen-leiste" style={`grid-template-columns: ${abschnitte.map((a) => `minmax(0, ${a[3]}fr)`).join(' ')}`} aria-label={K.welcheKamera}>
+  {abschnitte.map(([ab, titel, text]) => (
+    <li data-linsenabschnitt data-ab={ab}>
+      <span class="titel">{titel}</span>
+      <span class="text">{text}</span>
+    </li>
+  ))}
+</ul>
+
+<style>
+  .linsen-leiste {
+    display: grid;
+    gap: var(--space-1);
+    margin: var(--space-3) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  li {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-s);
+    background: var(--surface);
+    color: var(--ink);
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+  }
+  li[data-aktiv] { border-color: var(--accent); background: var(--accent); color: var(--accent-ink); }
+  .titel { font-family: var(--body); font-size: var(--fs-small); font-weight: 600; line-height: 1.3; }
+  .text { font-family: var(--body); font-size: var(--fs-small); line-height: 1.35; opacity: 0.8; }
+  /* Auf Akzent volle Deckkraft, sonst reicht der Kontrast für kleinen Text nicht (4.0 statt 4.5:1) */
+  li[data-aktiv] .text { opacity: 1; }
+  /* Auf dem Handy sind die Abschnitte gleich breit, sonst passt „Hauptkamera,“ nicht */
+  @media (max-width: 899px) {
+    .linsen-leiste { grid-template-columns: none !important; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
+    li { padding: 10px; overflow-wrap: anywhere; }
+  }
+</style>

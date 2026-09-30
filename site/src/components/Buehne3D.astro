@@ -1,0 +1,317 @@
+---
+// 3D-Bühne mit Farbwähler (Artboards „Startseite Desktop/Handy“, hero_stage in gen2.py).
+//
+// Grundidee: Im HTML steht IMMER die 2D-Grafik aus dem Zeichen-Motor (fertiges SVG).
+// Erst im Browser entscheidet pruefen.js, ob 3D erlaubt ist. Nur dann wird three.js
+// nachgeladen, und die Leinwand blendet über die 2D-Grafik, sobald das erste Bild steht.
+// Gibt 3D unterwegs auf (Kontextverlust, zu langsam), ist die 2D-Grafik einfach wieder da.
+//
+// Der Zustand steht zum Nachschauen (und für die Tests) auf dem äusseren Element:
+//   data-modus = '2d' | 'laedt' | '3d'     data-grund = warum 2D ('reduced-motion', …)
+//
+// Modellwahl (Etappe 8a): Umschalter „Kiesel 1 | Kiesel 1 Pro“ oben auf der Bühne.
+//   - Welches Modell gilt, steht auf <html data-held-modell="k1|pro">. Das setzt ein Skript im
+//     <head> der Seite aus localStorage (scripts/startmodell.js), BEVOR der Browser etwas
+//     zeichnet. CSS (global.css) zeigt damit nur, was zum Modell passt ([data-nur-modell]):
+//     die 2D-Grafik hier, die Knöpfe auf der Startseite. So blitzt beim Neuladen nie kurz der
+//     Pro auf, und nichts verrutscht. Ohne das Kopf-Skript gilt der Prop modell.
+//   - Ungültiger Wert, gesperrter Speicher, erster Besuch: der Pro (STANDARD).
+//   - Beide 2D-Grafiken stehen fertig im HTML (je ca. 2 KB gezippt), im echten Massstab
+//     zueinander: Ihre Höhe folgt der Höhe der viewBox (beide in 1/10 mm).
+//   - 3D baut zuerst nur das angezeigte Modell, das andere beim ersten Umschalten (buehne.js).
+//   - Meldet jede Wahl als Ereignis „kiesel:modell“ (detail: modell, farbe) an die Seite.
+//
+//   modell: Standardmodell 'k1' | 'pro'   farbe: Startfarbe   name: Name der Radio-Gruppe
+import Buehne from './Buehne.astro';
+import GlasChip from './GlasChip.astro';
+import Farbwaehler from './Farbwaehler.astro';
+import ModellUmschalter from './ModellUmschalter.astro';
+import { handy } from '../lib/kiesel-draw/phone.js';
+import { modelleFuer } from '../data/modelle.js';
+import { KIESEL_IDS } from '../data/geraete.js';
+import { texte, spracheVon } from '../i18n/index.js';
+
+const sprache = spracheVon(Astro.url);
+const t = texte(sprache);
+const MODELLE = modelleFuer(t, sprache);
+
+const { modell = 'pro', farbe = 'sky-blue', name = 'buehne-farbe' } = Astro.props;
+const B = t.buehne3d;
+const legende = (id) => B.farbeDes(MODELLE[id].name);
+const zeichne = (id) => handy({ texte: t.zeichnung, sprache, ansicht: 'hinten', modell: id, farbe, drehung: -10, hoehe: null, label: B.bild2d(B.name(MODELLE[id].name, t.farben[farbe])) });
+const bilder = KIESEL_IDS.map((id) => ({ id, svg: zeichne(id) }));
+const vbHoehe = (svg) => Number(svg.match(/viewBox="[^"]*?(\S+)"/)[1]);
+const groesste = Math.max(...bilder.map((b) => vbHoehe(b.svg)));
+const namen = Object.fromEntries(KIESEL_IDS.map((id) => [id, MODELLE[id].name]));
+---
+<div class="buehne-3d" data-buehne3d data-modell={modell} data-namen={JSON.stringify(namen)}
+  data-legenden={JSON.stringify(Object.fromEntries(KIESEL_IDS.map((id) => [id, legende(id)])))} data-modus="2d">
+  <Buehne class="flaeche">
+    {bilder.map(({ id, svg }) => (
+      <div class="bild-2d" data-bild2d={id} data-farbe={farbe} data-nur-modell={id}
+        style={`--massstab: ${(vbHoehe(svg) / groesste).toFixed(4)}`} set:html={svg} />
+    ))}
+    <ModellUmschalter class="umschalter" wert={modell} label={B.modellWaehlen} />
+    <script is:inline>
+      // Gleich nach dem Umschalter: gedrückten Knopf und Legende auf die Wahl im <head> setzen
+      (function () {
+        var m = document.documentElement.dataset.heldModell;
+        var el = document.currentScript.closest('[data-buehne3d]');
+        if (!m || !JSON.parse(el.dataset.namen)[m]) return;
+        el.querySelectorAll('[data-modell-wahl]').forEach(function (b) {
+          b.setAttribute('aria-pressed', b.dataset.modellWahl === m ? 'true' : 'false');
+        });
+      })();
+    </script>
+    <span class="chip drehen" data-nur3d hidden>
+      <GlasChip icon="rotate"><span class="lang">{B.ziehen}</span><span class="kurz">{B.drehen}</span></GlasChip>
+    </span>
+    <span class="chip modus" data-nur3d hidden aria-hidden="true"><GlasChip>3D</GlasChip></span>
+  </Buehne>
+  <div class="leiste">
+    <Farbwaehler zeile name={name} wert={farbe} legende={legende(modell)} />
+  </div>
+</div>
+<script is:inline>
+  // Legende des Farbwählers (nur für Screenreader) auf das gewählte Modell setzen
+  (function () {
+    var el = document.currentScript.previousElementSibling;
+    var m = document.documentElement.dataset.heldModell;
+    var legenden = JSON.parse(el.dataset.legenden);
+    var legende = el.querySelector('legend');
+    if (legende && legenden[m]) legende.textContent = legenden[m];
+  })();
+</script>
+
+<style>
+  .buehne-3d { position: relative; }
+  .buehne-3d :global(.flaeche) { height: 420px; }
+
+  /* 2D-Grafik und 3D-Leinwand liegen übereinander und blenden ineinander über.
+     Die SVG ist so hoch, wie ihr Modell im Verhältnis zum grössten ist (echter Massstab). */
+  .bild-2d { display: flex; align-items: center; justify-content: center; height: 78%; transition: opacity 0.6s; }
+  .bild-2d :global(svg) { width: auto; height: calc(100% * var(--massstab, 1)); }
+  /* Modellwechsel in 2D: das neue Modell wächst/schrumpft von der alten Grösse auf die echte
+     (--von setzt das Skript), kurz überblendet. Bei weniger Bewegung: sofort. */
+  .bild-2d.wechsel :global(svg) { animation: wechsel 350ms cubic-bezier(0.33, 1, 0.68, 1); }
+  @keyframes wechsel {
+    from { transform: scale(var(--von, 1)); opacity: 0.35; }
+    to { transform: none; opacity: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .bild-2d.wechsel :global(svg) { animation: none; }
+  }
+  /* Umschalter: Glas-Pille oben in der Mitte (Gegenstück zur Farb-Pille unten) */
+  .buehne-3d :global(.umschalter) {
+    position: absolute;
+    top: var(--space-3);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1;
+  }
+  /* Schnappschuss des alten Modells beim 3D-Wechsel (buehne.js), liegt über der Leinwand */
+  .buehne-3d :global(.leinwand-3d-bild) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+  .buehne-3d :global(.leinwand-3d) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    transition: opacity 0.6s;
+    cursor: grab;
+  }
+  .buehne-3d :global(.leinwand-3d:active) { cursor: grabbing; }
+  .buehne-3d :global(.leinwand-3d:focus-visible) { outline-offset: -4px; }
+  .buehne-3d[data-modus="3d"] :global(.leinwand-3d) { opacity: 1; }
+  .buehne-3d[data-modus="3d"] .bild-2d { opacity: 0; }
+
+  .chip { position: absolute; bottom: var(--space-3); pointer-events: none; }
+  .drehen { left: var(--space-3); }
+  .modus, .lang { display: none; }
+
+  /* Handy: Farbpunkte unter der Bühne, Name darunter */
+  .leiste {
+    display: flex;
+    justify-content: center;
+    margin-top: var(--space-3);
+    --fw-richtung: column;
+  }
+
+  @media (min-width: 900px) {
+    .buehne-3d :global(.flaeche) { height: clamp(420px, 46vw, 660px); }
+    .bild-2d { height: 85%; }
+    .chip { bottom: var(--space-5); }
+    .buehne-3d :global(.umschalter) { top: var(--space-5); }
+    .drehen { left: var(--space-5); }
+    .modus { display: block; right: var(--space-5); }
+    .lang { display: inline; }
+    .kurz { display: none; }
+    /* Desktop: Farbwähler als Glas-Pille unten in der Mitte der Bühne */
+    .leiste {
+      position: absolute;
+      bottom: var(--space-5);
+      left: 50%;
+      transform: translateX(-50%);
+      margin: 0;
+      padding: 6px var(--space-4) 6px 6px;
+      border-radius: var(--radius-full);
+      background: var(--glass);
+      -webkit-backdrop-filter: blur(8px);
+      backdrop-filter: blur(8px);
+      --fw-richtung: row;
+      --fw-ink: var(--glass-ink);
+      --fw-hover: rgba(255, 255, 255, 0.35);
+    }
+  }
+  /* hidden gewinnt immer (global.css), die Chips erscheinen erst mit 3D */
+</style>
+
+<script>
+  import { handy } from '../lib/kiesel-draw/phone.js';
+  import { grundGegen3D, TESTMODUS } from '../lib/kiesel-3d/pruefen.js';
+  import { buehne3d as B_DE } from '../i18n/de.js';
+  import { buehne3d as B_EN } from '../i18n/en.js';
+  import { waehle, SPRACHE } from '../scripts/seitensprache.js';
+  import { sperrbildschirm } from '../lib/kiesel-draw/sperrbildschirm.js';
+  import { merkeStartmodell } from '../scripts/startmodell.js';
+  const B = waehle(B_DE, B_EN);
+
+  const WENIGER_BEWEGUNG = matchMedia('(prefers-reduced-motion: reduce)');
+
+  document.querySelectorAll('[data-buehne3d]').forEach((el) => {
+    const namen = JSON.parse(el.dataset.namen);
+    const legenden = JSON.parse(el.dataset.legenden);
+    const flaeche = el.querySelector('.flaeche');
+    const bild2d = (m) => el.querySelector(`[data-bild2d="${m}"]`);
+    // Das Skript vor dem ersten Bild hat die gespeicherte Wahl schon auf <html> gesetzt
+    let modell = namen[document.documentElement.dataset.heldModell] ? document.documentElement.dataset.heldModell : el.dataset.modell;
+    let farbe = el.querySelector('input[type="radio"]:checked')?.value ?? 'sky-blue';
+    // Name der Farbe in der Sprache der Seite: steht im title des Farbwähler-Labels
+    const farbName = () => el.querySelector(`input[type="radio"][value="${farbe}"]`)?.closest('label').title ?? farbe;
+    let b3d = null;
+
+    const label = () => B.name(namen[modell], farbName());
+    const label3d = () => B.bild3d(label());
+    const melden = () => el.dispatchEvent(new CustomEvent('kiesel:modell', { bubbles: true, detail: { modell, farbe } }));
+
+    // 2D-Grafik des gewählten Modells in der gewählten Farbe (derselbe Zeichen-Motor wie im
+    // Build). Nur das sichtbare Modell wird neu gezeichnet, das andere erst, wenn es dran ist.
+    function zeichne2D() {
+      const b = bild2d(modell);
+      if (b.dataset.farbe === farbe) return;
+      b.innerHTML = handy({ ansicht: 'hinten', modell, farbe, drehung: -10, hoehe: null, label: B.bild2d(label()) });
+      b.dataset.farbe = farbe;
+    }
+
+    // Farbe: auch während 3D läuft wird 2D nachgeführt. So stimmt sie, falls 3D aufgibt.
+    el.addEventListener('kiesel:farbe', (e) => {
+      farbe = e.detail.farbe;
+      zeichne2D();
+      if (b3d) {
+        b3d.setzeFarbe(farbe);
+        b3d.setzeLabel(label3d());
+      }
+      melden();
+    });
+
+    // Modell: merken, <html> umstellen (CSS zeigt die passende Grafik und die passenden
+    // Knöpfe), 2D mit kurzer Grössen-Animation, 3D über buehne.js
+    el.addEventListener('kiesel:modellwahl', (e) => {
+      const alt = modell;
+      modell = e.detail.modell;
+      if (modell === alt) return;
+      merkeStartmodell(modell);
+      zeichne2D();
+      const neu = bild2d(modell);
+      const hoehe = (m) => parseFloat(bild2d(m).style.getPropertyValue('--massstab'));
+      neu.style.setProperty('--von', (hoehe(alt) / hoehe(modell)).toFixed(4));
+      neu.classList.remove('wechsel');
+      document.documentElement.dataset.heldModell = modell;
+      if (!WENIGER_BEWEGUNG.matches && el.dataset.modus !== '3d') {
+        void neu.offsetWidth; // Animation neu starten, falls sie noch läuft
+        neu.classList.add('wechsel');
+      }
+      el.querySelector('legend').textContent = legenden[modell];
+      if (b3d) {
+        b3d.setzeLabel(label3d());
+        b3d.setzeModell(modell).catch((fehler) => {
+          console.warn('3D-Modellwechsel fehlgeschlagen, zeige 2D:', fehler);
+          b3d?.beenden('fehler');
+        });
+      }
+      melden();
+    });
+    el.addEventListener('animationend', (e) => e.target.closest('.bild-2d')?.classList.remove('wechsel'));
+
+    const nur3d = (an) => el.querySelectorAll('[data-nur3d]').forEach((c) => { c.hidden = !an; });
+
+    function auf2D(grund) {
+      b3d = null;
+      el.dataset.modus = '2d';
+      el.dataset.grund = grund;
+      nur3d(false);
+      el.querySelectorAll('[data-bild2d]').forEach((b) => b.removeAttribute('aria-hidden'));
+    }
+
+    async function los() {
+      el.dataset.modus = 'laedt';
+      try {
+        // import() mit Pfad: Vite macht daraus eine eigene Datei (samt three.js),
+        // die erst jetzt über das Netz kommt.
+        const { starte3D } = await import('../lib/kiesel-3d/buehne.js');
+        const b = await starte3D({
+          ziel: flaeche, modell, farbe, beiAbbruch: auf2D, label: label3d(), sperr: sperrbildschirm(SPRACHE),
+          waechter: TESTMODUS !== 'foto' && TESTMODUS !== 'gerade', gerade: TESTMODUS === 'gerade',
+          freiOben: () => { const u = el.querySelector('.umschalter'); return u.offsetTop + u.offsetHeight; },
+        });
+        if (!b || el.dataset.modus === '2d') return; // unterwegs abgebrochen
+        b3d = b;
+        // Farbe und Modell könnten sich während des Ladens geändert haben
+        b3d.setzeFarbe(farbe);
+        b3d.setzeLabel(label3d());
+        b3d.setzeModell(modell).catch(() => b3d?.beenden('fehler'));
+        el.dataset.modus = '3d';
+        delete el.dataset.grund;
+        nur3d(true);
+        // Die 2D-Grafik ist jetzt nur noch durchsichtig: für Screenreader ausblenden,
+        // sonst hören sie das Handy doppelt (einmal 2D, einmal die 3D-Leinwand)
+        el.querySelectorAll('[data-bild2d]').forEach((b) => b.setAttribute('aria-hidden', 'true'));
+      } catch (fehler) {
+        console.warn('3D nicht verfügbar, zeige 2D:', fehler);
+        auf2D('fehler');
+      }
+    }
+
+    // Seite auf den Stand bringen (Knöpfe mit Farbe, 2D falls der Standard nicht gilt)
+    zeichne2D();
+    melden();
+
+    const grund = grundGegen3D();
+    if (grund) { auf2D(grund); return; }
+
+    // Wer während des Besuchs "weniger Bewegung" einschaltet, bekommt sofort 2D
+    WENIGER_BEWEGUNG.addEventListener('change', (e) => { if (e.matches && b3d) b3d.beenden('reduced-motion'); });
+
+    // Erst laden, wenn die Seite fertig ist (Text, Bilder und Schriften haben Vorrang),
+    // der Browser gerade nichts Wichtigeres zu tun hat (requestIdleCallback, höchstens 2 s
+    // warten) und die Bühne in der Nähe des sichtbaren Bereichs liegt.
+    // (Safari kennt requestIdleCallback noch nicht, dort nach 200 ms)
+    const imLeerlauf = window.requestIdleCallback?.bind(window) ?? ((f) => setTimeout(f, 200));
+    const bereit = () => imLeerlauf(() => {
+      const beobachter = new IntersectionObserver((eintraege) => {
+        if (!eintraege.some((e) => e.isIntersecting)) return;
+        beobachter.disconnect();
+        los();
+      }, { rootMargin: '200px' });
+      beobachter.observe(el);
+    }, { timeout: 2000 });
+    if (document.readyState === 'complete') bereit();
+    else addEventListener('load', bereit, { once: true });
+  });
+</script>
