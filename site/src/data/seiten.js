@@ -12,7 +12,7 @@
 export const EN_PRAEFIX = 'en/';
 
 // [deutsche Adresse, Name, öffentlich, englische Adresse ohne en/ (null = nur Deutsch)]
-// Adressen relativ zu /kiesel-website/v2/ bzw. /kiesel-website/v2/en/.
+// Adressen relativ zu /kiesel-website/ bzw. /kiesel-website/en/.
 // Nicht öffentlich: /designsystem/ und /spielwiese/ (noindex, Werkbank, nur Deutsch) und die
 // 404-Seite (eine pro Sprache; GitHub Pages liefert nur die deutsche aus, sie tauscht selbst).
 export const SEITEN = [

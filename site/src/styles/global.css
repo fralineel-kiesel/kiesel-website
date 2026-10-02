@@ -10,7 +10,7 @@
    Beide Dateien sind variable Fonts: eine Datei enthält alle Stärken von 400 bis 600.
    Genau die brauchen die Vorlagen: Unbounded 500/600, Instrument Sans 400/500/600.
    Der Pfad ist relativ; beim Build hängt Astro einen Fingerabdruck an den Dateinamen
-   und setzt den base-Pfad /kiesel-website/v2/ davor. */
+   und setzt den base-Pfad /kiesel-website/ davor. */
 @font-face {
   font-family: "Unbounded";
   src: url("../assets/fonts/unbounded.woff2") format("woff2");

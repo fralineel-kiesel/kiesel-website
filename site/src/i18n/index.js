@@ -19,7 +19,7 @@ export const SPRACHEN = Object.keys(WOERTERBUECHER);
 
 export const texte = (sprache = STANDARD) => WOERTERBUECHER[sprache] ?? WOERTERBUECHER[STANDARD];
 
-// Sprache einer Seite aus ihrer Adresse: …/v2/en/… → 'en', sonst 'de'
+// Sprache einer Seite aus ihrer Adresse: …/kiesel-website/en/… → 'en', sonst 'de'
 export const spracheVon = (url) => (url ? spracheDerAdresse(url.pathname) : STANDARD);
 
 // Die jeweils andere Sprache (Sprachumschalter, Sprach-Hinweis)

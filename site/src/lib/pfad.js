@@ -1,14 +1,14 @@
 // pfad() baut interne Links mit dem base-Pfad aus astro.config.mjs und in der richtigen Sprache.
-// Warum base: Die Seite liegt (vorerst) unter /kiesel-website/v2/. Ein fester Link wie
+// Warum base: Die Seite liegt unter /kiesel-website/ (GitHub Pages, Projekt-Repo). Ein fester Link wie
 // "/kaufen/" würde auf github.io/kaufen/ zeigen, also ins Leere.
 // Warum Sprache: Im Code steht immer die deutsche Adresse (Kennung der Seite). pfad() übersetzt
 // sie samt Parametern und Sprungziel über das Adressbuch (data/seiten.js).
 //
-//   pfad('kaufen/')                         →  /kiesel-website/v2/kaufen/
-//   pfad('kiesel-1/#akku')                  →  /kiesel-website/v2/kiesel-1/#akku
-//   pfad('kiesel-1/#akku', 'en')            →  /kiesel-website/v2/en/kiesel-1/#battery
-//   pfad('kaufen/?modell=pro&farbe=x', 'en') →  /kiesel-website/v2/en/buy/?model=pro&color=x
-//   pfad()                                  →  /kiesel-website/v2/   (Startseite)
+//   pfad('kaufen/')                         →  /kiesel-website/kaufen/
+//   pfad('kiesel-1/#akku')                  →  /kiesel-website/kiesel-1/#akku
+//   pfad('kiesel-1/#akku', 'en')            →  /kiesel-website/en/kiesel-1/#battery
+//   pfad('kaufen/?modell=pro&farbe=x', 'en') →  /kiesel-website/en/buy/?model=pro&color=x
+//   pfad()                                  →  /kiesel-website/   (Startseite)
 //
 // import.meta.env.BASE_URL setzt Astro selbst, dank trailingSlash:'always' mit "/" am Ende.
 // Läuft im Build und im Browser.
@@ -16,7 +16,7 @@ import { SEITEN, EN_PRAEFIX, ANKER, PARAMETER } from '../data/seiten.js';
 
 // Ausserhalb von Astro/Vite (Prüfskripte mit node) gibt es import.meta.env nicht: dann derselbe
 // Wert wie base in astro.config.mjs.
-const BASE = import.meta.env?.BASE_URL ?? '/kiesel-website/v2/';
+const BASE = import.meta.env?.BASE_URL ?? '/kiesel-website/';
 
 // Nachschlagen in beide Richtungen: deutsch → englisch und englisch → deutsch
 const umkehren = (tabelle) => Object.fromEntries(Object.entries(tabelle).map(([de, en]) => [en, de]));
@@ -68,11 +68,11 @@ export function pfad(ziel = '', sprache = 'de') {
   return BASE + EN_PRAEFIX + SEITE_EN[weg] + (suchteil ? `?${suchteil}` : '') + (a !== null ? `#${anker(a, 'en')}` : '');
 }
 
-// Sprache einer Adresse (pathname mit base-Pfad): …/v2/en/… → 'en', sonst 'de'
+// Sprache einer Adresse (pathname mit base-Pfad): …/kiesel-website/en/… → 'en', sonst 'de'
 export const spracheDerAdresse = (pathname) => (pathname.startsWith(BASE + EN_PRAEFIX) ? 'en' : 'de');
 
 // Deutsche Adresse (Kennung) einer Seite aus ihrem pathname, oder null (Seite nur in einer Sprache
-// bzw. unbekannt). '/kiesel-website/v2/en/buy/' → 'kaufen/'
+// bzw. unbekannt). '/kiesel-website/en/buy/' → 'kaufen/'
 export function seitenKennung(pathname) {
   if (!pathname.startsWith(BASE)) return null;
   const rest = pathname.slice(BASE.length);
@@ -90,7 +90,7 @@ export const gibtEs = (kennung, sprache) => kennung !== null && (sprache === 'de
 
 // Dieselbe Seite in der anderen Sprache, samt übersetzten Parametern und Sprungziel.
 // Für Sprachumschalter und Sprach-Hinweis. adresse = pathname + search + hash (wie location).
-//   gegenadresse('/kiesel-website/v2/kaufen/?modell=pro#x', 'en') → '/kiesel-website/v2/en/buy/?model=pro#x'
+//   gegenadresse('/kiesel-website/kaufen/?modell=pro#x', 'en') → '/kiesel-website/en/buy/?model=pro#x'
 // null, wenn es keine Gegenseite gibt.
 export function gegenadresse(adresse, zielSprache) {
   const [weg, q, a] = teile(adresse);
@@ -105,7 +105,7 @@ export function gegenadresse(adresse, zielSprache) {
 }
 
 // Ist ziel die aktuelle Seite (genau) oder ein Teil davon (Bereich)?
-// aktuell ist Astro.url.pathname, z.B. "/kiesel-website/v2/kiesel-1-pro/technik/".
+// aktuell ist Astro.url.pathname, z.B. "/kiesel-website/kiesel-1-pro/technik/".
 export function istAktiv(aktuell, ziel, genau = true, sprache = 'de') {
   const voll = pfad(ziel, sprache).split('#')[0];
   return genau ? aktuell === voll : aktuell.startsWith(voll);

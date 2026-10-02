@@ -1,7 +1,7 @@
 # Lokale Claude-Einstellungen dieses Rechners (Berechtigungen, nicht teilen)
 .claude/settings.local.json
 
-# Python-Zwischenspeicher, entsteht beim Ausführen von werkzeuge/bilder.py
+# Python-Zwischenspeicher, entsteht beim Ausführen der Skripte in design/generator/ und site/scripts/
 __pycache__/
 *.pyc
 

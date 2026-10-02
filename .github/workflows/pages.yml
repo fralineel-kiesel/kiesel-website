@@ -1,6 +1,7 @@
-# Veröffentlicht die Website auf GitHub Pages, und zwar beide Versionen in einem Deployment:
-#   alte Seite aus Branch main  →  https://fralineel-kiesel.github.io/kiesel-website/
-#   Kiesel 2.0 aus Branch v2    →  https://fralineel-kiesel.github.io/kiesel-website/v2/
+# Veröffentlicht Kiesel 2.0 (Ordner site/) auf GitHub Pages:
+#   Branch main  →  https://fralineel-kiesel.github.io/kiesel-website/
+# Nur ein Push auf main (oder ein manueller Start unter Actions) veröffentlicht. Andere Branches
+# lösen nichts aus, sonst würde ein beliebiger Push die Live-Seite überschreiben.
 # Voraussetzung: Settings › Pages › Source = "GitHub Actions".
 #
 # Bewusst OHNE Tests: Der Workflow baut nur (npm run build) und veröffentlicht. Stoppen kann
@@ -13,7 +14,7 @@ name: GitHub Pages
 
 on:
   push:
-    branches: [main, v2]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -29,55 +30,40 @@ jobs:
   bauen:
     runs-on: ubuntu-latest
     steps:
-      - name: Alte Seite aus main holen
+      - name: Code holen
         uses: actions/checkout@v7
-        with:
-          ref: main
-          path: alt
-
-      - name: Kiesel 2.0 aus v2 holen
-        uses: actions/checkout@v7
-        with:
-          ref: v2
-          path: neu
 
       - name: Node.js einrichten
         uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: neu/site/package-lock.json
+          cache-dependency-path: site/package-lock.json
 
       - name: Pakete installieren
-        working-directory: neu/site
+        working-directory: site
         run: npm ci
 
       - name: Kiesel 2.0 bauen
-        working-directory: neu/site
+        working-directory: site
         run: npm run build
-
-      - name: Beide Seiten zusammenlegen
-        run: |
-          cp -R alt _site
-          rm -rf _site/.git _site/.github
-          mkdir _site/v2
-          cp -R neu/site/dist/. _site/v2/
 
       - name: Pages vorbereiten
         uses: actions/configure-pages@v6
 
+      # site/dist/ liegt danach an der Wurzel: dist/index.html = …/kiesel-website/,
+      # dist/404.html = die eine Fehlerseite, die GitHub Pages ausliefert
       - name: Ergebnis hochladen
         uses: actions/upload-pages-artifact@v5
         with:
-          path: _site
-          include-hidden-files: true
+          path: site/dist
 
   veroeffentlichen:
     needs: bauen
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}v2/
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Auf GitHub Pages veröffentlichen
         id: deployment

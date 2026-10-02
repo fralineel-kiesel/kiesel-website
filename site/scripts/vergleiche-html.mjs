@@ -1,34 +1,34 @@
-// Sicherheitsnetz für Umbauten, die nichts Sichtbares ändern sollen (Etappe 9a: Texte nach
-// src/i18n/): Baut einen alten Stand und den jetzigen und vergleicht das Ergebnis.
+// Sicherheitsnetz für Umbauten, die nichts Sichtbares ändern sollen: Baut einen alten Stand
+// (die Basis) und den jetzigen und vergleicht das Ergebnis.
 //
-//   npm run vergleiche:html                      alter Stand = Abzweigpunkt von origin/v2
-//   npm run vergleiche:html -- --basis 103c06a   alter Stand = dieser Commit
+//   npm run vergleiche:html                      Basis = Abzweigpunkt von origin/main (= was live ist)
+//   npm run vergleiche:html -- --basis d3d404e   Basis = dieser Commit
 //   … -- --ohne-build                            jetzigen Build (dist/) nicht neu bauen
 //   … -- --nur-statisch                          ohne Browser-Teil
 //   … -- --ohne-regeln                           Gegenprobe: gleicher Stand muss ohne Regeln gleich sein
 //
-// 1. Statisch: jede Datei in dist/ ausser _astro/ (HTML, sitemap.xml, robots.txt) Byte für Byte,
-//    dazu pro Seite der Inhalt aller eingebundenen Stylesheets aus _astro/ (in Reihenfolge).
-// 2. Nach dem Skriptlauf: Beide Stände laufen je auf einem Mini-Server. Jede öffentliche Seite
-//    (dazu ein paar Adressen mit alten Parametern) wird im Browser geladen, mit einem Warenkorb
-//    im ALTEN Format (deutsche Farbnamen, art 'handy'/'huelle'). Verglichen wird das fertige
-//    DOM samt Zustand der Formularfelder und der Adresse. So fallen auch Texte auf, die erst
-//    per JavaScript entstehen.
+// Die Basis erneuert sich selbst: Jeder Branch vergleicht gegen den Stand von main, von dem er
+// abzweigt. Ihr Build wird in scripts/ausgabe/html-vergleich/basis-<commit>/ gespeichert, der
+// nächste Lauf mit derselben Basis spart sich das Bauen. Neu bauen = den Ordner löschen.
 //
-// Erlaubt sind nur Unterschiede, für die unten in REGELN eine Regel mit Begründung steht. Jede
+// 1. Statisch: jede Datei in dist/ ausser _astro/ (HTML beider Sprachen, sitemap.xml,
+//    robots.txt …) Byte für Byte, dazu pro Seite der Inhalt aller eingebundenen Stylesheets aus
+//    _astro/ (in Reihenfolge).
+// 2. Nach dem Skriptlauf: Beide Stände laufen je auf einem Mini-Server wie GitHub Pages. Jede
+//    öffentliche Seite beider Sprachen (dazu ein paar Adressen mit alten Parametern und zwei
+//    fehlende Adressen = 404) wird im Browser geladen, mit einem Warenkorb im alten Format
+//    (deutsche Farbnamen, art 'handy'/'huelle'). Verglichen wird das fertige DOM samt Zustand
+//    der Formularfelder und der Adresse. So fallen auch Texte auf, die erst per JavaScript entstehen.
+//
+// Immer gleichgemacht (auf beiden Seiten): Hash in /_astro/-Dateinamen, Namen der CSS-Pakete,
+// erzeugte IDs (neu nummeriert), Modul-Skripte (statisch ausgeblendet, ihre Wirkung prüft Teil 2),
+// Reihenfolge eingebetteter CSS-Regeln (nur mit Nachweis: berechnete Stile aller Elemente gleich).
+//
+// Erlaubt sind sonst nur Unterschiede, für die in REGELN eine Regel mit Begründung steht. Jede
 // Regel verwandelt die ALTE Fassung in die erwartete neue (wie scripts/abweichungen.mjs); danach
-// muss alles gleich sein. Nur die Dateinamen mit Hash werden auf beiden Seiten gleichgemacht.
-// Das Skript meldet, wie oft jede Regel gegriffen hat.
-//
-// Etappe 9b (Englisch) ergänzt die deutschen Seiten um Neues (hreflang, Sprachumschalter,
-// Sprach-Hinweis, 404-Tausch, Sitemap mit beiden Sprachen). Das beschreiben die ZUSAETZE: Sie
-// nehmen genau diese Teile aus der NEUEN Fassung heraus (samt ihrem CSS), danach muss der Rest
-// gleich sein wie vorher. Die englischen Seiten unter en/ gibt es nur im neuen Build; sie prüft
-// pruefe:englisch.
-//
-// Der alte Stand wird per "git worktree" in einen Temp-Ordner geholt und dort gebaut
-// (node_modules wird verlinkt). Sein Build bleibt in scripts/ausgabe/html-vergleich/ liegen,
-// der nächste Lauf mit derselben Basis spart sich das Bauen.
+// muss alles gleich sein. Das Skript meldet, wie oft jede Regel gegriffen hat. Eine Regel gehört
+// zu genau einem Umbau: nach dem Merge wieder löschen (die neue Basis enthält sie ja schon).
+// Die Regeln früherer Umbauten (9a Kennungen, 9b Englisch) stehen in der Git-Geschichte.
 import { chromium } from 'playwright';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -36,7 +36,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { starteServer } from './dist-server.mjs';
-import { OEFFENTLICH } from './seiten.mjs';
+import { ALLE_OEFFENTLICH } from './seiten.mjs';
 
 const hier = path.dirname(fileURLToPath(import.meta.url));
 const site = path.join(hier, '..');
@@ -47,183 +47,55 @@ const hat = (name) => process.argv.includes(name);
 const git = (...a) => execFileSync('git', a, { cwd: repo, encoding: 'utf8' }).trim();
 
 // ────────────────────────────────────────────────────────────── Regeln
-// Alte deutsche Farbnamen → neue Kennungen (dieselbe Tabelle wie src/data/farben.js, hier
-// absichtlich noch einmal ausgeschrieben: Der Test soll nicht dem Code glauben, den er prüft)
-const FARBEN = { Mattschwarz: 'matte-black', Titangrau: 'titanium-gray', Himmelblau: 'sky-blue', Mattweiss: 'matte-white', Kieselbeige: 'pebble-beige' };
-const FARB_RE = Object.keys(FARBEN).join('|');
-const FAQ_THEMEN = { Alle: 'alle', Konzept: 'concept', Handys: 'phones', 'Akku und Laden': 'battery', Funktionen: 'features', Kaufen: 'buying' };
-const DETAILS = {
-  Gipfelkreuz: 'summit-cross', 'Seilschaft auf dem Grat': 'rope-team', Steinbock: 'ibex', 'SAC-Hütte mit Fahne': 'mountain-hut',
-  Gondelbahn: 'gondola', Gleitschirm: 'paraglider', Segelboot: 'sailboat', 'Dorf mit Kirche': 'village',
-};
+// Bewusste sichtbare Unterschiede des laufenden Umbaus: { name, grund, alt: RegExp (mit g), neu: Funktion }.
+// Leer = der Umbau darf nichts ändern. Nach dem Merge wieder leeren.
+export const REGELN = [];
 
-export const REGELN = [
-  {
-    name: 'Farbkennung in Formularwerten und Datenattributen',
-    grund: 'Farben heissen intern jetzt sprachneutral (sky-blue …), damit eine englische Seite dieselben Werte schickt. Sichtbar (Text, title, aria-label) bleibt der deutsche Name.',
-    alt: new RegExp(`(\\bvalue|\\bdata-farbe|:wert)="(${FARB_RE})"`, 'g'),
-    neu: (_, attr, f) => `${attr}="${FARBEN[f]}"`,
-  },
-  {
-    name: 'Farbkennung in Links (?farbe=, ?huelle=)',
-    grund: 'Links auf /kaufen/ und /zubehoer/huelle/ übergeben die neue Kennung. Alte Links mit deutschem Namen funktionieren weiter (Migration beim Laden).',
-    alt: new RegExp(`([?&]|&amp;)(farbe|huelle)=(${FARB_RE})`, 'g'),
-    neu: (_, vor, p, f) => `${vor}${p}=${FARBEN[f]}`,
-  },
-  {
-    name: 'Farbkennung im Startzustand von /kaufen/ (data-start)',
-    grund: 'Der Startzustand ist JSON mit Kennungen, dieselben wie im Formular.',
-    alt: new RegExp(`((?:&quot;|\\\\")(?:farbe|huelleFarbe)(?:&quot;|\\\\"):(?:&quot;|\\\\"))(${FARB_RE})(&quot;|\\\\")`, 'g'),
-    neu: (_, a, f, b) => `${a}${FARBEN[f]}${b}`,
-  },
-  {
-    name: 'FAQ-Thema als Kennung (data-thema, data-thema-wahl)',
-    grund: 'Der Filter vergleicht Kennungen statt Anzeigetext, sonst würde er auf Englisch nichts mehr finden. Die Chips zeigen weiter den deutschen Namen.',
-    alt: new RegExp(`\\b(data-thema(?:-wahl)?)="(${Object.keys(FAQ_THEMEN).join('|')})"`, 'g'),
-    neu: (_, attr, t) => `${attr}="${FAQ_THEMEN[t]}"`,
-  },
-  {
-    name: 'Versteckte Details: Kennung statt Name (data-name → data-detail-id, Spielwiese data-ziel)',
-    grund: 'Die acht Details im Panorama haben eine sprachneutrale Kennung; ihr Name kommt aus der Textdatei. data-name las kein Skript.',
-    alt: new RegExp(`\\b(data-name|data-ziel)="(${Object.keys(DETAILS).join('|')})"`, 'g'),
-    neu: (_, attr, n) => `${attr === 'data-name' ? 'data-detail-id' : attr}="${DETAILS[n]}"`,
-  },
-  {
-    name: 'Startseite, Knopf „Kaufen ab …“: kein Zeilenumbruch mehr vor dem Text',
-    grund: 'Der Text kommt jetzt als Ausdruck aus der Textdatei; vor einem Ausdruck lässt Astro den Leerraum weg. Der Knopf ist inline-flex, Leerraum am Anfang wird nie dargestellt, der Name für Screenreader wird getrimmt: unsichtbar.',
-    alt: /(data-held-kaufen="(?:k1|pro)"[^>]*>)\n\s+(Kaufen ab )/g,
-    neu: (_, a, b) => a + b,
-  },
-  {
-    name: 'Akku-Rechner: typische Tage als Kennung (data-tag)',
-    grund: 'Die Tage heissen intern quiet, normal, busy, holiday; die Chips zeigen weiter „Ruhiger Tag“, „Normal“ …',
-    alt: /\bdata-tag="(Ruhiger Tag|Normal|Viel unterwegs|Ferientag)"/g,
-    neu: (_, n) => `data-tag="${{ 'Ruhiger Tag': 'quiet', Normal: 'normal', 'Viel unterwegs': 'busy', Ferientag: 'holiday' }[n]}"`,
-  },
-  {
-    name: 'Blumen-Vorgaben der Spielwiese: Kennung statt Name (data-vorgabe)',
-    grund: 'BLUME_FOKUS hat Kennungen (tele, bee, macro, all), die Namen aus gen2.py stehen in der Textdatei.',
-    alt: /\bdata-vorgabe="(Blume \(3x Tele\)|Biene|Makro \(alles nah\)|Alles scharf)"/g,
-    neu: (_, n) => `data-vorgabe="${{ 'Blume (3x Tele)': 'tele', Biene: 'bee', 'Makro (alles nah)': 'macro', 'Alles scharf': 'all' }[n]}"`,
-  },
-  {
-    name: 'Warenkorb-Zeilen: Kennungen in data-id und data-schluessel',
-    grund: 'Die Artikel-ID entsteht aus der gespeicherten Wahl (Art|Modell|Farbe|…). Art und Farbe sind jetzt Kennungen: handy → phone, huelle → case, Titangrau → titanium-gray.',
-    alt: new RegExp(`\\b(data-id|data-schluessel)="([^"]*)"`, 'g'),
-    neu: (_, attr, wert) => `${attr}="${wert.split('|').map((teil) => ({ handy: 'phone', huelle: 'case' })[teil] ?? FARBEN[teil] ?? teil).join('|')}"`,
-  },
-];
+// Basispfad eines Builds (base aus astro.config.mjs), abgelesen am Favicon der Startseite
+const basispfad = (dist) => fs.readFileSync(path.join(dist, 'index.html'), 'utf8').match(/<link rel="icon" href="([^"]*)favicon\.svg"/)[1];
 
-// Etappe 9b: Neues auf den deutschen Seiten. Diese Regeln wirken auf die NEUE Fassung und
-// nehmen das Neue heraus (statisches HTML und sitemap.xml).
-const SITEMAP_EINTRAG = /  <url>\n    <loc>([^<]+)<\/loc>(?:\n    <xhtml:link [^\n]*\/>)*\n  <\/url>\n/g;
-export const ZUSAETZE = [
-  {
-    name: 'hreflang-Verweise und og:locale:alternate im <head>',
-    grund: 'Jede öffentliche Seite nennt ihre Fassung in beiden Sprachen (de, en, x-default = Deutsch) und die andere Sprache für die Link-Vorschau.',
-    alt: /<link rel="alternate" hreflang="[^"]+" href="[^"]+">|<meta property="og:locale:alternate" content="[^"]+">/g,
-    neu: () => '',
-  },
-  {
-    name: 'Sprach-Hinweis (<aside data-sprachhinweis>, versteckt bis das Skript ihn zeigt)',
-    grund: '„Also available in English“, wenn der Browser Englisch bevorzugt. Steht versteckt gleich nach „Zum Inhalt“.',
-    alt: /<aside class="sprachhinweis"[^>]*>[\s\S]*?<\/aside>/g,
-    neu: () => '',
-  },
-  {
-    name: 'Sprachumschalter (<nav data-sprachwahl>) im Footer und im Burger-Menü',
-    grund: '„Deutsch · English“ neben dem Thema-Umschalter und unten im Burger-Menü.',
-    alt: /<nav class="sprachwahl[^"]*"[^>]*>[\s\S]*?<\/nav>/g,
-    neu: () => '',
-  },
-  {
-    name: '404: Tausch auf die englische Fassung unter /en/ (Inline-Skript im <head>)',
-    grund: 'GitHub Pages liefert nur eine 404.html. Liegt die Adresse unter /en/, holt sie sich en/404/ und zeigt sich englisch.',
-    alt: /<script>\(function\(\)\{var b=[\s\S]*?<\/script>/g,
-    neu: () => '',
-  },
-  {
-    name: 'sitemap.xml: englische Seiten und xhtml:link-Paare',
-    grund: 'Die Sitemap nennt jetzt beide Sprachen, jeder Eintrag mit seiner Gegenseite. Ohne das: dieselben deutschen Adressen wie vorher.',
-    alt: /(<urlset [^>]*?) xmlns:xhtml="[^"]*">|^  <url>\n[\s\S]*<\/url>\n/gm,
-    neu: (m, kopf) => (kopf ? `${kopf}>` : [...m.matchAll(SITEMAP_EINTRAG)].filter(([, loc]) => !loc.includes('/v2/en/')).map(([, loc]) => `  <url><loc>${loc}</loc></url>\n`).join('')),
-  },
-];
-// CSS der neuen Bausteine (Sprachwahl, SprachHinweis) und ihre Abstände in Footer und Burger-Menü
-const ZUSATZ_CSS = {
-  name: 'CSS von Sprachumschalter und Sprach-Hinweis',
-  grund: 'Eigene Stile der zwei neuen Bausteine (scoped) und ihr Abstand im Footer (.sprachwahl) und im Burger-Menü (.sprache).',
-};
-function ohneZusatzCss(css, cids, zaehler) {
-  return obersteBloecke(css).filter((b) => {
-    const neu = cids.some((c) => b.includes(c)) || /\.sprachwahl\b|\.sprache\b|\.sprachhinweis\b|@keyframes rein\b/.test(b);
-    if (neu) zaehler.set(ZUSATZ_CSS.name, (zaehler.get(ZUSATZ_CSS.name) ?? 0) + 1);
-    return !neu;
-  }).join('');
+// Dazu kommt eine Regel von selbst, wenn die zwei Builds verschiedene base haben
+// (Etappe 10: /kiesel-website/v2/ → /kiesel-website/). Sie ersetzt den alten Basispfad überall,
+// auch in absoluten Adressen (canonical, og:url, hreflang, Sitemap, robots.txt).
+function basisRegel(altBasis, neuBasis) {
+  if (altBasis === neuBasis) return [];
+  const esc = altBasis.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return [{
+    name: `Basispfad ${altBasis} → ${neuBasis}`,
+    grund: 'Die Seite ist umgezogen (base in astro.config.mjs). Links, Dateien und absolute Adressen haben einen anderen Vorsatz, sonst nichts.',
+    alt: new RegExp(esc, 'g'),
+    neu: () => neuBasis,
+  }];
 }
-// CSS-Änderungen, die bewusst auch die deutsche Seite betreffen: wirken auf die ALTE Fassung
-const REGELN_CSS = [
-  {
-    name: 'Akku-Rechner: Ergebnis darf in die nächste Zeile rutschen',
-    grund: 'Auf 390 px quetschte „empty at 10:18 PM“ den Namen „iPhone SE (2016)“ auf drei Zeilen. Jetzt bricht die Zeile um (flex-wrap), das Ergebnis steht dann rechtsbündig darunter. Sichtbar auch auf Deutsch, nur auf schmalen Bildschirmen beim SE: vorher „iPhone SE (2016)“ zweizeilig neben „leer um 22:18“, jetzt der Name einzeilig und das Ergebnis darunter. Wo beides Platz hat (Desktop), bleibt alles wie vorher.',
-    alt: /(\.zeile\[data-astro-cid-bj62t7ws\]\{)justify-content:space-between;align-items:baseline;gap:12px;display:flex\}|(\.ergebnis\[data-astro-cid-bj62t7ws\]\{font-family:var\(--display\);letter-spacing:var\(--ls-3\);white-space:nowrap;)(font-size:22px)/g,
-    neu: (_, zeile, ergebnis, rest) => (zeile ? `${zeile}flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:0 12px;display:flex}` : `${ergebnis}margin-left:auto;${rest}`),
-  },
-];
-
-// data-astro-cid der neuen Bausteine (aus dem neuen HTML)
-// (aus dem ganzen Build: das CSS steckt auch in Seiten, die den Baustein nicht zeigen, z.B. Designsystem)
-let cidsCache = null;
-function neueCids(neuDist) {
-  if (cidsCache) return cidsCache;
-  const alle = new Set();
-  for (const d of dateien(neuDist).filter((x) => x.endsWith('.html'))) {
-    for (const m of fs.readFileSync(path.join(neuDist, d), 'utf8').matchAll(/<(?:aside class="sprachhinweis|nav class="sprachwahl)[^>]*?(data-astro-cid-[a-z0-9]+)/g)) alle.add(m[1]);
-  }
-  return (cidsCache = [...alle]);
-}
-
-// Nur im Browser-Teil: die Adresse nach dem Laden
-const REGELN_ADRESSE = [
-  {
-    name: 'Adresse von /kaufen/: alte Farbnamen werden zu Kennungen',
-    grund: '/kaufen/ schreibt die Adresse nach (replaceState), jetzt mit Kennungen: aus ?farbe=Titangrau wird ?farbe=titanium-gray. /zubehoer/huelle/ schreibt die Adresse wie bisher nicht nach.',
-    alt: /^kaufen\/\?[^#]*/g,
-    neu: (m) => m.replace(new RegExp(`([?&])(farbe|huelle)=(${FARB_RE})\\b`, 'gi'),
-      (_, vor, p, f) => `${vor}${p}=${FARBEN[Object.keys(FARBEN).find((k) => k.toLowerCase() === f.toLowerCase())]}`),
-  },
-  {
-    name: 'Adresse: ?ansicht=uebereinander → ?ansicht=overlay',
-    grund: 'Neue Kennung für die Ansicht „Übereinander“ auf /vergleichen/.',
-    alt: /([?&])ansicht=uebereinander\b/g,
-    neu: (_, vor) => `${vor}ansicht=overlay`,
-  },
-];
 
 // Dateinamen mit Hash (/_astro/kaufen.C8kEdgo3.css): Der Hash hängt am Inhalt, und der
 // Code der Skripte ändert sich ja. Auf beiden Seiten gleichmachen.
 const ohneHash = (s) => s.replace(/(\/_astro\/[\w.-]+?)\.[\w-]{8}\.(js|css|woff2|png|jpg|webp|svg)/g, '$1.[hash].$2');
-// Etappe 9b, ebenfalls auf beiden Seiten gleichmachen:
-// - Namen der CSS-Pakete (/_astro/index.css → pages.css): Seit die englischen Seiten die
-//   deutschen als Bausteine einbinden, teilt Vite die Pakete anders auf und benennt sie neu.
-//   Der Inhalt aller eingebundenen Stylesheets wird je Seite ohnehin verglichen (in Reihenfolge).
-// - erzeugte IDs (kiesel-logo-14, qs49fl): Logo.astro und uid() im Zeichen-Motor zählen über den
-//   ganzen Build; mit den englischen Seiten dazwischen verschieben sich die Nummern. Je Datei neu
-//   nummeriert, samt Verweisen (idsNeu, wie im Browser-Teil).
+// Namen der CSS-Pakete (/_astro/index.css → pages.css): Vite teilt die Pakete je nach Importen
+// anders auf. Der Inhalt aller eingebundenen Stylesheets wird je Seite ohnehin verglichen.
 const ohneCssNamen = (s) => s.replace(/(\/_astro\/)[\w.-]+?(\.\[hash\]\.css)/g, '$1[paket]$2');
+// Erzeugte IDs (kiesel-logo-14, qs49fl): Logo.astro und uid() im Zeichen-Motor zählen über den
+// ganzen Build bzw. in der Reihenfolge der Leerlauf-Aufgaben. Je Datei neu nummeriert, samt Verweisen.
+function idsNeu(t) {
+  const neu = new Map();
+  for (const [, id] of t.matchAll(/\bid="([^"]*\d[^"]*)"/g)) if (!neu.has(id)) neu.set(id, `id${neu.size + 1}`);
+  if (!neu.size) return t;
+  const esc = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp(`(?<=["#\\s(])(${[...neu.keys()].sort((a, b) => b.length - a.length).map(esc).join('|')})(?=["\\s)])`, 'g');
+  return t.replace(re, (id) => neu.get(id));
+}
 const gleichmachen = (s) => idsNeu(ohneCssNamen(ohneHash(s)));
 
-// Modul-Skripte: Ihr Code wandert mit dem Umbau (neue Importe, anderer Hash, klein genug zum
+// Modul-Skripte: Ihr Code wandert mit jedem Umbau (neue Importe, anderer Hash, klein genug zum
 // Einbetten oder nicht mehr). Was sie auf der Seite anrichten, prüft der Browser-Teil.
-// Hier werden sie darum auf beiden Seiten entfernt und nur ihre Namen verglichen (Info).
 const MODUL = /<script type="module"(?: src="([^"]*)")?>([\s\S]*?)<\/script>/g;
 const ohneModule = (s) => s.replace(MODUL, '');
 const modulNamen = (s) => [...s.matchAll(MODUL)].map((m) => (m[1] ? ohneHash(m[1]).replace(/.*\/_astro\//, '') : '(eingebettet)')).sort();
 
 // Eingebettete <style>-Blöcke: Astro sammelt die CSS-Regeln der Bausteine in der Reihenfolge,
-// in der Vite die Module fertig hat. Neue Importe (die Textdatei) können sie umstellen. Darum
-// werden die obersten Blöcke eines <style> sortiert verglichen, und wo das nötig war, prüft
-// Teil 2 im Browser, dass jedes Element dieselben berechneten Stile hat (siehe stileGleich).
+// in der Vite die Module fertig hat. Neue Importe können sie umstellen. Darum werden die
+// obersten Blöcke eines <style> sortiert verglichen, und wo das nötig war, prüft Teil 2 im
+// Browser, dass jedes Element dieselben berechneten Stile hat (siehe stile()).
 function obersteBloecke(css) {
   const bloecke = [];
   let tiefe = 0, start = 0;
@@ -235,10 +107,7 @@ function obersteBloecke(css) {
   return bloecke;
 }
 const stileSortiert = (html) => html.replace(/<style>([\s\S]*?)<\/style>/g, (_, css) => `<style>${obersteBloecke(css).sort().join('\n')}</style>`);
-export const CSS_REIHENFOLGE = {
-  name: 'Reihenfolge der eingebetteten CSS-Regeln (nur Designsystem)',
-  grund: 'Neue Importe ändern, in welcher Reihenfolge Astro die Stile der Bausteine einbettet. Gleiche Regeln, andere Reihenfolge; nachgewiesen im Browser: jedes Element hat dieselben berechneten Stile (hell und dunkel).',
-};
+const CSS_REIHENFOLGE = 'Reihenfolge der eingebetteten CSS-Regeln (Nachweis im Browser: gleiche berechnete Stile)';
 
 function wendeAn(text, regeln, zaehler) {
   for (const r of regeln) {
@@ -263,11 +132,12 @@ function baue(ordner) {
 function basisBauen(ref) {
   const sha = git('rev-parse', '--short', ref);
   const ziel = path.join(ausgabe, `basis-${sha}`);
-  if (fs.existsSync(path.join(ziel, 'index.html'))) { console.log(`Alter Stand ${sha}: Build von früher wird benutzt`); return { sha, dist: ziel }; }
-  console.log(`Alter Stand ${sha}: wird gebaut …`);
+  if (fs.existsSync(path.join(ziel, 'index.html'))) { console.log(`Basis ${sha}: gespeicherter Build wird benutzt`); return { sha, dist: ziel }; }
+  console.log(`Basis ${sha}: wird gebaut …`);
   const baum = fs.mkdtempSync(path.join(os.tmpdir(), 'kiesel-basis-'));
   git('worktree', 'add', '--detach', baum, sha);
   try {
+    if (!fs.existsSync(path.join(baum, 'site', 'astro.config.mjs'))) throw new Error(`Basis ${sha} hat kein site/ (zu alt?), mit --basis einen anderen Commit wählen`);
     fs.symlinkSync(path.join(site, 'node_modules'), path.join(baum, 'site', 'node_modules'), 'dir');
     baue(path.join(baum, 'site'));
     fs.mkdirSync(path.dirname(ziel), { recursive: true });
@@ -284,12 +154,11 @@ const dateien = (wurzel) => fs.readdirSync(wurzel, { recursive: true })
 
 // ────────────────────────────────────────────────────────────── 1. statisch
 const stilSeiten = []; // Seiten, deren CSS nur umgestellt ist: Teil 2 vergleicht dort berechnete Stile
-function vergleicheStatisch(altDist, neuDist, regeln = REGELN) {
+function vergleicheStatisch(altDist, neuDist, regeln) {
   console.log('\n── 1. Statisch: alle Dateien ausser _astro/ ──');
   const zaehler = new Map();
   let fehler = 0;
-  const alt = dateien(altDist), neu = dateien(neuDist).filter((d) => !d.startsWith('en/') && !d.startsWith(`en${path.sep}`));
-  console.log(`  (${dateien(neuDist).length - neu.length} Dateien unter en/: nur im neuen Build, geprüft von pruefe:englisch)`);
+  const alt = dateien(altDist), neu = dateien(neuDist);
   for (const d of new Set([...alt, ...neu])) {
     if (!alt.includes(d) || !neu.includes(d)) { console.log(`✗ ${d}: nur im ${alt.includes(d) ? 'alten' : 'neuen'} Build`); fehler++; continue; }
     const a = fs.readFileSync(path.join(altDist, d)), b = fs.readFileSync(path.join(neuDist, d));
@@ -298,11 +167,11 @@ function vergleicheStatisch(altDist, neuDist, regeln = REGELN) {
       continue;
     }
     const at = a.toString('utf8'), bt = b.toString('utf8');
-    let erwartet = wendeAn(ohneModule(gleichmachen(at)), regeln, zaehler);
-    let ist = regeln.length ? wendeAn(ohneModule(gleichmachen(bt)), ZUSAETZE, zaehler) : ohneModule(gleichmachen(bt));
-    if (erwartet !== ist && regeln.length && stileSortiert(erwartet) === stileSortiert(ist)) {
+    let erwartet = ohneModule(gleichmachen(wendeAn(at, regeln, zaehler)));
+    const ist = ohneModule(gleichmachen(bt));
+    if (erwartet !== ist && !hat('--ohne-regeln') && stileSortiert(erwartet) === stileSortiert(ist)) {
       erwartet = ist;
-      zaehler.set(CSS_REIHENFOLGE.name, (zaehler.get(CSS_REIHENFOLGE.name) ?? 0) + 1);
+      zaehler.set(CSS_REIHENFOLGE, (zaehler.get(CSS_REIHENFOLGE) ?? 0) + 1);
       stilSeiten.push(d);
     }
     if (erwartet === ist) {
@@ -315,20 +184,15 @@ function vergleicheStatisch(altDist, neuDist, regeln = REGELN) {
   }
   // CSS: Die Dateien unter _astro/ haben Hashes im Namen, darum pro Seite den Inhalt aller
   // eingebundenen Stylesheets (in Reihenfolge) vergleichen
-  const css = (wurzel, html) => [...html.matchAll(/<link rel="stylesheet" href="\/kiesel-website\/v2\/([^"]+)"/g)]
-    .map((m) => fs.readFileSync(path.join(wurzel, m[1]), 'utf8')).join('\n/* ── */\n');
+  const css = (wurzel, html) => {
+    const esc = basispfad(wurzel).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return [...html.matchAll(new RegExp(`<link rel="stylesheet" href="${esc}([^"]+)"`, 'g'))]
+      .map((m) => fs.readFileSync(path.join(wurzel, m[1]), 'utf8')).join('\n/* ── */\n');
+  };
   let cssFehler = 0;
   for (const d of alt.filter((d) => d.endsWith('.html') && neu.includes(d))) {
-    let a = ohneHash(css(altDist, fs.readFileSync(path.join(altDist, d), 'utf8')));
-    if (regeln.length) a = wendeAn(a, REGELN_CSS, zaehler);
-    const neuHtml = fs.readFileSync(path.join(neuDist, d), 'utf8');
-    let b = ohneHash(css(neuDist, neuHtml));
-    if (regeln.length) {
-      // Zusätze nur herausnehmen, wo sie stehen; der Rest muss auch in der Reihenfolge gleich sein
-      const blockweise = (t) => t.split('\n/* ── */\n').map((x) => obersteBloecke(x).join('')).join('\n/* ── */\n');
-      const ohne = b.split('\n/* ── */\n').map((x) => ohneZusatzCss(x, neueCids(neuDist), zaehler)).join('\n/* ── */\n');
-      if (blockweise(a) === ohne) b = a;
-    }
+    const a = ohneHash(wendeAn(css(altDist, fs.readFileSync(path.join(altDist, d), 'utf8')), regeln, zaehler));
+    const b = ohneHash(css(neuDist, fs.readFileSync(path.join(neuDist, d), 'utf8')));
     if (a !== b) { console.log(`✗ ${d}: CSS anders\n${zeigeUnterschied(a, b)}`); cssFehler++; }
   }
   if (!cssFehler) console.log('✓ CSS aller Seiten gleich (eingebundene Stylesheets, in Reihenfolge)');
@@ -343,11 +207,17 @@ const ALTER_KORB = JSON.stringify([
   { art: 'handy', modell: 'k1', farbe: 'Kieselbeige', speicher: '256gb', anzahl: 1 },
 ]);
 
+// Adressen mit Parametern (auch alten), dazu je Sprache eine fehlende Adresse (404, auf /en/ englisch)
 const EXTRA = [
   'kaufen/?modell=pro&farbe=Titangrau&speicher=2tb&huelle=Mattweiss',
   'kaufen/?modell=k1&farbe=kieselbeige',
   'zubehoer/huelle/?modell=k1&farbe=Mattschwarz',
   'vergleichen/?kiesel=pro&gegen=mini&ansicht=uebereinander&karte=1',
+  'en/buy/?model=k1&color=pebble-beige&storage=1tb',
+  'en/buy/?modell=pro&farbe=Himmelblau',
+  'en/compare/?phone=pro&vs=mini&view=overlay',
+  'gibt-es-nicht/',
+  'en/gibt-es-nicht/',
 ];
 
 // DOM als Text: Elemente mit sortierten Attributen, Zustand der Formularfelder, Text.
@@ -371,49 +241,35 @@ function domAlsText() {
   return zeilen.join('\n');
 }
 
-// Etappe 9b: im neuen Stand vor dem Schnappschuss herausnehmen (wie ZUSAETZE im statischen Teil)
-const ZUSAETZE_DOM = '[data-sprachhinweis], [data-sprachwahl], link[rel="alternate"][hreflang], meta[property="og:locale:alternate"]';
-async function schnappschuss(kontext, url, ohneZusaetze = false) {
+async function schnappschuss(kontext, server, adresse) {
   const seite = await kontext.newPage();
   const fehler = [];
   seite.on('pageerror', (e) => fehler.push(e.message));
-  await seite.goto(url, { waitUntil: 'networkidle' });
+  await seite.goto(server.basis + adresse, { waitUntil: 'networkidle' });
   // Leerlauf abwarten (Warenkorb-Vorschau, 2D-Entscheid der Bühne), dann zwei Bilder
   await seite.evaluate(() => new Promise((r) => requestIdleCallback(() => requestAnimationFrame(() => requestAnimationFrame(r)), { timeout: 2000 })));
   await seite.waitForTimeout(300);
-  if (ohneZusaetze) await seite.evaluate((sel) => document.querySelectorAll(sel).forEach((e) => e.remove()), ZUSAETZE_DOM);
   const dom = await seite.evaluate(domAlsText);
-  const adresse = new URL(seite.url());
+  const url = new URL(seite.url());
   await seite.close();
-  return { dom, adresse: adresse.pathname.replace(/^\/kiesel-website\/v2\//, '') + adresse.search + adresse.hash, fehler };
+  // Adresse ohne Server und Basispfad, dieselbe Form in beiden Ständen
+  return { dom, adresse: url.pathname.slice(server.basispfad.length) + url.search + url.hash, fehler };
 }
 
 // Im Browser: Server-Adresse (Port wechselt) weg, dazu die <link rel="modulepreload">, die Vite
 // beim Nachladen einfügt (welche Teil-Dateien es gibt, hängt davon ab, wie der Code aufgeteilt ist)
-// Erzeugte IDs (uid() im Browser: zufälliges Kürzel + laufende Nummer, siehe svg.js): Die
-// Nummer hängt davon ab, in welcher Reihenfolge Leerlauf-Aufgaben zeichnen. Darum bekommt jede
-// ID mit einer Ziffer eine neue Nummer nach Auftreten, samt aller Verweise (#id, url(#id)).
 function browserGleich(dom) {
   return idsNeu(ohneCssNamen(ohneHash(dom))
     .replace(/http:\/\/127\.0\.0\.1:\d+/g, '')
     .replace(/^ *<link [^\n]*rel="modulepreload"[^\n]*\n/gm, ''));
 }
-function idsNeu(t) {
-  const neu = new Map();
-  for (const [, id] of t.matchAll(/\bid="([^"]*\d[^"]*)"/g)) if (!neu.has(id)) neu.set(id, `id${neu.size + 1}`);
-  if (!neu.size) return t;
-  const esc = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const re = new RegExp(`(?<=["#\\s(])(${[...neu.keys()].sort((a, b) => b.length - a.length).map(esc).join('|')})(?=["\\s)])`, 'g');
-  return t.replace(re, (id) => neu.get(id));
-}
 
-async function stile(browser, url, schema, ohneZusaetze = false) {
+async function stile(browser, url, schema) {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce', colorScheme: schema, locale: 'de-CH' });
   const s = await ctx.newPage();
   await s.goto(url, { waitUntil: 'networkidle' });
-  if (ohneZusaetze) await s.evaluate((sel) => document.querySelectorAll(sel).forEach((e) => e.remove()), ZUSAETZE_DOM);
   // <script> und <link> haben keinen sichtbaren Stil; ihre Anzahl hängt davon ab, wie Vite den
-  // Code aufteilt (modulepreload, Skripte der neuen Bausteine), darum nicht mitzählen
+  // Code aufteilt (modulepreload), darum nicht mitzählen
   const r = await s.evaluate(() => [...document.querySelectorAll('*')].filter((el) => el.tagName !== 'SCRIPT' && el.tagName !== 'LINK').map((el) => { const c = getComputedStyle(el); return el.tagName + '|' + [...c].sort().map((p) => `${p}:${c.getPropertyValue(p)}`).join(';'); }));
   await ctx.close();
   // Verweise auf erzeugte IDs (fill: url("#qs55fr")) nach Auftreten neu nummerieren, wie idsNeu()
@@ -421,12 +277,14 @@ async function stile(browser, url, schema, ohneZusaetze = false) {
   return r.map((z) => z.replace(/url\("#([^"]+)"\)/g, (_, id) => { if (!nr.has(id)) nr.set(id, nr.size + 1); return `url("#id${nr.get(id)}")`; }));
 }
 
-async function vergleicheLaufzeit(altDist, neuDist, regeln = REGELN, regelnAdresse = REGELN_ADRESSE) {
-  console.log('\n── 2. Nach dem Skriptlauf (1440 px, weniger Bewegung, alter Warenkorb) ──');
-  const alt = await starteServer({ ordner: altDist });
-  const neu = await starteServer({ ordner: neuDist });
+async function vergleicheLaufzeit(altDist, neuDist, regeln) {
+  console.log('\n── 2. Nach dem Skriptlauf (1440 px, weniger Bewegung, alter Warenkorb, beide Sprachen) ──');
+  // fehlerseite: fehlende Adressen bekommen wie bei GitHub Pages die 404.html
+  const starte = async (ordner) => { const b = basispfad(ordner); return { ...(await starteServer({ ordner, basispfad: b, fehlerseite: true })), basispfad: b }; };
+  const alt = await starte(altDist), neu = await starte(neuDist);
   const browser = await chromium.launch();
-  // locale de-CH: ein deutscher Browser (Playwright ist sonst en-US, dann erschiene der Sprach-Hinweis)
+  // locale de-CH: ein deutscher Browser (Playwright ist sonst en-US, dann erschiene auf den
+  // deutschen Seiten der Sprach-Hinweis; auf den englischen Seiten erscheint er so, in beiden Ständen)
   const kontext = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce', colorScheme: 'light', locale: 'de-CH' });
   await kontext.addInitScript((korb) => { try { localStorage.setItem('kiesel-warenkorb', korb); } catch { /* egal */ } }, ALTER_KORB);
   // Math.random mit festem Startwert: uid() im Browser hängt ein zufälliges Kürzel an die
@@ -434,15 +292,14 @@ async function vergleicheLaufzeit(altDist, neuDist, regeln = REGELN, regelnAdres
   await kontext.addInitScript(() => { let x = 12345; Math.random = () => ((x = (x * 1103515245 + 12345) % 2147483648) / 2147483648); });
   const zaehler = new Map();
   let fehler = 0;
-  for (const adresse of [...OEFFENTLICH.map(([a]) => a), ...EXTRA]) {
-    const a = await schnappschuss(kontext, alt.basis + adresse);
-    const b = await schnappschuss(kontext, neu.basis + adresse, regeln.length > 0);
-    const erwartet = wendeAn(browserGleich(a.dom), regeln, zaehler);
+  for (const adresse of [...ALLE_OEFFENTLICH.map(([a]) => a), ...EXTRA]) {
+    const a = await schnappschuss(kontext, alt, adresse);
+    const b = await schnappschuss(kontext, neu, adresse);
+    const erwartet = browserGleich(wendeAn(a.dom, regeln, zaehler));
     const ist = browserGleich(b.dom);
-    const adrErwartet = wendeAn(a.adresse, regelnAdresse, zaehler);
     const probleme = [];
     if (erwartet !== ist) probleme.push(zeigeUnterschied(erwartet, ist));
-    if (adrErwartet !== b.adresse) probleme.push(`      Adresse erwartet ${adrErwartet}, ist ${b.adresse}`);
+    if (a.adresse !== b.adresse) probleme.push(`      Adresse erwartet ${a.adresse}, ist ${b.adresse}`);
     if (b.fehler.length) probleme.push(`      Skriptfehler: ${b.fehler.join(' | ')}`);
     console.log(`${probleme.length ? '✗' : '✓'} /${adresse}${probleme.length ? '\n' + probleme.join('\n') : ''}`);
     fehler += probleme.length ? 1 : 0;
@@ -451,7 +308,7 @@ async function vergleicheLaufzeit(altDist, neuDist, regeln = REGELN, regelnAdres
   for (const d of stilSeiten) {
     const adresse = d.replace(/index\.html$/, '');
     for (const schema of ['light', 'dark']) {
-      const a = await stile(browser, alt.basis + adresse, schema), b = await stile(browser, neu.basis + adresse, schema, regeln.length > 0);
+      const a = await stile(browser, alt.basis + adresse, schema), b = await stile(browser, neu.basis + adresse, schema);
       const anders = a.length !== b.length ? Infinity : a.filter((s, i) => s !== b[i]).length;
       console.log(`${anders ? '✗' : '✓'} /${adresse} (${schema}): ${a.length} Elemente, ${anders === Infinity ? 'andere Anzahl' : `${anders} mit anderen berechneten Stilen`}`);
       if (anders) fehler++;
@@ -464,24 +321,26 @@ async function vergleicheLaufzeit(altDist, neuDist, regeln = REGELN, regelnAdres
 
 // ────────────────────────────────────────────────────────────── Ablauf
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const ref = arg('--basis') ?? git('merge-base', 'HEAD', 'origin/v2');
+  const ref = arg('--basis') ?? git('merge-base', 'HEAD', 'origin/main');
   const basis = basisBauen(ref);
   if (!hat('--ohne-build')) { console.log('Jetziger Stand wird gebaut …'); baue(site); }
   const neuDist = path.join(site, 'dist');
   if (!fs.existsSync(path.join(neuDist, 'index.html'))) { console.log('✗ Kein vollständiger Build in dist/ (Fehler beim Bauen?)'); process.exit(1); }
 
-  const ohne = hat('--ohne-regeln');
-  const statisch = vergleicheStatisch(basis.dist, neuDist, ohne ? [] : REGELN);
-  const laufzeit = hat('--nur-statisch') ? { fehler: 0, zaehler: new Map() } : await vergleicheLaufzeit(basis.dist, neuDist, ohne ? [] : REGELN, ohne ? [] : REGELN_ADRESSE);
+  const regeln = hat('--ohne-regeln') ? [] : [...basisRegel(basispfad(basis.dist), basispfad(neuDist)), ...REGELN];
+  const statisch = vergleicheStatisch(basis.dist, neuDist, regeln);
+  const laufzeit = hat('--nur-statisch') ? { fehler: 0, zaehler: new Map() } : await vergleicheLaufzeit(basis.dist, neuDist, regeln);
 
   console.log('\n── Angewendete Regeln (alt → erwartet neu) ──');
-  for (const r of [...REGELN, CSS_REIHENFOLGE, ...REGELN_ADRESSE, ...ZUSAETZE, ZUSATZ_CSS, ...REGELN_CSS]) {
+  if (!regeln.length) console.log('  keine');
+  for (const r of regeln) {
     const n = (statisch.zaehler.get(r.name) ?? 0) + (laufzeit.zaehler.get(r.name) ?? 0);
     console.log(`${String(n).padStart(5)} × ${r.name}\n        Grund: ${r.grund}`);
   }
-  console.log('  immer: Hash in /_astro/-Dateinamen gleichgemacht, Modul-Skripte im statischen Teil ausgeblendet (Wirkung prüft Teil 2)');
-  console.log('  immer (seit 9b): Namen der CSS-Pakete und Nummern der Logo-IDs gleichgemacht (Aufteilung und Zähler über den ganzen Build; Inhalt je Seite verglichen)');
+  const umgestellt = statisch.zaehler.get(CSS_REIHENFOLGE);
+  if (umgestellt) console.log(`${String(umgestellt).padStart(5)} × ${CSS_REIHENFOLGE}`);
+  console.log('  immer: Hash und CSS-Paketnamen in /_astro/, erzeugte IDs neu nummeriert, Modul-Skripte im statischen Teil ausgeblendet (Wirkung prüft Teil 2)');
   const summe = statisch.fehler + laufzeit.fehler;
-  console.log(summe ? `\n✗ ${summe} Unterschied(e) ohne Regel` : `\n✓ Kein Unterschied ausser den Regeln oben (alter Stand ${basis.sha})`);
+  console.log(summe ? `\n✗ ${summe} Unterschied(e) ohne Regel` : `\n✓ Kein Unterschied ausser den Regeln oben (Basis ${basis.sha})`);
   process.exit(summe ? 1 : 0);
 }
